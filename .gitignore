@@ -1,6 +1,5 @@
-# brand/site images stay local until we decide to publish them
-assets/
-assests/
+# original high-res brand images (23 MB); optimized copies live in assets/
+assets-src/
 
 # python
 __pycache__/

@@ -31,7 +31,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 
 ## Phase 3 — Landing page
 - [ ] `site/` static page on GitHub Pages: what it is, bring-any-data table, pipeline, locale packs, install, skill install
-- [ ] Brand assets committed under `assets/`
+- [x] Brand assets: optimized web copies under `assets/` (originals stay local in `assets-src/`)
 
 ## Phase 4 — Prepare · Synth
 - [ ] `prepare`: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations

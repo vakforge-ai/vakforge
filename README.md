@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/social/readme-banner.webp" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
+</p>
+
 # vakforge
 
 **Turn the data your company already has into a self-hosted, real-time voice assistant.**
