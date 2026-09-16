@@ -1,0 +1,36 @@
+# brand/site images stay local until we decide to publish them
+assets/
+assests/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# project data and runs
+data/raw/
+runs/
+checkpoints/
+wandb/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.safetensors
+*.bin
+*.pt
+*.gguf
+
+# env / editor / os
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
