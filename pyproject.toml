@@ -1,0 +1,75 @@
+[project]
+name = "vakforge"
+version = "0.0.1"
+description = "Turn the data your company already has into a self-hosted, real-time voice assistant."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [{ name = "vakforge", email = "vakforge.ai@gmail.com" }]
+keywords = ["voice-agent", "speech-to-speech", "fine-tuning", "realtime", "locale"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+# Core must import with zero ML deps.
+dependencies = [
+  "typer>=0.12",
+  "pydantic>=2.7",
+  "rich>=13",
+  "numpy>=1.26",
+  "soundfile>=0.12",
+  "pyyaml>=6",
+  "jsonschema>=4.21",
+]
+
+[project.optional-dependencies]
+# Recipe extras are filled in when each recipe lands, after verifying the
+# upstream package name and pinning a version. Empty on purpose until then.
+lfm25 = []    # TODO(verify): liquid-audio + torch pin, Phase 5
+moshi = []    # TODO(verify): moshi-finetune commit pin, Phase 6
+qwen = []     # TODO(verify): ms-swift / transformers pins, Phase 6
+cascade = []  # TODO(verify): pipecat, faster-whisper, TTS pins, Phase 6
+dev = [
+  "pytest>=8",
+  "ruff>=0.5",
+]
+
+[project.scripts]
+vakforge = "vakforge.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/vakforge-ai/vakforge"
+Repository = "https://github.com/vakforge-ai/vakforge"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vakforge"]
+
+[tool.uv]
+default-groups = []
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not gpu and not model'"
+markers = [
+  "gpu: needs a CUDA GPU (opt-in: pytest -m gpu)",
+  "model: downloads model weights (opt-in: pytest -m model)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*.md", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

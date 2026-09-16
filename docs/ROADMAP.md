@@ -5,14 +5,14 @@ Single source of truth for status. Update checkboxes in the same commit as the w
 Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowledge, and a landing page. Recipes that need a GPU come after, largely from contributors who have one.
 
 ## Phase 0 — Core scaffold
-- [ ] `pyproject.toml` with core deps and extras `lfm25`, `moshi`, `qwen`, `cascade`, `dev`
-- [ ] `uv.lock`, `.gitignore`, `LICENSE` (Apache-2.0), `Makefile`/`justfile`
-- [ ] Package layout per `ARCHITECTURE.md`, incl. `locales/` with `LocalePack` protocol + `en` skeleton
-- [ ] `vakforge --version`, `vakforge init --locale`
-- [ ] `schema.py` (pydantic v2, incl. `locale`) + JSON Schema export
-- [ ] `vakforge validate` with actionable errors
-- [ ] Generated test fixtures (no committed audio binaries)
-- [ ] GitHub Actions: ruff + pytest, Python 3.11/3.12
+- [x] `pyproject.toml` with core deps; recipe extras declared but empty until each recipe pins its upstream
+- [x] `uv.lock`, `.gitignore`, `LICENSE` (Apache-2.0), `Makefile`
+- [x] Package layout (only what Phase 0 needs), `locales/` with `LocalePack` base + registry + `en`, `en-US`, `en-GB`, `en-IN` skeletons
+- [x] `vakforge --version`, `vakforge init --locale` (writes `vakforge.yaml`, data dirs, `.gitignore`)
+- [x] `schema.py` (pydantic v2, incl. `locale`; audio optional for text-sourced records) + `vakforge schema` JSON Schema export
+- [x] `vakforge validate`: schema, audio file vs declaration, locale/lang registry, tool args vs JSON Schema, consent, `splits.json`
+- [x] Generated test fixtures (WAVs synthesized in `tests/conftest.py`)
+- [x] GitHub Actions: ruff + pytest, Python 3.11/3.12
 
 ## Phase 1 — Locale packs · Inspect · Recommend
 - [ ] Pack `en` (parent): normalizer, NER, shared PII patterns, base scenarios

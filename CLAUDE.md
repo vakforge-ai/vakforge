@@ -27,12 +27,12 @@ Claude Code reads this file automatically at the start of every session in this 
 ## Commands
 
 ```bash
-uv sync                       # core
+uv sync --group dev           # core + pytest/ruff
 uv sync --extra lfm25         # recipe A deps
 uv sync --extra moshi         # recipe B deps
 uv sync --extra qwen          # recipe D deps
 uv sync --extra cascade       # recipe C deps
-uv run pytest                 # CPU tests
+uv run pytest                 # CPU tests (32 in Phase 0)
 uv run pytest -m gpu          # GPU tests (opt-in)
 uv run ruff check . && uv run ruff format .
 uv run vakforge --help

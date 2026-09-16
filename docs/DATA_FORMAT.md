@@ -85,6 +85,8 @@ my-agent/
 
 ## Field notes
 
+**audio** — optional. Records built from documents, tables or chat logs have no recording until `synth` renders one; audio-requiring adapters skip or reject such rows and say so.
+
 **audio.channels / channel_map** — `2` with a channel map means true dual-stream audio (required by `moshi-lora`). `1` means mixed mono; turns then come from diarization and `adapters/moshi.py` will refuse it unless `--allow-synthetic-stereo` reconstructs streams from cut segments (lower quality; flagged in the report).
 
 **audio.condition** — `studio | clean | phone | noisy`. Set by `inspect` heuristics, overridable. Used to stratify eval.

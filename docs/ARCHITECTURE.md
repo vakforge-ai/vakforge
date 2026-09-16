@@ -21,8 +21,7 @@ vakforge/
 
   locales/
     base.py                 # LocalePack protocol + registry (see LOCALE_PACKS.md)
-    en/                     # parent: normalizer, NER, shared PII, base scenarios
-    en_us/  en_gb/  en_in/  # formats, IDs, consent notes, generators
+    en.py                   # parent + en-US/en-GB/en-IN skeletons; split into packages as they grow
     hi_latn_in/             # Roman-Hindi detection, transliteration, Indian generators
     zh_cn/                  # planned
 
@@ -101,20 +100,27 @@ benchmarks/vakforge-bench-<locale>-v0/
 ```python
 class Adapter(Protocol):
     name: str
+
     def build(self, manifest: Path, out_dir: Path, cfg: AdapterConfig) -> AdapterOutput: ...
+
     # AdapterOutput: out_dir, manifest_hash, stats (rows kept/dropped and why)
+
 
 class Recipe(Protocol):
     name: str
-    extra: str                                   # uv extra that provides deps
-    def check_env(self) -> list[EnvIssue]: ...   # missing deps, GPU, gated weights
+    extra: str  # uv extra that provides deps
+
+    def check_env(self) -> list[EnvIssue]: ...  # missing deps, GPU, gated weights
     def train(self, dataset: AdapterOutput, cfg: TrainConfig) -> TrainResult: ...
     def load_for_eval(self, checkpoint: Path | None) -> Inferencer: ...  # None = base model
     def serve(self, checkpoint: Path | None, cfg: ServeConfig) -> StreamingBackend: ...
 
+
 class Inferencer(Protocol):
     def respond(self, session: EvalSession) -> EvalTurnResult: ...
+
     # returns text, audio (24 kHz), tool_calls, timings (ttft, ttfa, total)
+
 
 class StreamingBackend(Protocol):
     async def append_audio(self, pcm16: bytes) -> None: ...
