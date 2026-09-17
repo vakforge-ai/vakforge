@@ -1,0 +1,44 @@
+name: Locale pack proposal
+description: Propose or volunteer a new locale pack (language + market).
+labels: ["locale-pack", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A locale pack holds everything language- or market-specific. See docs/LOCALE_PACKS.md for the full checklist.
+  - type: input
+    id: pack-id
+    attributes:
+      label: Pack id (BCP-47 with region)
+      placeholder: es-MX
+    validations:
+      required: true
+  - type: textarea
+    id: formats
+    attributes:
+      label: Formats
+      description: Currency words and symbols, date order, phone and postal formats, national ID patterns.
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and consent notes
+      description: Relevant data protection law and call-recording consent rules, with sources. Not legal advice.
+    validations:
+      required: true
+  - type: textarea
+    id: models
+    attributes:
+      label: Speech models
+      description: Open STT and TTS that work for this language today, and whether any speech-to-speech recipe supports it natively.
+  - type: dropdown
+    id: helping
+    attributes:
+      label: Can you help build it?
+      options:
+        - Yes, I can open the pull request
+        - I can review and provide golden test cases
+        - No, just requesting
+    validations:
+      required: true
