@@ -1,0 +1,24 @@
+# Dependabot version updates. Works on private repositories on the free plan.
+# Verified against docs.github.com dependabot options reference: "uv" and "github-actions" ecosystems.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dev-tools:
+        patterns: ["pytest", "ruff"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
