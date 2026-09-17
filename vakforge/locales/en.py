@@ -1,8 +1,8 @@
-"""English packs: `en` parent with shared rules, plus en-US, en-GB, en-IN.
+"""`en` parent pack: rules shared by every English locale.
 
-The parent owns patterns that are the same everywhere English is spoken (email, payment
-cards, IBAN) and the English WER normalizer. Children add market formats, national IDs and
-consent rules; they split into their own modules as they grow.
+Owns patterns that are the same everywhere English is spoken (email, payment cards, IBAN)
+and the English WER normalizer. Market packs live in their own modules and inherit from it:
+`en_us`, `en_gb`, `en_in` (and `hi_latn_in` through `en_in`).
 """
 
 from __future__ import annotations
