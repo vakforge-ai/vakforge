@@ -52,6 +52,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["vakforge"]
 
+[tool.hatch.build.targets.sdist]
+exclude = ["site", ".github", "assets-src"]
+
 [tool.uv]
 default-groups = []
 

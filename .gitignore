@@ -1,4 +1,4 @@
-# original high-res brand images (23 MB); optimized copies live in assets/
+# original high-res brand images (23 MB); optimized copies live in site/assets/
 assets-src/
 
 # python
@@ -33,3 +33,6 @@ wandb/
 .idea/
 .DS_Store
 Thumbs.db
+
+# local layout probes
+site/_*.html

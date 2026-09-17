@@ -74,7 +74,11 @@ vakforge/
     report.py               # report.md + report.json
 
   serve/
-    realtime_ws.py          # OpenAI-Realtime-compatible WebSocket (documented subset)
+    protocols/              # wire-format front ends over one StreamingBackend
+      realtime_ws.py        # OpenAI Realtime WebSocket format (documented subset), first
+      webrtc.py             # LiveKit / Pipecat transports, next
+      sip.py                # telephony, next
+      http.py               # one turn per request, planned
     session.py              # per-connection state, audio buffers, tool dispatch
     adapters/               # recipe → streaming inference interface
     examples/               # python_client.py, pipecat_pipeline.py, livekit_agent.py
@@ -84,7 +88,7 @@ vakforge/
 
 skill/vakforge/             # agent skill: SKILL.md + references/ distilled from docs/
 site/                       # static landing page (GitHub Pages)
-assets/                     # brand and site images
+site/assets/                # brand and site images (served by Cloudflare Pages)
 configs/                    # default YAML per recipe
 notebooks/                  # Colab notebooks, one per recipe
 tests/
@@ -129,7 +133,7 @@ class StreamingBackend(Protocol):
     async def tool_result(self, call_id: str, content: dict) -> None: ...
 ```
 
-`eval` and `serve` depend only on these protocols, so a new recipe that implements them gets the full report and the Realtime endpoint for free.
+`eval` and `serve` depend only on these protocols, so a new recipe that implements them gets the full report and every protocol front end for free.
 
 ## Data flow
 
@@ -155,7 +159,21 @@ any source ─► prepare ─► data/vakforge.jsonl ◄─ synth
                     serve.realtime_ws ─► ws://…/v1/realtime
 ```
 
-## Serving: OpenAI Realtime compatibility
+## Serving: protocol front ends
+
+The model backend (`StreamingBackend`) knows nothing about the wire. Each protocol is a thin front end in `serve/protocols/` that translates its messages into `append_audio` / `commit` / `responses` / `tool_result`. Every model served is open and local; "OpenAI Realtime compatible" names a message format, not a dependency.
+
+| Front end | Why | Status |
+|---|---|---|
+| OpenAI Realtime WebSocket | de facto shape for voice agents; GPT Realtime users change one URL; Pipecat, LiveKit, Twilio clients work unchanged | first |
+| WebRTC (LiveKit / Pipecat transports) | browsers and mobile, lowest latency, echo cancellation for free | next |
+| SIP | telephony, the call-centre use case | next |
+| HTTP | one turn per request for batch and simple integrations | planned |
+| Gemini Live format | teams on Google's stack | on request |
+
+A new front end ships with its own event list in `serve/README.md` and a contract test against a fake backend.
+
+### OpenAI Realtime WebSocket subset
 
 We implement a documented subset, enough for common clients:
 

@@ -30,8 +30,10 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [ ] Tested on one real project end to end (documents + tables, no audio) and one with call recordings
 
 ## Phase 3 — Landing page
-- [ ] `site/` static page on GitHub Pages: what it is, bring-any-data table, pipeline, locale packs, install, skill install
-- [x] Brand assets: optimized web copies under `assets/` (originals stay local in `assets-src/`)
+- [x] `site/` static landing page (Cloudflare Pages): hero demo, pipeline, data router, repo parts, locale explorer, eval report, redaction console, agent skill, CTA
+- [x] Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)
+- [ ] Deploy to Cloudflare Pages
+- [x] Brand assets: mark, favicons, app icon, social and OG images under `site/assets/` (originals stay local in `assets-src/`)
 
 ## Phase 4 — Prepare · Synth
 - [ ] `prepare`: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations
@@ -45,9 +47,15 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [ ] Verify `liquid_audio` API against pinned version; `UPSTREAM_NOTES.md`
 - [ ] Adapter, `train`, eval metrics, `report.md`/`report.json` base vs tuned
 - [ ] Colab notebook end to end on `en-US` demo; second run on `hi-Latn-IN`
-- [ ] Realtime-compatible WebSocket (documented event subset), Python client, Pipecat and LiveKit examples, Dockerfile
+- [ ] `serve` backend/protocol split; OpenAI Realtime WebSocket front end (documented event subset), Python client, Pipecat and LiveKit examples, Dockerfile
 
-## Phase 6 — More recipes (contributor-friendly)
+## Phase 6 — More protocol front ends
+- [ ] WebRTC front end via LiveKit or Pipecat transports
+- [ ] SIP / telephony front end
+- [ ] Plain HTTP one-turn front end
+- [ ] Gemini Live format (on request)
+
+## Phase 6b — More recipes (contributor-friendly)
 - [ ] Recipe B `moshi-lora`: adapter, train wrapper, duplex eval, serve path
 - [ ] Recipe D `qwen-omni` + pack `zh-CN`
 - [ ] Recipe C `cascade`

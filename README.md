@@ -1,18 +1,18 @@
 <p align="center">
-  <img src="assets/social/readme-banner.webp" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
+  <img src="https://raw.githubusercontent.com/vakforge-ai/vakforge/main/site/assets/social/readme-banner.webp" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
 </p>
 
 # vakforge
 
 **Turn the data your company already has into a self-hosted, real-time voice assistant.**
 
-Documents, FAQs, database tables, chat logs, CRM records, recorded calls: vakforge works out what your assistant actually needs (knowledge, behaviour, tools, voice, language), generates the conversational data you lack, trains only what needs training, proves the result beats the base model on your own held-out data, and serves it behind an OpenAI-Realtime-compatible WebSocket. Open source, runs on your hardware, any language through locale packs. Launch locales: English (US, UK, India) and Hinglish.
+Documents, FAQs, database tables, chat logs, CRM records, recorded calls: vakforge works out what your assistant actually needs (knowledge, behaviour, tools, voice, language), generates the conversational data you lack, trains only what needs training, proves the result beats the base model on your own held-out data, and serves it on your hardware behind protocols your clients already speak, starting with the OpenAI Realtime WebSocket format. Open models only, nothing calls a hosted API, any language through locale packs. Launch locales: English (US, UK, India) and Hinglish.
 
 > Status: pre-alpha. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what exists today.
 
 ## The problem
 
-Open speech-to-speech models exist (Moshi, PersonaPlex, LFM2.5-Audio, Qwen-Omni). Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and it answers a WebSocket like GPT Realtime does."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
+Open speech-to-speech models exist (Moshi, PersonaPlex, LFM2.5-Audio, Qwen-Omni). Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
 
 ## What ships
 
@@ -29,7 +29,7 @@ vakforge prepare               ->  ingest, transcribe, redact PII, canonical dat
 vakforge synth                 ->  synthetic dialogues in your locale over your tools and facts
 vakforge train --recipe X      ->  one tested recipe, not a menu of 400 models
 vakforge eval                  ->  base vs tuned: WER, entities, tool calls, latency, voice
-vakforge serve                 ->  OpenAI-Realtime-compatible WebSocket; re-point your client
+vakforge serve                 ->  your open model behind the Realtime protocol; WebRTC and SIP next
 ```
 
 ## Bring any data
@@ -63,6 +63,20 @@ The pipeline is language-agnostic. Everything language- or market-specific lives
 | `cascade` | STT + LLM LoRA + TTS chosen by locale | any language with a good STT+TTS pair | turn-based | 1x 24 GB GPU | planned |
 
 Details in [`docs/RECIPES.md`](docs/RECIPES.md).
+
+## Serving: open models, standard protocols
+
+"OpenAI Realtime compatible" describes the wire format, not the model. Every recipe serves an open model on your hardware; nothing calls OpenAI or any hosted API. We speak the Realtime WebSocket format first because it is the closest thing voice agents have to a common protocol: teams already on GPT Realtime change one URL, and Pipecat, LiveKit and Twilio integrations work unchanged. Open speech-to-speech models each ship their own ad-hoc protocol, so copying a widely used shape beats inventing another.
+
+The server separates the model backend from the protocol, so more front ends plug in without touching recipes:
+
+| Protocol | For | Status |
+|---|---|---|
+| OpenAI Realtime WebSocket (documented subset) | teams migrating off GPT Realtime; Pipecat, LiveKit, Twilio clients | first |
+| WebRTC via LiveKit or Pipecat transports | browser and mobile apps, lowest latency | next |
+| SIP / telephony | call centres and phone lines | next |
+| Plain HTTP, one turn per request | batch jobs, simple integrations | planned |
+| Gemini Live API format | teams on Google's stack | on request |
 
 ## Why launch with English and Hinglish
 

@@ -4,7 +4,7 @@ Claude Code reads this file automatically at the start of every session in this 
 
 ## What this repo is
 
-`vakforge` — turns the data a company already has (documents, database tables, chat logs, CRM records, recorded calls) into a self-hosted, evaluated, real-time voice assistant behind an OpenAI-Realtime-compatible WebSocket. Any language via locale packs; launch locales English (en-US/en-GB/en-IN) and Hinglish (hi-Latn-IN). Ships as: zero-ML-dep core library + CLI, an agent skill under `skill/`, a landing page under `site/`, and GPU recipes as optional extras. Full spec lives in `docs/`.
+`vakforge` — turns the data a company already has (documents, database tables, chat logs, CRM records, recorded calls) into a self-hosted, evaluated, real-time voice assistant served from open models on the user's hardware, behind standard protocols (OpenAI Realtime WebSocket format first; WebRTC and SIP next). "Realtime compatible" means the wire format only; nothing calls a hosted API. Any language via locale packs; launch locales English (en-US/en-GB/en-IN) and Hinglish (hi-Latn-IN). Ships as: zero-ML-dep core library + CLI, an agent skill under `skill/`, a landing page under `site/`, and GPU recipes as optional extras. Full spec lives in `docs/`.
 
 ## Read first, every session
 
