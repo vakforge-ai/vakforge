@@ -43,7 +43,7 @@ class EnglishPack(LocalePack):
         if formats.currency_symbols and formats.currency_words:
             word = formats.currency_words[0]
             symbols = "|".join(re.escape(s) for s in formats.currency_symbols)
-            t = re.sub(rf"(?:{symbols})\s?(\d[\d,]*(?:\.\d+)?)", rf"\1 {word}", t)
+            t = re.sub(rf"(?:{symbols})\s?(\d[\d,]*(?:\.\d+)?)", rf"\1 {word}", t, flags=re.I)
         t = _THOUSANDS.sub("", t)
         t = _PERCENT.sub(" percent", t)
         t = t.replace("&", " and ")

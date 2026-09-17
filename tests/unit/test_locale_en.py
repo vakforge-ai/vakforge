@@ -25,6 +25,18 @@ def test_normalizer_golden(raw, expected):
     assert EN.normalize_text(raw) == expected
 
 
+def test_currency_symbols_with_letters_match_after_lowercasing():
+    from vakforge.locales.base import LocaleFormats
+    from vakforge.locales.en import EnglishPack
+
+    class _Pack(EnglishPack):
+        id = "t-en-currency"
+        languages = ["en"]
+        formats = LocaleFormats(currency_symbols=("US$", "$"), currency_words=("dollars",))
+
+    assert _Pack().normalize_text("US$ 45 and $3") == "45 dollars and 3 dollars"
+
+
 # ---- shared PII: positives -----------------------------------------------------------
 
 
