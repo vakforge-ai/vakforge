@@ -11,8 +11,9 @@
 ## Setup
 
 ```bash
-git clone <repo> && cd vakforge
-uv sync --extra dev
+git clone https://github.com/vakforge-ai/vakforge && cd vakforge
+uv sync --group dev
+uvx pre-commit install   # runs ruff and file checks on every commit
 uv run pytest            # must pass on CPU with no downloads
 uv run ruff check . && uv run ruff format --check .
 ```
@@ -20,16 +21,31 @@ uv run ruff check . && uv run ruff format --check .
 Recipe work:
 
 ```bash
-uv sync --extra dev --extra lfm25      # or --extra moshi / --extra qwen / --extra cascade
+uv sync --group dev --extra lfm25      # or --extra moshi / --extra qwen / --extra cascade
 uv run pytest -m model                 # opt-in, downloads models
 uv run pytest -m gpu                   # opt-in, needs CUDA
 ```
 
 ## Branches and commits
 
-- Branch from `main`: `feat/<area>-<short>`, `fix/…`, `docs/…`.
-- Conventional commits: `feat(prepare): roman-hindi language tagging`.
+- **Features and anything substantial** go on a branch from `main` (`feat/<area>-<short>`, `ci/…`, `docs/…`) and land through a pull request. Merge only when CI is green.
+- **Small fixes** (typos, one-line corrections, copy tweaks) may go straight to `main`.
+- `main` has no branch protection while the repository is private on the free plan, so these rules are enforced by review, not by GitHub. Do not force-push `main`.
+- Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.
+- Conventional commit messages: `feat(prepare): roman-hindi language tagging`.
 - One logical change per PR. Large recipes land as a sequence: adapter → train wrapper → eval → serve.
+
+## Releases
+
+1. Bump `version` in `pyproject.toml` and `__version__` in `vakforge/__init__.py`, run `uv lock`, commit as `chore(release): X.Y.Z`.
+2. Push a matching tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
+3. The `release` workflow checks the tag against the version, runs tests, builds, and publishes to PyPI through trusted publishing. No token is involved.
+
+PyPI never lets a published version change, so check the README renders (images must use public URLs) before tagging.
+
+## Security
+
+Report vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md), never in a public issue.
 
 ## Pull request checklist
 
