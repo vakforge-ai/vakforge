@@ -60,13 +60,6 @@ class En(EnglishPack):
 
 
 @register
-class EnGB(EnglishPack):
-    id = "en-GB"
-    languages = ["en-GB"]
-    parent = "en"
-
-
-@register
 class EnIN(EnglishPack):
     id = "en-IN"
     languages = ["en-IN"]
