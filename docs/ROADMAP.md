@@ -15,10 +15,16 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] GitHub Actions: ruff + pytest, Python 3.11/3.12
 
 ## Phase 1 — Locale packs · Inspect · Recommend
-- [ ] Pack `en` (parent): normalizer, NER, shared PII patterns, base scenarios
-- [ ] Pack `en-US`, `en-GB`, `en-IN`: formats, national-ID patterns, consent notes
-- [ ] Pack `hi-Latn-IN`: Roman-Hindi detection, transliteration helpers, Indian name/address generator
-- [ ] Golden tests for every pack (normalizer, detect_lang, PII positive/negative)
+- [x] Pack model: formats, PII patterns with checksum validators, consent, privacy notes, recipe support, inheritance
+- [x] Pack `en` (parent): English WER normalizer, email / card (Luhn) / IBAN (mod-97) patterns
+- [ ] Pack `en` (parent): NER for names and addresses, base scenarios
+- [x] Pack `en-US`: dollars, MDY, SSN, NANP phones, state consent notes
+- [x] Pack `en-GB`: pounds, DMY, NI number, UK phones, UK GDPR notes
+- [x] Pack `en-IN`: rupees with lakh/crore and Indian digit grouping, Aadhaar (Verhoeff), PAN, +91 mobiles, DPDP notes
+- [x] Pack `hi-Latn-IN`: Roman-Hindi vs English vs Devanagari detection, `lang_mix`, Devanagari-safe normalizer with spelling variants
+- [ ] Pack `hi-Latn-IN`: Devanagari to Roman transliteration, Indian name/address generator
+- [x] Golden tests for every pack (normalizer, detect_lang, PII positive/negative)
+- [x] `vakforge locales` to list packs and show resolved settings
 - [ ] `inspect` for audio: stats, clipping, silence, SNR, language guess
 - [ ] `inspect` for text and tables: documents, chat exports, CSV/SQL schemas; entity and tool-candidate discovery
 - [ ] `recommend`: questionnaire + rules from `DECISION_GUIDE.md`, honours `recipe_support`, says "retrieval, not fine-tune" when true
