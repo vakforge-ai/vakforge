@@ -1,0 +1,54 @@
+"""en-US: US English. Dollars, MDY dates, NANP phones, SSN."""
+
+from __future__ import annotations
+
+import re
+
+from vakforge.locales.base import LocaleFormats, PIIPattern, PrivacyNotes, register
+from vakforge.locales.en import EnglishPack
+
+# SSA never issues area 000, 666 or 900-999, group 00, or serial 0000.
+SSN = PIIPattern(
+    "ssn",
+    re.compile(r"\b(?!000|666|9\d\d)\d{3}[- ](?!00)\d{2}[- ](?!0000)\d{4}\b"),
+)
+# NANP: area and exchange codes start 2-9; optional +1 and common separators.
+PHONE_US = PIIPattern(
+    "phone",
+    re.compile(r"(?<![\d+])(?:\+?1[\s.-]?)?\(?[2-9]\d{2}\)?[\s.-]?[2-9]\d{2}[\s.-]?\d{4}\b"),
+)
+
+
+@register
+class EnUS(EnglishPack):
+    id = "en-US"
+    name = "US English"
+    languages = ["en-US"]
+    parent = "en"
+    formats = LocaleFormats(
+        currency_symbols=("US$", "$"),
+        currency_words=("dollars", "bucks", "grand"),
+        date_order="MDY",
+        phone_example="(415) 555-0134",
+        postal_example="94107 or 94107-1234",
+    )
+    pii_patterns = [SSN, PHONE_US]
+    call_recording_consent = "varies_by_state"
+    privacy_notes = PrivacyNotes(
+        summary=(
+            "No single federal privacy law. State laws apply, for example California "
+            "CCPA/CPRA. Illinois BIPA treats voiceprints as biometric identifiers. "
+            "Call-recording consent varies by state; several, including California, "
+            "require all parties to consent."
+        ),
+        links=(
+            "https://oag.ca.gov/privacy/ccpa",
+            "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004",
+        ),
+    )
+    recipe_support = {
+        "lfm25-audio": "native",
+        "moshi-lora": "native",
+        "qwen-omni": "native",
+        "cascade": "native",
+    }
