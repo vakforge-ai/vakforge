@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in vakforge does not work as documented.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not attach real customer audio, transcripts, names or IDs.** Synthetic or redacted examples only.
+        Security problems go to vakforge.ai@gmail.com, not here. See SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: vakforge version
+      description: Output of `vakforge --version`
+      placeholder: vakforge 0.0.2
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+      placeholder: vakforge validate data/vakforge.jsonl
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the full error output.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Smallest example that reproduces it
+      description: A few lines of a manifest, a config, or a synthetic file.
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: Windows 11, Python 3.12, uv 0.6, CPU only
+    validations:
+      required: true
+  - type: input
+    id: locale
+    attributes:
+      label: Locale pack and recipe, if relevant
+      placeholder: hi-Latn-IN, lfm25-audio
