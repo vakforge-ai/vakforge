@@ -75,9 +75,18 @@ Shared: English normalizer, person/organisation NER, email/card/IBAN patterns, t
 
 Added in the order native speech-output support appears in open models; until then `cascade` with locale STT/TTS defaults.
 
+## How packs are implemented
+
+- One module per pack under `vakforge/locales/` (`en.py`, `en_us.py`, `en_gb.py`, `en_in.py`, `hi_latn_in.py`), imported by `vakforge/locales/__init__.py`, which registers them.
+- A pack is a `LocalePack` subclass with class attributes (`formats`, `pii_patterns`, `call_recording_consent`, `privacy_notes`, `recipe_support`) plus optional overrides of `detect_lang` and `normalize_text`.
+- Inheritance: `parent` names another pack. Language tags and PII patterns are merged up the chain (a child pattern with the same `name` replaces the parent's). Scalar settings resolve to the nearest pack that sets them: `pack.resolved("call_recording_consent")`.
+- PII patterns are a regex plus an optional checksum validator (`vakforge/locales/checksums.py`: Luhn, Verhoeff, IBAN mod-97) so look-alike digit strings are not flagged. `pack.find_pii(text)` returns non-overlapping spans.
+- Postal codes are not PII patterns on their own; `prepare` redacts them only next to a street address.
+- Inspect any pack's resolved settings with `vakforge locales <id>`.
+
 ## Adding a locale pack (checklist)
 
-1. `vakforge/locales/<id>/` implementing `LocalePack`; inherit from a parent where sensible.
+1. `vakforge/locales/<id_with_underscores>.py` implementing `LocalePack`; inherit from a parent where sensible, and import it in `vakforge/locales/__init__.py`.
 2. Unit tests: `detect_lang`, `normalize_text` (golden cases incl. numbers, currency, dates), every `pii_pattern` (positive and negative cases), name generator sanity.
 3. Scenario templates localised (not just translated — local business norms, greetings, verification steps).
 4. `tts_defaults` / `stt_defaults` verified to run; `recipe_support` filled honestly.
