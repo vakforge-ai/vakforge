@@ -3,13 +3,30 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, TextIO
 
 import typer
 from rich.console import Console
 
 from vakforge import __version__
+
+
+def make_stream_safe(stream: TextIO) -> None:
+    """Replace unencodable characters instead of crashing.
+
+    Legacy Windows consoles default to cp1252, which cannot encode characters vakforge
+    prints (₹, ✗, Devanagari). Output degrades to "?" there; UTF-8 terminals are unaffected.
+    """
+    reconfigure = getattr(stream, "reconfigure", None)
+    encoding = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+    if reconfigure and encoding != "utf8":
+        reconfigure(errors="replace")
+
+
+make_stream_safe(sys.stdout)
+make_stream_safe(sys.stderr)
 
 app = typer.Typer(
     help="Turn the data your company already has into a self-hosted voice assistant.",

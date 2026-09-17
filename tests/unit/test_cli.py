@@ -39,6 +39,19 @@ def test_validate_exit_codes(project):
     assert "audio.path" in r.output
 
 
+def test_cp1252_console_does_not_crash_on_rupee_or_cross():
+    import io
+
+    from vakforge.cli import make_stream_safe
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    make_stream_safe(stream)
+    stream.write("₹500 ✗ मेरा\n")
+    stream.flush()
+    assert raw.getvalue().startswith(b"?500 ? ????")
+
+
 def test_schema_export(tmp_path):
     out = tmp_path / "s.json"
     r = runner.invoke(app, ["schema", "--out", str(out)])
