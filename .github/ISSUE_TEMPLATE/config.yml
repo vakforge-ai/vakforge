@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/vakforge-ai/vakforge/blob/main/SECURITY.md
+    about: Report privately by email, not in a public issue.
+  - name: Roadmap and status
+    url: https://github.com/vakforge-ai/vakforge/blob/main/docs/ROADMAP.md
+    about: Check whether a feature is already planned.
