@@ -11,8 +11,9 @@
 ## Setup
 
 ```bash
-git clone <repo> && cd vakforge
-uv sync --extra dev
+git clone https://github.com/vakforge-ai/vakforge && cd vakforge
+uv sync --group dev
+uvx pre-commit install   # runs ruff and file checks on every commit
 uv run pytest            # must pass on CPU with no downloads
 uv run ruff check . && uv run ruff format --check .
 ```
@@ -20,7 +21,7 @@ uv run ruff check . && uv run ruff format --check .
 Recipe work:
 
 ```bash
-uv sync --extra dev --extra lfm25      # or --extra moshi / --extra qwen / --extra cascade
+uv sync --group dev --extra lfm25      # or --extra moshi / --extra qwen / --extra cascade
 uv run pytest -m model                 # opt-in, downloads models
 uv run pytest -m gpu                   # opt-in, needs CUDA
 ```
