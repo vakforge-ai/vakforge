@@ -57,10 +57,3 @@ class En(EnglishPack):
     name = "English (shared)"
     languages = ["en"]
     pii_patterns = [EMAIL, CARD, IBAN]
-
-
-@register
-class EnIN(EnglishPack):
-    id = "en-IN"
-    languages = ["en-IN"]
-    parent = "en"
