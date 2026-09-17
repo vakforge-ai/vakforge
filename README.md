@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://vakforge.pages.dev/assets/social/readme-banner.webp" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
+  <img src="https://vakforge.pages.dev/assets/social/readme-banner.png" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
 </p>
 
 # vakforge
