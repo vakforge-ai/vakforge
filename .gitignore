@@ -33,3 +33,6 @@ wandb/
 .idea/
 .DS_Store
 Thumbs.db
+
+# local layout probes
+site/_*.html
