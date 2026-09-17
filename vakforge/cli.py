@@ -137,5 +137,60 @@ def schema(
         print(text)
 
 
+@app.command()
+def locales(
+    pack_id: Annotated[
+        str | None, typer.Argument(help="Show one pack in detail, e.g. hi-Latn-IN.")
+    ] = None,
+) -> None:
+    """List locale packs, or show one pack's formats, PII patterns, consent and recipe support."""
+    from rich.table import Table
+
+    from vakforge.locales import get_pack, list_packs
+
+    if pack_id is None:
+        table = Table(title="Locale packs", title_justify="left")
+        for col in ("id", "name", "parent", "languages", "consent", "PII types"):
+            table.add_column(col)
+        for pid in list_packs():
+            p = get_pack(pid)
+            table.add_row(
+                pid,
+                p.name,
+                p.parent or "",
+                ", ".join(sorted(p.all_languages())),
+                p.resolved("call_recording_consent") or "",
+                str(len(p.all_pii_patterns())),
+            )
+        console.print(table)
+        return
+
+    try:
+        p = get_pack(pack_id)
+    except KeyError as exc:
+        err_console.print(f"[red]{exc.args[0]}[/]")
+        raise typer.Exit(2) from None
+
+    fmt = p.resolved("formats")
+    notes = p.resolved("privacy_notes")
+    console.print(f"[bold]{p.id}[/] {p.name}" + (f"  (inherits {p.parent})" if p.parent else ""))
+    console.print(f"languages: {', '.join(sorted(p.all_languages()))}")
+    if fmt:
+        console.print(
+            f"currency: {' '.join(fmt.currency_symbols)} ({', '.join(fmt.currency_words)})"
+            f" · dates {fmt.date_order} · phone e.g. {fmt.phone_example}"
+            f" · postal e.g. {fmt.postal_example}"
+        )
+    console.print(f"PII: {', '.join(pat.name for pat in p.all_pii_patterns())}")
+    console.print(f"call-recording consent: {p.resolved('call_recording_consent') or 'not set'}")
+    support = p.resolved("recipe_support")
+    if support:
+        console.print("recipes: " + ", ".join(f"{r}={s}" for r, s in support.items()))
+    if notes:
+        console.print(f"privacy (not legal advice): {notes.summary}")
+        for link in notes.links:
+            console.print(f"  {link}")
+
+
 if __name__ == "__main__":
     app()
