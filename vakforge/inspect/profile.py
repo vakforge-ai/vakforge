@@ -26,7 +26,7 @@ MAX_BYTES = 2_000_000  # read at most this much text per file
 
 
 def _read_text(path: Path) -> str:
-    with path.open(encoding="utf-8", errors="replace") as fh:
+    with path.open(encoding="utf-8-sig", errors="replace") as fh:
         return fh.read(MAX_BYTES)
 
 
@@ -58,7 +58,7 @@ def _columns_from_rows(rows: list[dict[str, Any]]) -> list[str]:
 def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     tables: dict[str, dict[str, Any]] = {}
     if src.format in {"csv", "tsv"}:
-        with src.path.open(encoding="utf-8", errors="replace", newline="") as fh:
+        with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
             reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
             rows = list(reader)
         tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": len(rows)}

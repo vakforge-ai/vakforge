@@ -51,3 +51,18 @@ def test_tool_candidates_deduplicated_across_sources(tmp_path):
     )
     s = inspect_dir(tmp_path, get_pack("en-US"))["summary"]
     assert s["tool_candidates"] == ["lookup_orders_by_order_id"]
+
+
+def test_utf8_bom_from_windows_tools_is_ignored(tmp_path):
+    bom = "﻿"
+    (tmp_path / "orders.csv").write_text(bom + "order_id,status\nA1,open\n", encoding="utf-8")
+    (tmp_path / "chat.txt").write_text(
+        bom + "15/09/26, 09:02 - Rahul: Order kab aayega?\n"
+        "15/09/26, 09:03 - Shop: Kal tak\n15/09/26, 09:05 - Rahul: Theek hai\n",
+        encoding="utf-8",
+    )
+    report = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))
+    s = report["summary"]
+    assert s["counts"]["chat"] == 1
+    assert s["chat_messages"] == 3
+    assert s["tool_candidates"] == ["lookup_orders_by_order_id"]

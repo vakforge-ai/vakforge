@@ -42,7 +42,7 @@ class Source:
 def _looks_like_chat_json(path: Path) -> bool:
     """JSON or JSONL whose records carry role/speaker + content/text, or a `messages` list."""
     try:
-        with path.open(encoding="utf-8") as fh:
+        with path.open(encoding="utf-8-sig") as fh:
             head = fh.read(20_000)
     except (OSError, UnicodeDecodeError):
         return False
@@ -73,7 +73,7 @@ def _looks_like_chat_json(path: Path) -> bool:
 
 def _looks_like_whatsapp(path: Path) -> bool:
     try:
-        with path.open(encoding="utf-8", errors="replace") as fh:
+        with path.open(encoding="utf-8-sig", errors="replace") as fh:
             lines = [fh.readline() for _ in range(20)]
     except OSError:
         return False
