@@ -26,11 +26,9 @@ vakforge/
     zh_cn/                  # planned
 
   inspect/
-    sources.py              # walk a data dir: documents, tables (CSV/SQL schema), chat exports, audio
-    text_stats.py           # entity and tool-candidate discovery in documents and tables
-    audio_stats.py          # duration, clipping, silence, SNR estimate
-    lang_guess.py           # per-file language guess (light model or heuristics)
-    report.py               # rich table + inspect.json
+    sources.py              # walk a data dir; classify documents, tables, chats (JSONL, WhatsApp), audio
+    profile.py              # shallow facts per kind: words/languages/PII, columns/id columns, messages, audio stats
+    report.py               # folder summary + inspect.json; one bad file never aborts the run
 
   recommend/
     questionnaire.py        # interactive prompts (typer)
