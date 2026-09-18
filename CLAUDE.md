@@ -32,7 +32,7 @@ uv sync --extra lfm25         # recipe A deps
 uv sync --extra moshi         # recipe B deps
 uv sync --extra qwen          # recipe D deps
 uv sync --extra cascade       # recipe C deps
-uv run pytest                 # CPU tests (32 in Phase 0)
+uv run pytest                 # CPU tests, no downloads
 uv run pytest -m gpu          # GPU tests (opt-in)
 uv run ruff check . && uv run ruff format .
 uv run vakforge --help

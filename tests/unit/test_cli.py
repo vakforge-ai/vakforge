@@ -39,6 +39,40 @@ def test_validate_exit_codes(project):
     assert "audio.path" in r.output
 
 
+def test_cp1252_console_does_not_crash_on_rupee_or_cross():
+    import io
+
+    from vakforge.cli import make_stream_safe
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    make_stream_safe(stream)
+    stream.write("₹500 ✗ मेरा\n")
+    stream.flush()
+    assert raw.getvalue().startswith(b"?500 ? ????")
+
+
+def test_locales_lists_launch_packs():
+    r = runner.invoke(app, ["locales"])
+    assert r.exit_code == 0, r.output
+    for pack_id in ("en-US", "en-GB", "en-IN", "hi-Latn-IN"):
+        assert pack_id in r.output
+
+
+def test_locales_show_resolves_inherited_settings():
+    r = runner.invoke(app, ["locales", "hi-Latn-IN"])
+    assert r.exit_code == 0, r.output
+    assert "aadhaar" in r.output
+    assert "notice_required" in r.output
+    assert "lfm25-audio=understand_only" in r.output
+
+
+def test_locales_unknown_pack():
+    r = runner.invoke(app, ["locales", "xx-YY"])
+    assert r.exit_code == 2
+    assert "unknown locale pack" in r.output
+
+
 def test_schema_export(tmp_path):
     out = tmp_path / "s.json"
     r = runner.invoke(app, ["schema", "--out", str(out)])
