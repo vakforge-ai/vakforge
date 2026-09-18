@@ -21,9 +21,10 @@ vakforge/
 
   locales/
     base.py                 # LocalePack protocol + registry (see LOCALE_PACKS.md)
-    en.py                   # parent + en-US/en-GB/en-IN skeletons; split into packages as they grow
-    hi_latn_in/             # Roman-Hindi detection, transliteration, Indian generators
-    zh_cn/                  # planned
+    checksums.py            # Luhn, Verhoeff, IBAN validators used by PII patterns
+    en.py                   # `en` parent: shared English PII + WER normalizer
+    en_us.py  en_gb.py  en_in.py   # market packs: formats, national IDs, consent notes
+    hi_latn_in.py           # Hinglish: Roman-Hindi detection, lang_mix, Devanagari-safe normalizer
 
   inspect/
     sources.py              # walk a data dir; classify documents, tables, chats (JSONL, WhatsApp), audio
