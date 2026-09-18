@@ -73,6 +73,27 @@ def test_locales_unknown_pack():
     assert "unknown locale pack" in r.output
 
 
+def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init", "proj", "-l", "hi-Latn-IN"]).exit_code == 0
+    raw = tmp_path / "proj" / "data" / "raw"
+    (raw / "faq.md").write_text("Refund 5 din mein.\n\nMail help@acme.in", encoding="utf-8")
+    (raw / "deck.pptx").write_bytes(b"PK")
+    r = runner.invoke(app, ["inspect", str(raw), "-o", "report.json"])
+    assert r.exit_code == 0, r.output
+    assert "email 1" in r.output
+    assert "skipped deck.pptx" in r.output
+    assert "0.0 min" in r.output  # no audio: minutes, not "0.0 h"
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["locale"] == "hi-Latn-IN"
+
+
+def test_inspect_without_locale_explains(tmp_path):
+    r = runner.invoke(app, ["inspect", str(tmp_path)])
+    assert r.exit_code == 2
+    assert "pass --locale" in r.output
+
+
 def test_schema_export(tmp_path):
     out = tmp_path / "s.json"
     r = runner.invoke(app, ["schema", "--out", str(out)])

@@ -137,6 +137,72 @@ def schema(
         print(text)
 
 
+def _project_locale(start: Path) -> str | None:
+    """First locale in the nearest `vakforge.yaml` at or above `start`."""
+    from vakforge.config import CONFIG_NAME, ProjectConfig
+
+    for folder in [start, *start.parents]:
+        if (folder / CONFIG_NAME).exists():
+            return ProjectConfig.load(folder).locales[0]
+    return None
+
+
+@app.command()
+def inspect(
+    path: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Data folder.")],
+    locale: Annotated[
+        str | None,
+        typer.Option("--locale", "-l", help="Locale pack; defaults to the project's first."),
+    ] = None,
+    out: Annotated[Path, typer.Option("--out", "-o", help="Where to write the report.")] = Path(
+        "inspect.json"
+    ),
+) -> None:
+    """Report what is in a folder of documents, tables, chats and audio."""
+    from rich.table import Table
+
+    from vakforge.inspect.report import inspect_dir, write_report
+    from vakforge.locales import get_pack, list_packs
+
+    pack_id = locale or _project_locale(path.resolve())
+    if pack_id is None:
+        err_console.print(
+            "[red]no locale[/]: pass --locale (one of "
+            f"{', '.join(list_packs())}) or run inside a `vakforge init` project"
+        )
+        raise typer.Exit(2)
+    try:
+        pack = get_pack(pack_id)
+    except KeyError as exc:
+        err_console.print(f"[red]{exc.args[0]}[/]")
+        raise typer.Exit(2) from None
+
+    report = inspect_dir(path, pack)
+    s = report["summary"]
+    table = Table(title=f"{path} · locale {pack.id}", title_justify="left", show_header=False)
+    table.add_column(style="dim")
+    table.add_column()
+    counts = ", ".join(f"{n} {k}" for k, n in s["counts"].items() if n)
+    table.add_row("files", counts or "none")
+    table.add_row("documents", f"{s['document_words']} words")
+    table.add_row("chats", f"{s['chat_messages']} messages")
+    hours = s["audio_hours"]
+    length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
+    table.add_row("audio", f"{length}, {s['stereo_audio_files']} stereo file(s)")
+    table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
+    table.add_row(
+        "personal data", ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
+    )
+    table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
+    console.print(table)
+    for f in report["files"]:
+        if not f["readable"]:
+            reason = f.get("error") or f.get("note") or "unsupported type"
+            err_console.print(f"[yellow]skipped[/] {f['path']}: {reason}")
+    write_report(report, out)
+    console.print(f"[green]wrote[/] {out}")
+
+
 @app.command()
 def locales(
     pack_id: Annotated[
