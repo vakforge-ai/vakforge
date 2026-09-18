@@ -30,6 +30,64 @@ vakforge is about the last part: owning your voice AI instead of renting it.
 
 Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
 
+## How it works
+
+### Where vakforge fits
+
+```mermaid
+flowchart LR
+  subgraph data["Your company's data"]
+    D1[Documents and FAQs]
+    D2[Database tables and CRM]
+    D3[Chat logs]
+    D4[Recorded calls]
+  end
+  subgraph vf["vakforge: the decision layer"]
+    I["inspect<br/>what you have"] --> R{"recommend<br/>what needs changing"}
+  end
+  D1 & D2 & D3 & D4 --> I
+  R -->|knowledge| RAG["Retrieval<br/>no training"]
+  R -->|actions| TOOLS["Tools over your tables"]
+  R -->|behaviour, accent, timing| FT["Fine-tune an open model"]
+  R -->|language| LP["Locale pack"]
+  RAG & TOOLS & FT & LP --> A["Your voice assistant<br/>open models on your servers"]
+  A --> C["Your app, phone line or browser<br/>Realtime WebSocket · WebRTC · SIP"]
+```
+
+### The workflow
+
+```mermaid
+flowchart LR
+  init[init] --> inspect[inspect] --> recommend{{recommend}} --> prepare[prepare] --> synth[synth] --> train[train] --> evaluate{{eval}} --> serve[serve]
+  classDef built fill:#0f3d3c,stroke:#32D5D2,color:#F7FAFF
+  classDef next fill:#3d1a18,stroke:#FF5A4E,color:#F7FAFF
+  classDef agent fill:#1a2540,stroke:#8393ad,color:#C9D6E5,stroke-dasharray:4 3
+  class init,inspect built
+  class recommend next
+  class prepare,synth,train,evaluate,serve agent
+```
+
+Teal: in the CLI today. Coral: next. Dashed: generated per project by your coding agent through the vakforge skill. Hexagons are decision gates: nothing is trained before `recommend` says so, and nothing ships before `eval` shows it beats the base model.
+
+### How the decision is made
+
+```mermaid
+flowchart TD
+  Q{"What should the assistant do better?"}
+  Q -->|know prices, policies, FAQs| K["Retrieval<br/>no training"]
+  Q -->|look things up, book, open tickets| T["Tools over your data<br/>small tool-use fine-tune only if it misses"]
+  Q -->|follow our call flow and tone| B["Behaviour fine-tune<br/>of the language model"]
+  Q -->|understand our callers' accents, names, amounts| S["Speech-to-text or encoder fine-tune"]
+  Q -->|sound like our brand| V["Voice cloning<br/>with written consent"]
+  Q -->|handle interruptions naturally| D["Full-duplex model<br/>trained on real calls"]
+  Q -->|speak another language| L["Locale pack<br/>plus multilingual or cascade model"]
+  K & T & B & S & V & D & L --> E{{"Evaluate on your held-out data<br/>base vs tuned"}}
+  E -->|better| Ship["Ship on your servers"]
+  E -->|not better| Back["Don't ship: fix the data or pick another route"]
+```
+
+The full rules, with data requirements and hardware tiers, are in [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md).
+
 ## What ships
 
 vakforge is three things in one repo:
