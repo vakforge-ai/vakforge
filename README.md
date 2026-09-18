@@ -4,89 +4,72 @@
 
 # vakforge
 
-**The decision layer for open voice AI.** Turn the data your company already has into a self-hosted, real-time voice assistant, and know what actually needs training before you spend anything on GPUs.
+**The decision layer for open voice AI.**
 
-Documents, FAQs, database tables, chat logs, CRM records, recorded calls: vakforge works out what your assistant actually needs (knowledge, behaviour, tools, voice, language), generates the conversational data you lack, trains only what needs training, proves the result beats the base model on your own held-out data, and serves it on your hardware behind protocols your clients already speak, starting with the OpenAI Realtime WebSocket format. Open models only, nothing calls a hosted API, any language through locale packs. Launch locales: English (US, UK, India) and Hinglish.
+vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.
 
-> Status: pre-alpha. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what exists today.
+<p align="center">
+  <img src="https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." width="100%">
+</p>
+
+- **Bring any data:** documents, FAQs, database tables, chat logs, CRM records, recorded calls.
+- **Open models only:** nothing calls a hosted API. You own the result.
+- **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
+
+> Status: pre-alpha. `init`, `validate`, `inspect` and the locale packs work today. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Why vakforge exists
 
-Open voice models are good enough today: Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni for speech-to-speech, plus strong open speech-to-text and text-to-speech. Yet most companies still pay per minute for a closed voice API. Not because the open models are worse, but because nobody tells them how to use them:
+Open voice models are good enough today. Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni can listen and talk, and strong open speech-to-text and text-to-speech models exist too. Yet most companies still pay per minute for a closed voice API.
+
+That is not because the open models are worse. It is because nobody helps them answer four questions:
 
 - Should we fine-tune, or is retrieval enough?
-- Which model fits our language, our latency and our hardware?
-- What data do we need, and are we even allowed to train on our calls?
+- Which model fits our language, our speed needs and our hardware?
+- What data do we need, and are we allowed to train on our calls?
 - How do we prove the result is better before a customer hears it?
 
-vakforge answers those questions from your own data. It inspects what you have, recommends the cheapest fix that works (usually retrieval and tools, not a fine-tune), and gives a coding agent a tested path to build, evaluate and self-host the rest. The hard part was never the models. It was the decision.
+vakforge answers them from your own data.
+
+The hard part was never the models. It was the decision.
 
 > "Open models strengthen safety and cybersecurity, accelerate innovation and diffusion, and enable sovereignty."
 > Jensen Huang, NVIDIA, [on X, 24 July 2026](https://finance.yahoo.com/technology/ai/articles/jensen-huang-just-used-first-175154980.html)
 
-vakforge is about the last part: owning your voice AI instead of renting it.
-
-## The problem, for engineers
-
-Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
+vakforge is about that last word: owning your voice AI instead of renting it.
 
 ## How it works
 
-### Where vakforge fits
+<p align="center">
+  <img src="https://vakforge.pages.dev/assets/diagrams/workflow-light.webp" alt="Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates." width="100%">
+</p>
 
-```mermaid
-flowchart LR
-  subgraph data["Your company's data"]
-    D1[Documents and FAQs]
-    D2[Database tables and CRM]
-    D3[Chat logs]
-    D4[Recorded calls]
-  end
-  subgraph vf["vakforge: the decision layer"]
-    I["inspect<br/>what you have"] --> R{"recommend<br/>what needs changing"}
-  end
-  D1 & D2 & D3 & D4 --> I
-  R -->|knowledge| RAG["Retrieval<br/>no training"]
-  R -->|actions| TOOLS["Tools over your tables"]
-  R -->|behaviour, accent, timing| FT["Fine-tune an open model"]
-  R -->|language| LP["Locale pack"]
-  RAG & TOOLS & FT & LP --> A["Your voice assistant<br/>open models on your servers"]
-  A --> C["Your app, phone line or browser<br/>Realtime WebSocket · WebRTC · SIP"]
-```
+1. **`init`** creates a project folder for your language and market.
+2. **`inspect`** reads your data folder and reports what is in it: languages, personal data, tables that could become tools, audio quality.
+3. **`recommend`** decides what needs changing. Often the answer is retrieval and tools, with no training at all.
+4. **`prepare`, `train`, `eval`, `serve`** are built for your project by a coding agent using the vakforge skill. It trains only what `recommend` asked for, and ships only if `eval` shows the result beats the base model.
 
-### The workflow
+Today the CLI covers `init`, `validate`, `inspect` and the locale packs. `recommend` is next.
 
-```mermaid
-flowchart LR
-  init[init] --> inspect[inspect] --> recommend{{recommend}} --> prepare[prepare] --> synth[synth] --> train[train] --> evaluate{{eval}} --> serve[serve]
-  classDef built fill:#0f3d3c,stroke:#32D5D2,color:#F7FAFF
-  classDef next fill:#3d1a18,stroke:#FF5A4E,color:#F7FAFF
-  classDef agent fill:#1a2540,stroke:#8393ad,color:#C9D6E5,stroke-dasharray:4 3
-  class init,inspect built
-  class recommend next
-  class prepare,synth,train,evaluate,serve agent
-```
+## How the decision is made
 
-Teal: in the CLI today. Coral: next. Dashed: generated per project by your coding agent through the vakforge skill. Hexagons are decision gates: nothing is trained before `recommend` says so, and nothing ships before `eval` shows it beats the base model.
+| If the assistant should... | The fix is | Training? |
+|---|---|---|
+| know your prices, policies and FAQs | retrieval: look facts up at answer time | none |
+| look things up, book, open tickets | tools over your tables | only if it keeps missing |
+| follow your call flow and tone | behaviour fine-tune of the language model | small |
+| understand your callers' accents, names, amounts | speech-to-text fine-tune | small |
+| sound like your brand | voice cloning, with written consent | voice only |
+| handle interruptions naturally | a full-duplex model trained on real calls | large |
+| speak another language | a locale pack plus a model that speaks it | depends |
 
-### How the decision is made
+Every route ends the same way: test it against your own held-out data, and ship only if it beats the base model.
 
-```mermaid
-flowchart TD
-  Q{"What should the assistant do better?"}
-  Q -->|know prices, policies, FAQs| K["Retrieval<br/>no training"]
-  Q -->|look things up, book, open tickets| T["Tools over your data<br/>small tool-use fine-tune only if it misses"]
-  Q -->|follow our call flow and tone| B["Behaviour fine-tune<br/>of the language model"]
-  Q -->|understand our callers' accents, names, amounts| S["Speech-to-text or encoder fine-tune"]
-  Q -->|sound like our brand| V["Voice cloning<br/>with written consent"]
-  Q -->|handle interruptions naturally| D["Full-duplex model<br/>trained on real calls"]
-  Q -->|speak another language| L["Locale pack<br/>plus multilingual or cascade model"]
-  K & T & B & S & V & D & L --> E{{"Evaluate on your held-out data<br/>base vs tuned"}}
-  E -->|better| Ship["Ship on your servers"]
-  E -->|not better| Back["Don't ship: fix the data or pick another route"]
-```
+Each goal has its own fix, and most of them are not a full fine-tune. The detailed rules, with how much data each route needs and what hardware it takes, are in [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md).
 
-The full rules, with data requirements and hardware tiers, are in [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md).
+## The problem, for engineers
+
+Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. Evaluation tools and serving frameworks exist. What is missing is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path, and most of them fine-tune when they should have used retrieval.
 
 ## What ships
 
