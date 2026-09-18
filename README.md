@@ -4,15 +4,31 @@
 
 # vakforge
 
-**Turn the data your company already has into a self-hosted, real-time voice assistant.**
+**The decision layer for open voice AI.** Turn the data your company already has into a self-hosted, real-time voice assistant, and know what actually needs training before you spend anything on GPUs.
 
 Documents, FAQs, database tables, chat logs, CRM records, recorded calls: vakforge works out what your assistant actually needs (knowledge, behaviour, tools, voice, language), generates the conversational data you lack, trains only what needs training, proves the result beats the base model on your own held-out data, and serves it on your hardware behind protocols your clients already speak, starting with the OpenAI Realtime WebSocket format. Open models only, nothing calls a hosted API, any language through locale packs. Launch locales: English (US, UK, India) and Hinglish.
 
 > Status: pre-alpha. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what exists today.
 
-## The problem
+## Why vakforge exists
 
-Open speech-to-speech models exist (Moshi, PersonaPlex, LFM2.5-Audio, Qwen-Omni). Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
+Open voice models are good enough today: Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni for speech-to-speech, plus strong open speech-to-text and text-to-speech. Yet most companies still pay per minute for a closed voice API. Not because the open models are worse, but because nobody tells them how to use them:
+
+- Should we fine-tune, or is retrieval enough?
+- Which model fits our language, our latency and our hardware?
+- What data do we need, and are we even allowed to train on our calls?
+- How do we prove the result is better before a customer hears it?
+
+vakforge answers those questions from your own data. It inspects what you have, recommends the cheapest fix that works (usually retrieval and tools, not a fine-tune), and gives a coding agent a tested path to build, evaluate and self-host the rest. The hard part was never the models. It was the decision.
+
+> "Open models strengthen safety and cybersecurity, accelerate innovation and diffusion, and enable sovereignty."
+> Jensen Huang, NVIDIA, [on X, 24 July 2026](https://finance.yahoo.com/technology/ai/articles/jensen-huang-just-used-first-175154980.html)
+
+vakforge is about the last part: owning your voice AI instead of renting it.
+
+## The problem, for engineers
+
+Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. Evaluation tools exist. Serving frameworks exist. What does not exist is one path from *"here is what my company knows"* to *"here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite."* Every team rebuilds that path badly, and most of them fine-tune when they should have used retrieval.
 
 ## What ships
 
