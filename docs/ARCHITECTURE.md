@@ -9,6 +9,75 @@
 4. **Wrap upstream, don't fork.** `moshi-finetune`, `liquid-audio`, Unsloth, NeMo are pinned dependencies called through thin adapters. If an upstream needs a patch, keep it as a `patches/*.patch` applied at install time, and open an upstream PR.
 5. **Everything is reproducible from a manifest hash + config file + pinned versions.**
 
+## System view
+
+What vakforge owns, what the coding agent generates per project, and what comes from upstream open source.
+
+```mermaid
+flowchart TB
+  subgraph project["Your project"]
+    agent["Coding agent + vakforge skill"]
+    glue["Generated per project<br/>prepare · synth · train · eval · serve"]
+  end
+  subgraph core["vakforge core: pip install vakforge, no ML dependencies"]
+    cli["CLI"]
+    schema["schema + validate"]
+    insp["inspect"]
+    rec["recommend"]
+    loc["locale packs"]
+    cli --> schema & insp & rec
+    schema & insp & rec --> loc
+  end
+  subgraph upstream["Open source we build on, pinned per recipe"]
+    models["Open voice models<br/>LFM2.5-Audio · Moshi · PersonaPlex · Qwen-Omni"]
+    trainers["Trainers<br/>liquid-audio · moshi-finetune · ms-swift · Unsloth"]
+    serving["Serving<br/>Pipecat · LiveKit · vLLM-omni"]
+  end
+  agent -->|runs| cli
+  agent -->|writes| glue
+  glue -->|reads inspect.json and vakforge.jsonl| core
+  glue --> models & trainers & serving
+```
+
+## Locale pack inheritance
+
+Children merge language tags and PII patterns from their parent and override scalar settings (`formats`, consent rule, privacy notes).
+
+```mermaid
+flowchart TD
+  base["LocalePack<br/>formats · PII patterns · consent · privacy notes · recipe support"]
+  en["en<br/>email · card (Luhn) · IBAN · English WER normalizer"]
+  us["en-US<br/>SSN · US phones · dollars"]
+  gb["en-GB<br/>NI number · UK phones · pounds"]
+  in["en-IN<br/>Aadhaar (Verhoeff) · PAN · +91 mobiles · lakh/crore"]
+  hi["hi-Latn-IN<br/>Roman-Hindi detection · lang_mix · Devanagari-safe normalizer"]
+  base --> en
+  en --> us & gb & in
+  in --> hi
+```
+
+## An agent run, step by step
+
+```mermaid
+sequenceDiagram
+  actor Dev as Developer
+  participant Agent as Coding agent + skill
+  participant CLI as vakforge CLI
+  participant Up as Open models and trainers
+  Dev->>Agent: Build a Hinglish support assistant from data/raw
+  Agent->>CLI: vakforge init my-assistant -l hi-Latn-IN
+  Agent->>CLI: vakforge inspect data/raw
+  CLI-->>Agent: inspect.json: sources, languages, PII, tool candidates
+  Agent->>CLI: vakforge recommend
+  CLI-->>Agent: retrieval and tools first, fine-tune only if needed, consent checklist
+  Agent->>Dev: Plan, cost, and questions (consent basis, hardware)
+  Dev-->>Agent: Approve
+  Agent->>Up: Verify APIs against installed source, then write the glue
+  Agent->>CLI: vakforge validate data/vakforge.jsonl
+  Agent->>Up: Train only what was recommended, evaluate base vs tuned
+  Agent-->>Dev: Report, and a self-hosted endpoint if it beats the base model
+```
+
 ## Package layout
 
 ```
