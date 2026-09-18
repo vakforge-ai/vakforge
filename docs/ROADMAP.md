@@ -25,8 +25,11 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [ ] Pack `hi-Latn-IN`: Devanagari to Roman transliteration, Indian name/address generator
 - [x] Golden tests for every pack (normalizer, detect_lang, PII positive/negative)
 - [x] `vakforge locales` to list packs and show resolved settings
-- [ ] `inspect` for audio: stats, clipping, silence, SNR, language guess
-- [ ] `inspect` for text and tables: documents, chat exports, CSV/SQL schemas; entity and tool-candidate discovery
+- [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal
+- [x] `inspect` for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports
+- [x] `inspect` for audio: duration, sample rate, channels, clipping, silence, condition guess (no SNR or spoken-language guess: those need ASR, out of core scope)
+- [x] `inspect.json` report for `recommend` and the agent skill
+- [ ] `inspect`: PDF / DOCX / XLSX text (listed as unreadable with a hint today)
 - [ ] `recommend`: questionnaire + rules from `DECISION_GUIDE.md`, honours `recipe_support`, says "retrieval, not fine-tune" when true
 
 ## Phase 2 — Agent skill
