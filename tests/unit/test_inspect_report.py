@@ -42,3 +42,12 @@ def test_report_round_trips_as_utf8_json(tmp_path):
     report = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))
     out = write_report(report, tmp_path.parent / "inspect.json")
     assert json.loads(out.read_text(encoding="utf-8"))["summary"]["languages"] == {"hi": 1}
+
+
+def test_tool_candidates_deduplicated_across_sources(tmp_path):
+    (tmp_path / "orders.csv").write_text("order_id\nA1\n", encoding="utf-8")
+    (tmp_path / "schema.sql").write_text(
+        "CREATE TABLE orders (\n  order_id INT\n);", encoding="utf-8"
+    )
+    s = inspect_dir(tmp_path, get_pack("en-US"))["summary"]
+    assert s["tool_candidates"] == ["lookup_orders_by_order_id"]

@@ -74,7 +74,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
         "stereo_audio_files": stereo,
         "languages": dict(languages.most_common()),
         "pii": dict(pii.most_common()),
-        "tool_candidates": tool_candidates,
+        "tool_candidates": list(dict.fromkeys(tool_candidates)),
     }
 
 
