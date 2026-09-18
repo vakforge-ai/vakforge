@@ -1,0 +1,58 @@
+import json
+
+from tests.conftest import write_wav
+from vakforge.inspect.sources import discover
+
+
+def _make_tree(root):
+    (root / "docs").mkdir()
+    (root / "docs" / "faq.md").write_text("# FAQ\nHow do I reset?", encoding="utf-8")
+    (root / "docs" / "policy.pdf").write_bytes(b"%PDF-1.4 fake")
+    (root / "tables").mkdir()
+    (root / "tables" / "orders.csv").write_text("order_id,status\nA1,open\n", encoding="utf-8")
+    (root / "tables" / "schema.sql").write_text("CREATE TABLE t (id int);", encoding="utf-8")
+    (root / "tables" / "catalog.json").write_text(json.dumps([{"sku": "X", "price": 5}]))
+    (root / "tables" / "prices.xlsx").write_bytes(b"PK fake")
+    (root / "chats").mkdir()
+    (root / "chats" / "support.jsonl").write_text(
+        json.dumps({"role": "user", "content": "hi"}) + "\n", encoding="utf-8"
+    )
+    (root / "chats" / "export.txt").write_text(
+        "12/03/24, 10:15 - Priya: Hello\n12/03/24, 10:16 - Agent: Hi\n"
+        "12/03/24, 10:17 - Priya: Order status?\n",
+        encoding="utf-8",
+    )
+    write_wav(root / "calls" / "call1.wav")
+    (root / "calls" / "call2.m4a").write_bytes(b"fake")
+    (root / ".DS_Store").write_bytes(b"x")
+    (root / ".git").mkdir()
+    (root / ".git" / "HEAD").write_text("ref")
+    (root / "notes.bin").write_bytes(b"\x00")
+
+
+def test_discover_classifies_every_kind(tmp_path):
+    _make_tree(tmp_path)
+    got = {
+        s.path.relative_to(tmp_path).as_posix(): (s.kind, s.format, s.readable)
+        for s in discover(tmp_path)
+    }
+    assert got == {
+        "calls/call1.wav": ("audio", "wav", True),
+        "calls/call2.m4a": ("audio", "m4a", False),
+        "chats/export.txt": ("chat", "whatsapp", True),
+        "chats/support.jsonl": ("chat", "jsonl", True),
+        "docs/faq.md": ("document", "md", True),
+        "docs/policy.pdf": ("document", "pdf", False),
+        "notes.bin": ("other", "bin", False),
+        "tables/catalog.json": ("table", "json", True),
+        "tables/orders.csv": ("table", "csv", True),
+        "tables/prices.xlsx": ("table", "xlsx", False),
+        "tables/schema.sql": ("table", "sql", True),
+    }
+
+
+def test_unreadable_sources_explain_what_to_do(tmp_path):
+    _make_tree(tmp_path)
+    notes = {s.path.name: s.note for s in discover(tmp_path) if not s.readable and s.note}
+    assert notes["call2.m4a"] == "convert to WAV or FLAC first"
+    assert notes["prices.xlsx"] == "export to CSV to profile"
