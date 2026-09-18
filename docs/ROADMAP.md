@@ -38,7 +38,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 ## Phase 3 — Landing page
 - [x] `site/` static landing page (Cloudflare Pages): hero demo, pipeline, data router, repo parts, locale explorer, eval report, redaction console, agent skill, CTA
 - [x] Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)
-- [ ] Deploy to Cloudflare Pages
+- [x] Deploy to Cloudflare Pages: https://vakforge.pages.dev, auto-deploys from main
 - [x] Brand assets: mark, favicons, app icon, social and OG images under `site/assets/` (originals stay local in `assets-src/`)
 
 ## Phase 4 — Prepare · Synth
