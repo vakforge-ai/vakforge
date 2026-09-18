@@ -70,7 +70,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
         "unreadable": sum(not f["readable"] for f in files),
         "document_words": words,
         "chat_messages": messages,
-        "audio_hours": round(audio_seconds / 3600, 2),
+        "audio_hours": round(audio_seconds / 3600, 4),
         "stereo_audio_files": stereo,
         "languages": dict(languages.most_common()),
         "pii": dict(pii.most_common()),

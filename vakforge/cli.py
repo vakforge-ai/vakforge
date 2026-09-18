@@ -186,7 +186,9 @@ def inspect(
     table.add_row("files", counts or "none")
     table.add_row("documents", f"{s['document_words']} words")
     table.add_row("chats", f"{s['chat_messages']} messages")
-    table.add_row("audio", f"{s['audio_hours']} h, {s['stereo_audio_files']} stereo file(s)")
+    hours = s["audio_hours"]
+    length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
+    table.add_row("audio", f"{length}, {s['stereo_audio_files']} stereo file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
     table.add_row(
         "personal data", ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"

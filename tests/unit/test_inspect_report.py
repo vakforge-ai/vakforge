@@ -22,7 +22,7 @@ def test_summary_counts_and_totals(tmp_path):
     s = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))["summary"]
     assert s["counts"] == {"document": 2, "table": 3, "chat": 1, "audio": 1, "other": 0}
     assert s["chat_messages"] == 1
-    assert s["audio_hours"] == 0.0
+    assert s["audio_hours"] == 0.001  # 3.6 s
     assert s["stereo_audio_files"] == 1
     assert s["pii"] == {"email": 1}
     assert "lookup_orders_by_order_id" in s["tool_candidates"]

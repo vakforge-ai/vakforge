@@ -83,6 +83,7 @@ def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
     assert r.exit_code == 0, r.output
     assert "email 1" in r.output
     assert "skipped deck.pptx" in r.output
+    assert "0.0 min" in r.output  # no audio: minutes, not "0.0 h"
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     assert report["locale"] == "hi-Latn-IN"
 
