@@ -50,4 +50,20 @@ Fine-tune if, after prompt + RAG, the base model still fails a scripted-flow or 
 
 ## Output of `vakforge recommend`
 
-The command prints: the primary problem class, the recipe (filtered by what the locale pack supports), the minimum data you need (with what you have vs. what's missing), the hardware tier, the eval metrics that will decide success, the locale's consent/privacy checklist, and — when relevant — "you probably don't need to fine-tune; here's the RAG + eval path instead."
+```bash
+vakforge recommend inspect.json                    # or a data folder; locale from the project
+vakforge recommend inspect.json -g workflow --gpu 24
+vakforge recommend inspect.json --duplex --gpu 80
+```
+
+The command prints, and writes to `recommend.json`:
+
+- **primary problem** and the full list of goals (inferred from the data, or set with `--goal`)
+- **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → recognition and voice, non-English turns → locale pack
+- **fine-tune?** yes or not yet, with the reason: documents only, no conversations yet, too few hours for voice/duplex, or "measure the baseline first"
+- **recipe**, filtered by the locale pack's `recipe_support` and your `--gpu`; `understand_only` is called out so nobody expects Hindi speech from an English-output model
+- **conversation turns** you have (chat messages plus an estimate from audio hours) against the ~600 a behaviour fine-tune needs
+- **consent and privacy**: the pack's call-recording rule, any personal data `inspect` found, the pack's privacy notes
+- **next steps**, always starting with "measure the base model with prompt + retrieval first"
+
+The rules live in `vakforge/recommend/rules.py`; the thresholds (600 turns, 10 hours for voice, GPU tiers per recipe) are module constants so they are easy to argue with.
