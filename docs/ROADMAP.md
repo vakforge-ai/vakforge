@@ -43,6 +43,8 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)
 - [x] Deploy to Cloudflare Pages: https://vakforge.pages.dev, auto-deploys from main
 - [x] Brand assets: mark, favicons, app icon, social and OG images under `site/assets/` (originals stay local in `assets-src/`)
+- [ ] Light theme for the landing page (toggle + `prefers-color-scheme`), reusing the light diagram set
+- [ ] Site copy audit before going public: label evaluation report, redaction console and serve as planned until they exist
 
 ## Phase 4 — Prepare · Synth
 - [ ] `prepare`: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations
