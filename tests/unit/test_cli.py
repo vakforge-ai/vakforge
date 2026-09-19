@@ -52,6 +52,32 @@ def test_cp1252_console_does_not_crash_on_rupee_or_cross():
     assert raw.getvalue().startswith(b"?500 ? ????")
 
 
+def test_recommend_from_folder_and_from_report(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["init", "proj", "-l", "hi-Latn-IN"]).exit_code == 0
+    raw = tmp_path / "proj" / "data" / "raw"
+    (raw / "faq.md").write_text("Refund 5 din mein.\n\nMail help@acme.in", encoding="utf-8")
+    (raw / "orders.csv").write_text("order_id,status\nA1,open\n", encoding="utf-8")
+    r = runner.invoke(app, ["recommend", str(raw), "-o", "rec.json"])
+    assert r.exit_code == 0, r.output
+    assert "not yet" in r.output  # no conversations, so no fine-tune
+    rec = json.loads((tmp_path / "rec.json").read_text(encoding="utf-8"))
+    assert rec["locale"] == "hi-Latn-IN"
+    assert rec["primary_problem"] == "tools"
+    assert rec["fine_tune"] is False
+
+    assert runner.invoke(app, ["inspect", str(raw), "-o", "inspect.json"]).exit_code == 0
+    r = runner.invoke(app, ["recommend", "inspect.json", "-g", "workflow", "--gpu", "24"])
+    assert r.exit_code == 0, r.output
+    assert "primary problem" in r.output and "workflow" in r.output
+
+
+def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
+    (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
+    assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2
+    assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "--gpu", "12"]).exit_code == 2
+
+
 def test_locales_lists_launch_packs():
     r = runner.invoke(app, ["locales"])
     assert r.exit_code == 0, r.output
