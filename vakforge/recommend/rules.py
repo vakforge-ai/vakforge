@@ -20,6 +20,7 @@ GOALS: tuple[Goal, ...] = (
     "language",
 )
 TURNS_FOR_BEHAVIOUR = 600  # a few hundred to a few thousand turns covering every branch
+MIN_TURNS_TO_TRAIN = 200  # below this, train nothing: generate with synth and collect real turns
 TURNS_PER_AUDIO_HOUR = 300  # rough: a support call has ~5 turns a minute
 HOURS_FOR_VOICE = 10  # voice, style and duplex want tens of hours of real conversation
 GPU_GB = {"none": 0, "24": 24, "48": 48, "80": 80}
@@ -210,6 +211,12 @@ def recommend(
             False,
             "no conversations to learn from yet: start with retrieval and tools, "
             "generate dialogues with synth, collect real ones",
+        )
+    elif turns_have < MIN_TURNS_TO_TRAIN:
+        fine_tune, reason = (
+            False,
+            f"only {turns_have} conversation turns; fewer than {MIN_TURNS_TO_TRAIN} teaches "
+            "noise, not behaviour. Generate with synth and collect real ones first",
         )
     elif primary in {"voice", "duplex"} and audio_hours < HOURS_FOR_VOICE:
         fine_tune, reason = (

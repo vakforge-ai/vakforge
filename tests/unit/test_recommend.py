@@ -46,9 +46,16 @@ def test_tables_and_chats_without_gpu_defer_training_to_colab():
 
 
 def test_data_gap_triggers_synth_step():
-    r = recommend(summary(counts={"chat": 1}, chat_messages=120), US, Constraints(gpu="24"))
+    r = recommend(summary(counts={"chat": 1}, chat_messages=300), US, Constraints(gpu="24"))
     assert r.fine_tune is True
-    assert any("data gap: 120 of ~600" in s for s in r.next_steps)
+    assert any("data gap: 300 of ~600" in s for s in r.next_steps)
+
+
+def test_a_handful_of_turns_is_not_enough_to_train():
+    r = recommend(summary(counts={"chat": 1}, chat_messages=3), US, Constraints(gpu="24"))
+    assert r.fine_tune is False
+    assert "only 3 conversation turns" in r.fine_tune_reason
+    assert any("data gap: 3 of ~600" in s for s in r.next_steps)
 
 
 def test_no_conversations_means_no_fine_tune_yet():
