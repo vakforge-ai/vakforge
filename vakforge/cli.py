@@ -204,6 +204,105 @@ def inspect(
 
 
 @app.command()
+def recommend(
+    source: Annotated[
+        Path, typer.Argument(exists=True, help="inspect.json, or a data folder to inspect first.")
+    ],
+    goal: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--goal",
+            "-g",
+            help="What should improve: knowledge, tools, workflow, recognition, voice, duplex, "
+            "language. Repeatable; inferred from the data if omitted.",
+        ),
+    ] = None,
+    gpu: Annotated[
+        str, typer.Option("--gpu", help="Largest GPU you can train on: none, 24, 48 or 80 (GB).")
+    ] = "none",
+    duplex: Annotated[
+        bool, typer.Option("--duplex", help="Callers must be able to interrupt (sub-300 ms).")
+    ] = False,
+    locale: Annotated[
+        str | None,
+        typer.Option("--locale", "-l", help="Locale pack; defaults to the project's first."),
+    ] = None,
+    out: Annotated[Path, typer.Option("--out", "-o", help="Where to write the decision.")] = Path(
+        "recommend.json"
+    ),
+) -> None:
+    """Decide what needs changing (retrieval, tools, locale pack, fine-tune) and the recipe."""
+    from rich.table import Table
+
+    from vakforge.locales import get_pack, list_packs
+    from vakforge.recommend import Constraints
+    from vakforge.recommend import recommend as decide
+    from vakforge.recommend.rules import GOALS, GPU_GB
+
+    bad = [g for g in goal or [] if g not in GOALS]
+    if bad:
+        err_console.print(f"[red]unknown goal {bad[0]!r}[/]; choose from {', '.join(GOALS)}")
+        raise typer.Exit(2)
+    if gpu not in GPU_GB:
+        err_console.print(f"[red]--gpu must be one of {', '.join(GPU_GB)}[/]")
+        raise typer.Exit(2)
+
+    if source.is_dir():
+        from vakforge.inspect.report import inspect_dir
+
+        pack_id = locale or _project_locale(source.resolve())
+        if pack_id is None:
+            err_console.print(
+                "[red]no locale[/]: pass --locale or run inside a `vakforge init` project"
+            )
+            raise typer.Exit(2)
+        pack = get_pack(pack_id)
+        summary = inspect_dir(source, pack)["summary"]
+    else:
+        report = json.loads(source.read_text(encoding="utf-8"))
+        pack_id = locale or report.get("locale")
+        if pack_id is None:
+            err_console.print("[red]no locale[/] in the report; pass --locale")
+            raise typer.Exit(2)
+        try:
+            pack = get_pack(pack_id)
+        except KeyError:
+            err_console.print(f"[red]unknown locale {pack_id!r}[/]; known: {list_packs()}")
+            raise typer.Exit(2) from None
+        summary = report["summary"]
+
+    rec = decide(summary, pack, Constraints(goals=tuple(goal or ()), gpu=gpu, duplex=duplex))
+
+    table = Table(
+        title=f"recommendation · locale {pack.id}", title_justify="left", show_header=False
+    )
+    table.add_column(style="dim")
+    table.add_column()
+    table.add_row("primary problem", rec.primary_problem)
+    table.add_row("goals", ", ".join(rec.goals))
+    for r in rec.routes:
+        table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
+    verdict = "[bold green]yes[/]" if rec.fine_tune else "[bold yellow]not yet[/]"
+    table.add_row("fine-tune?", f"{verdict}  {rec.fine_tune_reason}")
+    table.add_row("recipe", f"{rec.recipe or 'none'}  {rec.recipe_reason}")
+    if rec.turns_need:
+        table.add_row("conversation turns", f"{rec.turns_have} of ~{rec.turns_need} needed")
+    console.print(table)
+    if rec.consent:
+        console.print("[bold]consent and privacy[/] (not legal advice)")
+        for line in rec.consent:
+            console.print(f"  • {line}")
+    console.print("[bold]next steps[/]")
+    for i, step in enumerate(rec.next_steps, 1):
+        console.print(f"  {i}. {step}")
+    out.write_text(
+        json.dumps({"locale": pack.id, **rec.to_dict()}, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    console.print(f"[green]wrote[/] {out}")
+
+
+@app.command()
 def locales(
     pack_id: Annotated[
         str | None, typer.Argument(help="Show one pack in detail, e.g. hi-Latn-IN.")

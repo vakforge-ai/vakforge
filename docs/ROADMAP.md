@@ -30,7 +30,8 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `inspect` for audio: duration, sample rate, channels, clipping, silence, condition guess (no SNR or spoken-language guess: those need ASR, out of core scope)
 - [x] `inspect.json` report for `recommend` and the agent skill
 - [ ] `inspect`: PDF / DOCX / XLSX text (listed as unreadable with a hint today)
-- [ ] `recommend`: questionnaire + rules from `DECISION_GUIDE.md`, honours `recipe_support`, says "retrieval, not fine-tune" when true
+- [x] `recommend`: rules from `DECISION_GUIDE.md` as code; reads `inspect.json` or a folder; routes per source, fine-tune verdict, recipe filtered by locale `recipe_support` and GPU, data gap, consent checklist; writes `recommend.json`
+- [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
 ## Phase 2 — Agent skill
 - [ ] `skill/vakforge/SKILL.md`: workflow the agent follows (inspect → recommend → prepare → synth → train → eval → serve)
