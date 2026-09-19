@@ -74,7 +74,7 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 ## What's in the repo
 
 1. **A small library and command-line tool** (`pip install vakforge`). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.
-2. **An agent skill** (`skill/`, in progress). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.
+2. **An agent skill** (`skill/vakforge/`). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.
 3. **Recipes** ([`docs/RECIPES.md`](docs/RECIPES.md)). Written-down, tested paths from an open base model to a running assistant. Only recipes someone has run end to end get listed.
 
 | Command | What it does | Status |
@@ -86,6 +86,21 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 | `vakforge schema` | Export the dataset format as JSON Schema | works |
 | `vakforge recommend` | Decide what needs changing, often "retrieval, not training" | next |
 | `prepare`, `synth`, `train`, `eval`, `serve` | Build, test and host the assistant | written per project by the agent skill |
+
+## Use it with a coding agent
+
+The skill is where the knowledge lives. Copy it into your project and the agent follows the
+vakforge workflow: inspect, recommend, then write and test the prepare, train, eval and serve
+code for your case, verifying every upstream API against installed source first.
+
+```bash
+# Claude Code: project-level skill (or ~/.claude/skills/vakforge for every project)
+mkdir -p .claude/skills
+cp -r path/to/vakforge/skill/vakforge .claude/skills/vakforge
+```
+
+Then ask: *"Build a Hinglish support assistant from the data in data/raw."* Other agents that
+read `SKILL.md`-style instructions work the same way; point them at the folder.
 
 ## Bring any data
 
