@@ -111,10 +111,17 @@ checkpoint, and a training log.
 
 ### 7. Evaluate
 
-Write `<project>/eval/` that scores base and tuned on the same held-out split and emits
-`report.md` and `report.json` in the shape given in `references/eval.md`, broken down by
-locale, language, audio condition and source. Done when the report exists and you have told
-the user, in plain words, what got better, what got worse, and whether it should ship.
+Write `<project>/eval/` that emits `report.md` and `report.json` in the shape given in
+`references/eval.md`, broken down by locale, language, audio condition and source. Two
+branches:
+
+- **No fine-tune** (step 6 was skipped): score the retrieval + tools stack on the held-out
+  split against the acceptance targets the user agreed to in step 3.
+- **Fine-tune**: score base and tuned on the same held-out split; the tuned model must beat
+  the base on the metrics `recommend` named, with regressions inside the agreed budget.
+
+Done when the report exists and you have told the user, in plain words, what got better,
+what got worse, and whether it should ship.
 
 ### 8. Serve
 
