@@ -16,7 +16,7 @@ vakforge helps you build a voice assistant from the data your company already ha
 - **Open models only:** the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)
 - **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
 
-> Status: pre-alpha. `init`, `validate`, `inspect` and the locale packs work today. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> Status: pre-alpha. `init`, `inspect`, `recommend`, `validate` and the locale packs work today. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Why vakforge exists
 
