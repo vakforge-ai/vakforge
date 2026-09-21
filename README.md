@@ -13,7 +13,7 @@ vakforge helps you build a voice assistant from the data your company already ha
 </p>
 
 - **Bring any data:** documents, FAQs, database tables, chat logs, CRM records, recorded calls.
-- **Open models only:** nothing calls a hosted API. You own the result.
+- **Open models only:** the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)
 - **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
 
 > Status: pre-alpha. `init`, `validate`, `inspect` and the locale packs work today. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
@@ -49,7 +49,7 @@ vakforge is about that last word: owning your voice AI instead of renting it.
 3. **`recommend`** decides what needs changing. Often the answer is retrieval and tools, with no training at all.
 4. **`prepare`, `train`, `eval`, `serve`** are built for your project by a coding agent using the vakforge skill. It trains only what `recommend` asked for, and ships only if `eval` shows the result beats the base model.
 
-Today the CLI covers `init`, `validate`, `inspect` and the locale packs. `recommend` is next.
+Today the CLI covers `init`, `inspect`, `recommend`, `validate` and the locale packs.
 
 ## How the decision is made
 
@@ -84,7 +84,7 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 | `vakforge validate` | Check a dataset file against the vakforge format | works |
 | `vakforge locales` | List language packs and show their rules | works |
 | `vakforge schema` | Export the dataset format as JSON Schema | works |
-| `vakforge recommend` | Decide what needs changing, often "retrieval, not training" | next |
+| `vakforge recommend` | Decide what needs changing, often "retrieval, not training" | works |
 | `prepare`, `synth`, `train`, `eval`, `serve` | Build, test and host the assistant | written per project by the agent skill |
 
 ## Use it with a coding agent
@@ -161,7 +161,7 @@ vakforge init my-assistant --locale hi-Latn-IN
 vakforge inspect my-assistant/data/raw
 ```
 
-`inspect` prints a summary and writes `inspect.json`. `vakforge recommend`, which reads it, is next.
+`inspect` prints a summary and writes `inspect.json`. `vakforge recommend inspect.json` reads it and writes `recommend.json`.
 
 ## Documentation
 
