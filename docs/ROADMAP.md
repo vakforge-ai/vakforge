@@ -34,9 +34,10 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
 ## Phase 2 — Agent skill
-- [ ] `skill/vakforge/SKILL.md`: workflow the agent follows (inspect → recommend → prepare → synth → train → eval → serve)
-- [ ] `skill/vakforge/references/`: decision guide, data format, locale rules, data ethics, recipe pitfalls, upstream-verification rules
-- [ ] Skill calls the core CLI for schema, validation, recommend; generates recipe glue per project
+- [x] `skill/vakforge/SKILL.md`: hard rules plus the eight-step workflow with a completion criterion per step
+- [x] `skill/vakforge/references/`: decision rules, data format, data safety, recipes with verify-first checklist, eval and serving, locale hooks
+- [x] Skill calls the core CLI for init, locales, inspect, recommend and validate; generates recipe glue per project
+- [x] Consistency test: frontmatter, referenced files, CLI commands named in the skill exist
 - [ ] Tested on one real project end to end (documents + tables, no audio) and one with call recordings
 
 ## Phase 3 — Landing page
