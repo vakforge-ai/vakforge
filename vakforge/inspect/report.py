@@ -45,33 +45,46 @@ def inspect_dir(root: Path, pack: LocalePack) -> dict[str, Any]:
     }
 
 
+KINDS = ("document", "table", "chat", "audio", "other")
+
+
 def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
+    """Totals for the folder.
+
+    `counts` is what was found, `profiled` is what yielded facts. Every other total below
+    is built only from profiled files, so the two counts together say how much of the
+    folder the numbers actually cover.
+    """
     kinds = Counter(f["kind"] for f in files)
+    profiled_kinds = Counter(f["kind"] for f in files if "facts" in f)
     languages: Counter[str] = Counter()
     pii: Counter[str] = Counter()
     tool_candidates: list[str] = []
-    words = messages = stereo = 0
+    words = messages = two_channel = truncated = 0
     audio_seconds = 0.0
     for f in files:
         facts = f.get("facts", {})
         languages.update(facts.get("languages", {}))
         pii.update(facts.get("pii", {}))
+        truncated += bool(facts.get("truncated"))
         if f["kind"] == "document":
             words += facts.get("words", 0)
         if f["kind"] == "chat":
             messages += facts.get("messages", 0)
         if f["kind"] == "audio":
             audio_seconds += facts.get("duration_s", 0.0)
-            stereo += bool(facts.get("stereo_split_possible"))
+            two_channel += facts.get("channels", 0) == 2
         for table in facts.get("tables", {}).values():
             tool_candidates += table.get("tool_candidates", [])
     return {
-        "counts": {k: kinds.get(k, 0) for k in ("document", "table", "chat", "audio", "other")},
+        "counts": {k: kinds.get(k, 0) for k in KINDS},
+        "profiled": {k: profiled_kinds.get(k, 0) for k in KINDS},
         "unreadable": sum(not f["readable"] for f in files),
+        "truncated": truncated,
         "document_words": words,
         "chat_messages": messages,
         "audio_hours": round(audio_seconds / 3600, 4),
-        "stereo_audio_files": stereo,
+        "two_channel_audio_files": two_channel,
         "languages": dict(languages.most_common()),
         "pii": dict(pii.most_common()),
         "tool_candidates": list(dict.fromkeys(tool_candidates)),

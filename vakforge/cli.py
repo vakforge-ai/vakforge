@@ -183,12 +183,16 @@ def inspect(
     table.add_column(style="dim")
     table.add_column()
     counts = ", ".join(f"{n} {k}" for k, n in s["counts"].items() if n)
+    found = sum(s["counts"].values())
+    profiled = sum(s["profiled"].values())
     table.add_row("files", counts or "none")
+    # Every total below is built from the profiled files only, so show how many that is.
+    table.add_row("profiled", f"{profiled} of {found}")
     table.add_row("documents", f"{s['document_words']} words")
     table.add_row("chats", f"{s['chat_messages']} messages")
     hours = s["audio_hours"]
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
-    table.add_row("audio", f"{length}, {s['stereo_audio_files']} stereo file(s)")
+    table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
     table.add_row(
         "personal data", ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
@@ -199,6 +203,10 @@ def inspect(
         if not f["readable"]:
             reason = f.get("error") or f.get("note") or "unsupported type"
             err_console.print(f"[yellow]skipped[/] {f['path']}: {reason}")
+        elif f.get("facts", {}).get("truncated"):
+            err_console.print(
+                f"[yellow]partial[/] {f['path']}: too large to read whole, counts cover the start"
+            )
     write_report(report, out)
     console.print(f"[green]wrote[/] {out}")
 
@@ -282,11 +290,18 @@ def recommend(
     table.add_row("goals", ", ".join(rec.goals))
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
-    verdict = "[bold green]yes[/]" if rec.fine_tune else "[bold yellow]not yet[/]"
+    verdict = {
+        "blocked": "[bold red]no[/]",
+        "baseline_first": "[bold yellow]baseline first[/]",
+        "candidate": "[bold green]worth trying[/]",
+    }[rec.fine_tune]
     table.add_row("fine-tune?", f"{verdict}  {rec.fine_tune_reason}")
+    # The confidence label matters as much as the verdict: a threshold we invented and one
+    # a paper measured should not read the same way.
+    table.add_row(f"evidence ({rec.evidence_confidence})", rec.evidence)
     table.add_row("recipe", f"{rec.recipe or 'none'}  {rec.recipe_reason}")
-    if rec.turns_need:
-        table.add_row("conversation turns", f"{rec.turns_have} of ~{rec.turns_need} needed")
+    if rec.need is not None:
+        table.add_row(f"data ({rec.need_unit})", f"{rec.have:g} of ~{rec.need:g}")
     console.print(table)
     if rec.consent:
         console.print("[bold]consent and privacy[/] (not legal advice)")

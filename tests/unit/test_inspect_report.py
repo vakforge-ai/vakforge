@@ -23,9 +23,19 @@ def test_summary_counts_and_totals(tmp_path):
     assert s["counts"] == {"document": 2, "table": 3, "chat": 1, "audio": 1, "other": 0}
     assert s["chat_messages"] == 1
     assert s["audio_hours"] == 0.001  # 3.6 s
-    assert s["stereo_audio_files"] == 1
+    assert s["two_channel_audio_files"] == 1
     assert s["pii"] == {"email": 1}
     assert "lookup_orders_by_order_id" in s["tool_candidates"]
+
+
+def test_profiled_count_separates_found_from_understood(tmp_path):
+    # slides.pptx and bad.json are found but never profiled; the totals below them come
+    # only from the files that were, so both counts have to be visible.
+    _data(tmp_path)
+    s = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))["summary"]
+    assert s["counts"]["document"] == 2 and s["profiled"]["document"] == 1
+    assert s["counts"]["table"] == 3 and s["profiled"]["table"] == 2
+    assert s["unreadable"] == 2  # slides.pptx and bad.json
 
 
 def test_bad_file_is_recorded_not_fatal(tmp_path):

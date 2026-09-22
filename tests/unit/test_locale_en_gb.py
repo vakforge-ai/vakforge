@@ -18,6 +18,12 @@ def test_ni_number_detected(ni):
     assert found(f"my NI is {ni} thanks") == [("ni_number", ni)]
 
 
+# ASR output is usually lowercase, so a case-sensitive redactor would leak every spoken one.
+@pytest.mark.parametrize("ni", ["jg 10 37 59 a", "jg103759a", "Jg103759A"])
+def test_ni_number_detected_in_lowercase_transcripts(ni):
+    assert found(f"my ni is {ni} thanks") == [("ni_number", ni)]
+
+
 @pytest.mark.parametrize("bad", ["GB123456A", "DQ123456C", "AB123456E", "ZZ123456A"])
 def test_invalid_ni_ignored(bad):
     assert found(f"ref {bad}") == []

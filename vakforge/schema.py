@@ -7,6 +7,7 @@ Rules that need the filesystem or the locale registry live in `vakforge.validate
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -33,13 +34,36 @@ class Audio(_Strict):
     condition: Condition = "clean"
 
     @model_validator(mode="after")
+    def _path_stays_inside_the_dataset(self) -> Audio:
+        """`path` is resolved against the manifest's directory, so it must not climb out.
+
+        A manifest is data, often generated or received from elsewhere; an absolute path or
+        one containing `..` would let it name any file on the machine.
+        """
+        p = PurePosixPath(self.path.replace("\\", "/"))
+        if p.is_absolute() or PureWindowsPath(self.path).is_absolute():
+            raise ValueError(f"audio.path must be relative to the manifest, got {self.path!r}")
+        if ".." in p.parts:
+            raise ValueError(f"audio.path must not contain '..', got {self.path!r}")
+        if not self.path.strip():
+            raise ValueError("audio.path is empty")
+        return self
+
+    @model_validator(mode="after")
     def _channel_map_matches(self) -> Audio:
         if self.channels == 2 and self.channel_map is None:
             raise ValueError("stereo audio needs channel_map, e.g. {'0': 'user', '1': 'agent'}")
-        if self.channel_map is not None and set(self.channel_map) != {
-            str(i) for i in range(self.channels)
-        }:
+        if self.channel_map is None:
+            return self
+        if set(self.channel_map) != {str(i) for i in range(self.channels)}:
             raise ValueError(f"channel_map keys must be {[str(i) for i in range(self.channels)]}")
+        if self.channels == 2 and set(self.channel_map.values()) != {"user", "agent"}:
+            # Two channels of the same speaker cannot be split into a conversation, and the
+            # convention in docs/DATA_FORMAT.md is channel 0 user, channel 1 agent.
+            raise ValueError(
+                "stereo channel_map must map one channel to 'user' and the other to 'agent', "
+                f"got {self.channel_map}"
+            )
         return self
 
 
@@ -105,7 +129,31 @@ class Turn(_Strict):
                 raise ValueError("spoken turns need non-empty text")
             if not self.lang:
                 raise ValueError("spoken turns need lang (BCP-47, e.g. 'en-US', 'hi-Latn')")
+        self._check_entities()
         return self
+
+    def _check_entities(self) -> None:
+        """Offsets, when given, must point at the entity's own text.
+
+        Redaction and entity-level evaluation both slice `text` by these offsets, so an
+        offset that is stale or off by a character silently corrupts the record.
+        """
+        for i, e in enumerate(self.entities):
+            where = f"entities[{i}]"
+            if (e.start_char is None) != (e.end_char is None):
+                raise ValueError(f"{where}: set both start_char and end_char, or neither")
+            if e.start_char is None:
+                continue
+            if e.start_char < 0 or e.end_char < e.start_char:
+                raise ValueError(f"{where}: start_char={e.start_char} end_char={e.end_char}")
+            text = self.text or ""
+            if e.end_char > len(text):
+                raise ValueError(f"{where}: end_char {e.end_char} is past the end of text")
+            if text[e.start_char : e.end_char] != e.text:
+                raise ValueError(
+                    f"{where}: text[{e.start_char}:{e.end_char}] is "
+                    f"{text[e.start_char : e.end_char]!r}, not {e.text!r}"
+                )
 
 
 class Transcription(_Strict):
@@ -130,6 +178,35 @@ class Meta(_Strict):
     diarization: Diarization | None = None
     split: Split
     created: datetime
+
+    @model_validator(mode="after")
+    def _provenance_is_evidenced(self) -> Meta:
+        """Consent and redaction claims must carry what backs them up.
+
+        These fields are the only record of whether a row may lawfully be trained on, so an
+        unsupported claim fails the record rather than passing quietly. Synthetic rows are
+        exempt from the redaction rules because they contain no real person's data.
+        """
+        if self.consent in ("recorded_verbal", "written") and not self.consent_ref:
+            raise ValueError(
+                f"consent={self.consent!r} needs consent_ref pointing at the recording or form"
+            )
+        if self.consent == "public_license" and not self.license:
+            raise ValueError("consent='public_license' needs license (the licence it is under)")
+        if self.consent == "synthetic" and self.source != "synthetic":
+            raise ValueError(
+                f"consent='synthetic' is only valid with source='synthetic', not {self.source!r}"
+            )
+        if self.source == "real":
+            if not self.pii_redacted:
+                raise ValueError(
+                    "real data must be redacted before it enters a dataset; run `vakforge prepare`"
+                )
+            if not self.redaction_log:
+                raise ValueError(
+                    "pii_redacted=true on real data needs redaction_log naming what was removed"
+                )
+        return self
 
 
 class Conversation(_Strict):
@@ -156,7 +233,14 @@ class Conversation(_Strict):
                 raise ValueError(f"turns[{i}]: turns must be sorted by start")
             prev_start = t.start
 
-        tool_names = {t.name for t in self.tools}
+        tool_names: set[str] = set()
+        for i, tool in enumerate(self.tools):
+            if tool.name in tool_names:
+                # Two schemas under one name make every call to it ambiguous, and the
+                # generated tool wrapper would silently use whichever came last.
+                raise ValueError(f"tools[{i}]: duplicate tool name {tool.name!r}")
+            tool_names.add(tool.name)
+
         call_ids: set[str] = set()
         for i, t in enumerate(self.turns):
             if t.tool_call:
@@ -178,6 +262,13 @@ class Conversation(_Strict):
                 raise ValueError(
                     f"turns end at {last_end}s but audio.duration_s is {self.audio.duration_s}s"
                 )
+
+        if self.audio and self.meta.source == "real" and not self.meta.voice_consent_ref:
+            # A recorded voice is biometric data under UK GDPR and Illinois BIPA; training a
+            # voice on it needs its own consent, separate from consent to record the call.
+            raise ValueError(
+                "real recordings need meta.voice_consent_ref before the voice may be trained on"
+            )
         return self
 
 

@@ -15,11 +15,16 @@ AADHAAR = PIIPattern(
     validate=verhoeff_valid,
 )
 # AAAPA9999A; the 4th letter encodes the holder type (P person, C company, ...).
-PAN = PIIPattern("pan", re.compile(r"\b[A-Z]{3}[ABCFGHJLPT][A-Z]\d{4}[A-Z]\b"))
-# Mobile numbers start 6-9; optional +91 or leading 0.
+PAN = PIIPattern("pan", re.compile(r"\b[A-Z]{3}[ABCFGHJLPT][A-Z]\d{4}[A-Z]\b", re.I))
+# Mobile numbers start 6-9; optional +91 or leading 0. Ten digits after "order" or "invoice"
+# are a reference, not a phone number.
 PHONE_IN = PIIPattern(
     "phone",
     re.compile(r"(?<![\d+])(?:\+91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)"),
+    context_deny=re.compile(
+        r"(?i)\b(order|invoice|ref|reference|ticket|txn|transaction|awb|pnr|gst|receipt|"
+        r"policy|account|acc|a/c|card|imei|sku)\b\W{0,4}$"
+    ),
 )
 
 _SYMBOLS = r"(?:₹|rs\.?|inr)"

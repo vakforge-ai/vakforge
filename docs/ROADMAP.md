@@ -11,6 +11,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `vakforge --version`, `vakforge init --locale` (writes `vakforge.yaml`, data dirs, `.gitignore`)
 - [x] `schema.py` (pydantic v2, incl. `locale`; audio optional for text-sourced records) + `vakforge schema` JSON Schema export
 - [x] `vakforge validate`: schema, audio file vs declaration, locale/lang registry, tool args vs JSON Schema, consent, `splits.json`
+- [x] Schema fails closed on provenance: consent needs its reference or licence, real data needs redaction plus a log, real recordings need `voice_consent_ref`, entity offsets must match the text they point at, `audio.path` cannot escape the dataset, duplicate tool names and same-speaker stereo maps rejected
 - [x] Generated test fixtures (WAVs synthesized in `tests/conftest.py`)
 - [x] GitHub Actions: ruff + pytest, Python 3.11/3.12
 
@@ -23,14 +24,17 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Pack `en-IN`: rupees with lakh/crore and Indian digit grouping, Aadhaar (Verhoeff), PAN, +91 mobiles, DPDP notes
 - [x] Pack `hi-Latn-IN`: Roman-Hindi vs English vs Devanagari detection, `lang_mix`, Devanagari-safe normalizer with spelling variants
 - [ ] Pack `hi-Latn-IN`: Devanagari to Roman transliteration, Indian name/address generator
+- [x] PII patterns survive real transcripts: case-insensitive NI number and PAN (ASR output is lowercase), compact SSN behind a cue word, reference numbers not mistaken for Indian mobiles, IBAN country registry so invented countries fail
 - [x] Golden tests for every pack (normalizer, detect_lang, PII positive/negative)
 - [x] `vakforge locales` to list packs and show resolved settings
 - [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal
 - [x] `inspect` for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports
-- [x] `inspect` for audio: duration, sample rate, channels, clipping, silence, condition guess (no SNR or spoken-language guess: those need ASR, out of core scope)
-- [x] `inspect.json` report for `recommend` and the agent skill
+- [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
+- [x] `inspect.json` report for `recommend` and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover
+- [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals
 - [ ] `inspect`: PDF / DOCX / XLSX text (listed as unreadable with a hint today)
 - [x] `recommend`: rules from `DECISION_GUIDE.md` as code; reads `inspect.json` or a folder; routes per source, fine-tune verdict, recipe filtered by locale `recipe_support` and GPU, data gap, consent checklist; writes `recommend.json`
+- [x] `recommend`: per-goal bars with their own unit, floor, target, confidence label and citation (`BARS`); three-state verdict (`blocked` / `baseline_first` / `candidate`) instead of a boolean, per `docs/RESEARCH.md`
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
 ## Phase 2 — Agent skill
@@ -46,7 +50,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Deploy to Cloudflare Pages: https://vakforge.pages.dev, auto-deploys from main
 - [x] Brand assets: mark, favicons, app icon, social and OG images under `site/assets/` (originals stay local in `assets-src/`)
 - [ ] Light theme for the landing page (toggle + `prefers-color-scheme`), reusing the light diagram set
-- [ ] Site copy audit before going public: label evaluation report, redaction console and serve as planned until they exist
+- [x] Site copy audit: every step labelled `in the CLI` or `skill generates`, example report and hero run marked illustrative, routing matches `docs/RESEARCH.md`, evidence linked from the data router
 
 ## Phase 4 — Prepare · Synth
 - [ ] `prepare`: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations

@@ -59,11 +59,18 @@ vakforge recommend inspect.json --duplex --gpu 80
 The command prints, and writes to `recommend.json`:
 
 - **primary problem** and the full list of goals (inferred from the data, or set with `--goal`)
-- **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → recognition and voice, non-English turns → locale pack
-- **fine-tune?** yes or not yet, with the reason: documents only, no conversations yet, too few hours for voice/duplex, or "measure the baseline first"
+- **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack
+- **fine-tune?** one of three answers, never a bare yes:
+  - `no` — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from
+  - `baseline first` — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all
+  - `worth trying` — the data clears the bar, so try it after measuring the baseline, and compare the two
+- **evidence**, with a confidence label: `measured` (a cited paper reports the number), `reported` (a model team stated it) or `heuristic` (we chose it and nothing supports or refutes it)
 - **recipe**, filtered by the locale pack's `recipe_support` and your `--gpu`; `understand_only` is called out so nobody expects Hindi speech from an English-output model
-- **conversation turns** you have (chat messages plus an estimate from audio hours) against the ~600 a behaviour fine-tune needs
+- **data**, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning
 - **consent and privacy**: the pack's call-recording rule, any personal data `inspect` found, the pack's privacy notes
 - **next steps**, always starting with "measure the base model with prompt + retrieval first"
 
-The rules live in `vakforge/recommend/rules.py`; the thresholds (600 turns, 10 hours for voice, GPU tiers per recipe) are module constants so they are easy to argue with.
+The rules live in `vakforge/recommend/rules.py`. Each goal is one entry in the `BARS` table
+carrying its unit, floor, target, confidence and citation, so a number you disagree with is
+one line to change and it argues its own case. `docs/RESEARCH.md` records where each came
+from and which ones are ours rather than the literature's.

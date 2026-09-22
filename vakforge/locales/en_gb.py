@@ -13,7 +13,8 @@ NI_NUMBER = PIIPattern(
     "ni_number",
     re.compile(
         r"\b(?!BG|GB|KN|NK|NT|TN|ZZ)[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]"
-        r" ?\d{2} ?\d{2} ?\d{2} ?[A-D]\b"
+        r" ?\d{2} ?\d{2} ?\d{2} ?[A-D]\b",
+        re.I,  # transcripts arrive lowercased; a redactor that only sees capitals leaks
     ),
 )
 # Mobiles (07xxx / +44 7xxx) and geographic landlines (01x / 02x).
