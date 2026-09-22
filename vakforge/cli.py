@@ -310,6 +310,7 @@ def recommend(
     console.print("[bold]next steps[/]")
     for i, step in enumerate(rec.next_steps, 1):
         console.print(f"  {i}. {step}")
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps({"locale": pack.id, **rec.to_dict()}, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

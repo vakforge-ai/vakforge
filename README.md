@@ -163,6 +163,8 @@ vakforge inspect my-assistant/data/raw
 
 `inspect` prints a summary and writes `inspect.json`. `vakforge recommend inspect.json` reads it and writes `recommend.json`.
 
+No data of your own yet? [`examples/hinglish-shop`](examples/hinglish-shop) is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.
+
 ## Documentation
 
 - [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md): what needs customizing, and when not to fine-tune

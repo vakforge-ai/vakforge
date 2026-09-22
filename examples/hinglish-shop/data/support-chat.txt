@@ -1,0 +1,18 @@
+08/09/26, 10:12 - Priya: Hello, mera order SE-1042 abhi tak nahi aaya
+08/09/26, 10:13 - Sharma Electronics: Namaste Priya ji, ek minute check karti hoon
+08/09/26, 10:15 - Sharma Electronics: Aapka battery order kal dispatch hua hai, aaj shaam tak deliver ho jayega
+08/09/26, 10:15 - Priya: Ok thanks. Installation bhi free hai na?
+08/09/26, 10:16 - Sharma Electronics: Ji haan, Jaipur mein free hai. Technician delivery ke baad call karega
+08/09/26, 10:17 - Priya: Address note kar lijiye:
+Flat 4B, Shanti Apartments
+Vaishali Nagar, Jaipur 302021
+08/09/26, 10:18 - Sharma Electronics: Note kar liya. Aapka number 98765 12345 hi hai na?
+08/09/26, 10:18 - Priya: Haan wahi hai
+08/09/26, 10:19 - Sharma Electronics: Theek hai, technician kal subah 11 baje aayega
+09/09/26, 09:40 - Rahul: Hi, I want to cancel order SE-1045, ordered by mistake
+09/09/26, 09:42 - Sharma Electronics: Sure Rahul ji, cancel kar diya. Refund 5 se 7 din mein aa jayega
+09/09/26, 09:42 - Rahul: Great, thank you
+10/09/26, 16:05 - Amit: Inverter 1100 VA ka warranty claim karna hai, invoice number INV-8821
+10/09/26, 16:07 - Sharma Electronics: Ji Amit, serial number bhej dijiye, claim register kar dete hain
+10/09/26, 16:09 - Amit: LM1100-77A2-9931
+10/09/26, 16:11 - Sharma Electronics: Claim register ho gaya, technician 2 din mein visit karega

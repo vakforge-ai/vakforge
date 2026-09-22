@@ -42,6 +42,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `skill/vakforge/references/`: decision rules, data format, data safety, recipes with verify-first checklist, eval and serving, locale hooks
 - [x] Skill calls the core CLI for init, locales, inspect, recommend and validate; generates recipe glue per project
 - [x] Consistency test: frontmatter, referenced files, CLI commands named in the skill exist
+- [x] `examples/hinglish-shop`: synthetic documents + tables + chat project with `inspect.json` and `recommend.json` committed and diffed by a test on every run
 - [ ] Tested on one real project end to end (documents + tables, no audio) and one with call recordings
 
 ## Phase 3 — Landing page

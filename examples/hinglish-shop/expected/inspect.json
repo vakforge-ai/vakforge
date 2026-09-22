@@ -1,0 +1,141 @@
+{
+  "report_version": "0.1",
+  "root": "examples/hinglish-shop/data",
+  "locale": "hi-Latn-IN",
+  "summary": {
+    "counts": {
+      "document": 1,
+      "table": 2,
+      "chat": 1,
+      "audio": 0,
+      "other": 0
+    },
+    "profiled": {
+      "document": 1,
+      "table": 2,
+      "chat": 1,
+      "audio": 0,
+      "other": 0
+    },
+    "unreadable": 0,
+    "truncated": 0,
+    "document_words": 285,
+    "chat_messages": 16,
+    "audio_hours": 0.0,
+    "two_channel_audio_files": 0,
+    "languages": {
+      "hi-Latn": 19,
+      "en-IN": 11,
+      "hi": 2
+    },
+    "pii": {
+      "phone": 2,
+      "email": 1
+    },
+    "tool_candidates": [
+      "lookup_orders_by_order_id",
+      "lookup_orders_by_customer_id",
+      "lookup_products_by_sku"
+    ]
+  },
+  "files": [
+    {
+      "path": "faq.md",
+      "kind": "document",
+      "format": "md",
+      "readable": true,
+      "facts": {
+        "words": 285,
+        "languages": {
+          "en-IN": 7,
+          "hi-Latn": 7,
+          "hi": 2
+        },
+        "pii": {
+          "phone": 1,
+          "email": 1
+        }
+      }
+    },
+    {
+      "path": "orders.csv",
+      "kind": "table",
+      "format": "csv",
+      "readable": true,
+      "facts": {
+        "tables": {
+          "orders": {
+            "columns": [
+              "order_id",
+              "customer_id",
+              "item_sku",
+              "amount_inr",
+              "status",
+              "ordered_on",
+              "city"
+            ],
+            "rows": 8,
+            "id_columns": [
+              "order_id",
+              "customer_id"
+            ],
+            "tool_candidates": [
+              "lookup_orders_by_order_id",
+              "lookup_orders_by_customer_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "path": "products.csv",
+      "kind": "table",
+      "format": "csv",
+      "readable": true,
+      "facts": {
+        "tables": {
+          "products": {
+            "columns": [
+              "sku",
+              "name",
+              "category",
+              "price_inr",
+              "warranty_months",
+              "in_stock"
+            ],
+            "rows": 7,
+            "id_columns": [
+              "sku"
+            ],
+            "tool_candidates": [
+              "lookup_products_by_sku"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "path": "support-chat.txt",
+      "kind": "chat",
+      "format": "whatsapp",
+      "readable": true,
+      "facts": {
+        "words": 146,
+        "languages": {
+          "hi-Latn": 12,
+          "en-IN": 4
+        },
+        "pii": {
+          "phone": 1
+        },
+        "messages": 16,
+        "speakers": {
+          "Sharma Electronics": 8,
+          "Priya": 4,
+          "Rahul": 2,
+          "Amit": 2
+        }
+      }
+    }
+  ]
+}

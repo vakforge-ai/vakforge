@@ -38,7 +38,7 @@ def inspect_dir(root: Path, pack: LocalePack) -> dict[str, Any]:
         files.append(entry)
     return {
         "report_version": REPORT_VERSION,
-        "root": str(root),
+        "root": root.as_posix(),  # same spelling on every OS, so reports diff cleanly
         "locale": pack.id,
         "summary": summarise(files),
         "files": files,
@@ -92,5 +92,6 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def write_report(report: dict[str, Any], out: Path) -> Path:
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return out

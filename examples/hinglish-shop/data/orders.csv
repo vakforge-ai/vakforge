@@ -1,0 +1,9 @@
+order_id,customer_id,item_sku,amount_inr,status,ordered_on,city
+SE-1041,C-2201,INV-1100,8499,delivered,2026-09-02,Jaipur
+SE-1042,C-2202,BAT-150,13999,shipped,2026-09-04,Jaipur
+SE-1043,C-2203,FAN-CEIL-48,2199,delivered,2026-09-04,Ajmer
+SE-1044,C-2204,INV-1500,11999,processing,2026-09-06,Jaipur
+SE-1045,C-2202,MIX-750,3499,cancelled,2026-09-07,Jaipur
+SE-1046,C-2205,BAT-200,18499,shipped,2026-09-08,Jodhpur
+SE-1047,C-2206,FAN-TABLE,1499,delivered,2026-09-09,Jaipur
+SE-1048,C-2207,INV-1100,8499,return_requested,2026-09-10,Kota
