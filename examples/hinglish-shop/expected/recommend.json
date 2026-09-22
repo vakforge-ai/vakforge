@@ -1,0 +1,53 @@
+{
+  "locale": "hi-Latn-IN",
+  "primary_problem": "tools",
+  "goals": [
+    "tools",
+    "workflow",
+    "knowledge",
+    "language"
+  ],
+  "routes": [
+    {
+      "source": "documents",
+      "route": "retrieval",
+      "why": "facts change; keep them out of weights and look them up at answer time"
+    },
+    {
+      "source": "tables",
+      "route": "tools",
+      "why": "expose lookups as tools: lookup_orders_by_order_id, lookup_orders_by_customer_id, lookup_products_by_sku"
+    },
+    {
+      "source": "chats",
+      "route": "behaviour fine-tune",
+      "why": "real conversations teach flow, tone and hand-offs; measure the prompt-only baseline first"
+    },
+    {
+      "source": "languages",
+      "route": "locale pack",
+      "why": "non-English turns found; the pack decides which recipe can speak the language"
+    }
+  ],
+  "fine_tune": "blocked",
+  "fine_tune_reason": "16 conversation turns is below the 200 conversation turns floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
+  "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k, ToolACE 26,507 APIs). Hundreds of examples suit one fixed tool, not general multi-turn tool use; the schema and prompt come first either way",
+  "evidence_confidence": "measured",
+  "recipe": null,
+  "recipe_support": null,
+  "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+  "have": 16.0,
+  "need": 8000,
+  "need_unit": "turns",
+  "audio_hours": 0.0,
+  "consent": [
+    "personal data found (phone, email): prepare must redact text and audio before any training row is written",
+    "hi-Latn-IN: The Digital Personal Data Protection Act, 2023 and its rules apply: give notice and obtain consent before processing personal data, and honour withdrawal. Aadhaar numbers must not be stored or displayed in full."
+  ],
+  "next_steps": [
+    "measure the base model with prompt + retrieval on a held-out set of real conversations before training anything; that baseline is the only proof training was needed",
+    "define the suggested tools and test the base model's tool calls",
+    "data gap: 16 of ~8000 conversation turns (measured); run synth over your documents and tools for coverage, and keep the evaluation set real",
+    "ship the retrieval + tools version and collect real conversations"
+  ]
+}

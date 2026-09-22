@@ -1,0 +1,8 @@
+sku,name,category,price_inr,warranty_months,in_stock
+INV-1100,Luminous 1100 VA inverter,inverter,8499,24,yes
+INV-1500,Luminous 1500 VA inverter,inverter,11999,24,yes
+BAT-150,Exide 150 Ah tubular battery,battery,13999,36,yes
+BAT-200,Exide 200 Ah tubular battery,battery,18499,36,no
+FAN-CEIL-48,Havells 48 inch ceiling fan,fan,2199,12,yes
+FAN-TABLE,Bajaj 400 mm table fan,fan,1499,12,yes
+MIX-750,Prestige 750 W mixer grinder,appliance,3499,24,yes
