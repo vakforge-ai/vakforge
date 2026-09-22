@@ -12,6 +12,10 @@ HI = get_pack("hi-Latn-IN")
         ("Ek minute, check karti hoon.", "hi-Latn"),
         ("Order status batao", "hi-Latn"),
         ("Namaste ji", "hi-Latn"),
+        # Mostly English words around one or two Hindi verbs is still a Hinglish turn.
+        ("Main order cancel kar do", "hi-Latn"),
+        ("Please mera refund jaldi kar dijiye", "hi-Latn"),
+        ("Delivery kab tak aayega", "hi-Latn"),
         ("मेरा ऑर्डर कहाँ है?", "hi"),
         ("Can you check my order status?", "en-IN"),
         ("Please do the needful by Monday", "en-IN"),

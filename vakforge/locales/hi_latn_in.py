@@ -28,6 +28,9 @@ ROMAN_HINDI = frozenset(
     suno suniye wala wali wale waala liye yeh ye woh wo yahan wahan namaste namaskar
     dhanyavaad dhanyawad shukriya bhai didi bhaiya paisa paise rupaye din mahina saal
     ghar dukaan
+    nhi krna kro krke dedo dena deke lena lekar milega milegi milta chahta chahti chahte
+    samajh samjha pata malum mujhko tumko wapas wapis chalu chalta dikkat turant kyunki
+    matlab bataye hua hui gaya gayi rakho bhejo bhej aayega aayegi aaya aayi
     """.split()  # noqa: SIM905  (a word list reads better as one string)
 )
 
@@ -97,13 +100,19 @@ class HiLatnIN(EnIN):
         return hits, len(words)
 
     def detect_lang(self, text: str) -> str:
-        """`hi` for mostly Devanagari, `hi-Latn` for Roman Hindi, otherwise `en-IN`."""
+        """`hi` for mostly Devanagari, `hi-Latn` for Roman Hindi, otherwise `en-IN`.
+
+        One fifth of the words is enough, because the word list excludes spellings that are
+        also English. A single Hindi verb in an otherwise English sentence ("order cancel kar
+        do") still means the caller is speaking Hinglish. This is a heuristic, not a trained
+        classifier: see docs/RESEARCH.md on per-turn language identification.
+        """
         deva = len(_DEVANAGARI.findall(text))
         latin = sum(len(w) for w in _LATIN_WORD.findall(text))
         if deva and deva >= latin:
             return "hi"
         hits, words = self._hindi_ratio(text)
-        if hits and hits / words >= 0.25:
+        if hits and hits / words >= 0.2:
             return "hi-Latn"
         return "en-IN"
 
