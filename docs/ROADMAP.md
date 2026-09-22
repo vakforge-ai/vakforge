@@ -34,6 +34,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals
 - [ ] `inspect`: PDF / DOCX / XLSX text (listed as unreadable with a hint today)
 - [x] `recommend`: rules from `DECISION_GUIDE.md` as code; reads `inspect.json` or a folder; routes per source, fine-tune verdict, recipe filtered by locale `recipe_support` and GPU, data gap, consent checklist; writes `recommend.json`
+- [x] `recommend`: per-goal bars with their own unit, floor, target, confidence label and citation (`BARS`); three-state verdict (`blocked` / `baseline_first` / `candidate`) instead of a boolean, per `docs/RESEARCH.md`
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
 ## Phase 2 — Agent skill

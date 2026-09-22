@@ -60,11 +60,13 @@ def test_recommend_from_folder_and_from_report(tmp_path, monkeypatch):
     (raw / "orders.csv").write_text("order_id,status\nA1,open\n", encoding="utf-8")
     r = runner.invoke(app, ["recommend", str(raw), "-o", "rec.json"])
     assert r.exit_code == 0, r.output
-    assert "not yet" in r.output  # no conversations, so no fine-tune
+    assert "no" in r.output  # no conversations, so nothing to fine-tune on
+    assert "evidence" in r.output  # and the verdict says what it rests on
     rec = json.loads((tmp_path / "rec.json").read_text(encoding="utf-8"))
     assert rec["locale"] == "hi-Latn-IN"
     assert rec["primary_problem"] == "tools"
-    assert rec["fine_tune"] is False
+    assert rec["fine_tune"] == "blocked"
+    assert rec["evidence_confidence"] in {"measured", "reported", "heuristic"}
 
     assert runner.invoke(app, ["inspect", str(raw), "-o", "inspect.json"]).exit_code == 0
     r = runner.invoke(app, ["recommend", "inspect.json", "-g", "workflow", "--gpu", "24"])

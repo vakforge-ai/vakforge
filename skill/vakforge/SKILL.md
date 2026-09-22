@@ -75,8 +75,19 @@ Ask the user for the three constraints if you do not know them: what should impr
 whether callers must be able to interrupt. Read `recommend.json`. Done when the user has
 approved a plan that states: the routes per source, whether a fine-tune is on the table at
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
-hardware and cost. If `fine_tune` is false, the plan is retrieval plus tools plus synthetic
-dialogues, and you skip step 6.
+hardware and cost.
+
+`fine_tune` is one of three values, and each means a different plan:
+
+- `blocked` — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
+  why, quoting the `evidence` field.
+- `baseline_first` — build and ship the retrieval and tools version, measure it in step 7,
+  and only then revisit training. Do not write training code in this pass.
+- `candidate` — the data clears the bar. Still measure the baseline first; step 6 exists to
+  beat it, and a fine-tune that does not beat it gets thrown away.
+
+Quote `evidence` and `evidence_confidence` to the user. A target marked `heuristic` is ours
+and the user is entitled to argue with it; one marked `measured` comes from a cited paper.
 
 ### 4. Prepare
 

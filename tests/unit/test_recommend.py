@@ -11,7 +11,7 @@ def summary(**over):
         "document_words": 0,
         "chat_messages": 0,
         "audio_hours": 0.0,
-        "stereo_audio_files": 0,
+        "two_channel_audio_files": 0,
         "languages": {},
         "pii": {},
         "tool_candidates": [],
@@ -20,16 +20,25 @@ def summary(**over):
     return base
 
 
-def test_documents_only_means_retrieval_not_fine_tune():
+def test_documents_only_means_retrieval_never_fine_tune():
+    # Facts in weights go stale and raise hallucination, so no amount of documents moves
+    # this verdict. It is blocked, not "not yet".
     r = recommend(summary(counts={"document": 3}, document_words=4000), US)
     assert r.primary_problem == "knowledge"
-    assert r.fine_tune is False
+    assert r.fine_tune == "blocked"
     assert r.recipe is None
     assert [x.route for x in r.routes] == ["retrieval"]
-    assert "stale" in r.fine_tune_reason
+    assert "retrieval" in r.fine_tune_reason
+    assert r.evidence_confidence == "measured"
+    assert "2312.05934" in r.evidence
 
 
-def test_tables_and_chats_without_gpu_defer_training_to_colab():
+def test_a_lot_of_documents_does_not_unblock_knowledge():
+    lots = recommend(summary(counts={"document": 5000}, document_words=9_000_000), US)
+    assert lots.fine_tune == "blocked"
+
+
+def test_tables_and_chats_sit_below_the_tool_corpus_target():
     r = recommend(
         summary(
             counts={"table": 1, "chat": 1},
@@ -39,28 +48,55 @@ def test_tables_and_chats_without_gpu_defer_training_to_colab():
         US,
     )
     assert r.primary_problem == "tools"
-    assert r.fine_tune is True
+    # 900 turns clears the floor but is two orders of magnitude off the published corpora.
+    assert r.fine_tune == "baseline_first"
     assert r.recipe == "lfm25-audio"
     assert "24 GB" in r.recipe_reason and "Colab" in r.recipe_reason
-    assert r.turns_have == 900 and r.turns_need == 600
+    assert r.have == 900 and r.need == 8000 and r.need_unit == "turns"
 
 
-def test_data_gap_triggers_synth_step():
-    r = recommend(summary(counts={"chat": 1}, chat_messages=300), US, Constraints(gpu="24"))
-    assert r.fine_tune is True
-    assert any("data gap: 300 of ~600" in s for s in r.next_steps)
+def test_the_target_is_labelled_with_how_well_supported_it_is():
+    tools = recommend(
+        summary(counts={"chat": 1}, chat_messages=300), US, Constraints(goals=("tools",), gpu="24")
+    )
+    workflow = recommend(
+        summary(counts={"chat": 1}, chat_messages=300), US, Constraints(goals=("workflow",))
+    )
+    assert tools.evidence_confidence == "measured"  # published corpus sizes
+    assert workflow.evidence_confidence == "heuristic"  # 600 is ours, and says so
+    assert "neither validates 600" in workflow.evidence
 
 
-def test_a_handful_of_turns_is_not_enough_to_train():
+def test_data_gap_step_quotes_the_gap_and_its_confidence():
+    r = recommend(
+        summary(counts={"chat": 1}, chat_messages=300), US, Constraints(goals=("workflow",))
+    )
+    assert r.fine_tune == "baseline_first"
+    assert any("data gap: 300 of ~600 conversation turns" in s for s in r.next_steps)
+    assert any("heuristic" in s for s in r.next_steps)
+
+
+def test_a_handful_of_turns_is_below_the_floor():
     r = recommend(summary(counts={"chat": 1}, chat_messages=3), US, Constraints(gpu="24"))
-    assert r.fine_tune is False
-    assert "only 3 conversation turns" in r.fine_tune_reason
-    assert any("data gap: 3 of ~600" in s for s in r.next_steps)
+    assert r.fine_tune == "blocked"
+    assert "below the 200 conversation turns floor" in r.fine_tune_reason
 
 
-def test_no_conversations_means_no_fine_tune_yet():
+def test_enough_turns_makes_it_a_candidate_and_still_asks_for_the_baseline():
+    r = recommend(
+        summary(counts={"chat": 1}, chat_messages=2000),
+        US,
+        Constraints(goals=("workflow",), gpu="24"),
+    )
+    assert r.fine_tune == "candidate"
+    assert "baseline" in r.fine_tune_reason
+    assert r.next_steps[0].startswith("measure the base model")
+    assert any("compare base vs tuned" in s for s in r.next_steps)
+
+
+def test_no_conversations_means_nothing_to_train_on():
     r = recommend(summary(counts={"table": 1}, tool_candidates=["lookup_orders_by_order_id"]), US)
-    assert r.fine_tune is False
+    assert r.fine_tune == "blocked"
     assert "synth" in r.fine_tune_reason
 
 
@@ -76,25 +112,60 @@ def test_hinglish_marks_lfm25_understand_only():
     assert "language" in r.goals
 
 
-def test_duplex_needs_stereo_and_hours():
+def test_duplex_is_a_model_choice_not_a_training_budget():
+    # The company-scale case: 20 hours of two-channel calls. The old rule called this
+    # enough to train duplex; PersonaPlex used ~1,217 h of real audio, so it is not.
+    r = recommend(
+        summary(counts={"audio": 40}, audio_hours=20, two_channel_audio_files=40),
+        US,
+        Constraints(gpu="80", duplex=True),
+    )
+    assert r.primary_problem == "duplex"
+    assert r.fine_tune == "blocked"
+    assert "already interrupts" in r.fine_tune_reason
+    assert "1,217" in r.evidence
+    # A recipe is still named, because the user does need a duplex-capable base model.
+    assert r.recipe == "moshi-lora"
+
+
+def test_duplex_recipe_still_needs_two_channel_recordings():
     mono = recommend(
-        summary(counts={"audio": 40}, audio_hours=20, stereo_audio_files=0),
+        summary(counts={"audio": 40}, audio_hours=20, two_channel_audio_files=0),
         US,
         Constraints(gpu="80", duplex=True),
     )
     assert mono.recipe is None and "stereo" in mono.recipe_reason
-    stereo = recommend(
-        summary(counts={"audio": 40}, audio_hours=20, stereo_audio_files=40),
+
+
+def test_voice_cloning_is_measured_in_seconds_not_hours():
+    # VALL-E clones from a 3-second prompt, so half an hour of audio is ample; the real
+    # gate on voice is consent, which the consent checklist carries.
+    r = recommend(
+        summary(counts={"audio": 3}, audio_hours=0.5),
         US,
-        Constraints(gpu="80", duplex=True),
+        Constraints(goals=("voice",), gpu="48"),
     )
-    assert stereo.recipe == "moshi-lora" and stereo.fine_tune is True
-    thin = recommend(
-        summary(counts={"audio": 2}, audio_hours=1, stereo_audio_files=2),
+    assert r.need_unit == "seconds"
+    assert r.fine_tune == "candidate"
+    assert "consent for that speaker's voice" in r.evidence
+
+
+def test_recognition_recommends_biasing_before_collecting_hours():
+    r = recommend(
+        summary(counts={"audio": 5}, audio_hours=2),
         US,
-        Constraints(gpu="80", duplex=True),
+        Constraints(goals=("recognition",), gpu="24"),
     )
-    assert thin.fine_tune is False and "10+ hours" in thin.fine_tune_reason
+    assert r.need_unit == "hours"
+    assert r.fine_tune == "blocked"  # 2 h is under the 10 h floor
+    assert any("bias the recogniser" in s for s in r.next_steps)
+
+
+def test_audio_route_leads_with_contextual_biasing():
+    r = recommend(summary(counts={"audio": 5}, audio_hours=2, two_channel_audio_files=5), US)
+    routes = {x.route for x in r.routes}
+    assert "contextual biasing, then recognition" in routes
+    assert "duplex model choice" in routes
 
 
 def test_consent_checklist_from_pack_and_pii():
@@ -107,5 +178,5 @@ def test_consent_checklist_from_pack_and_pii():
 def test_explicit_goals_override_inference():
     r = recommend(summary(counts={"document": 2}), US, Constraints(goals=("workflow",), gpu="24"))
     assert r.primary_problem == "workflow"
-    assert r.fine_tune is False  # no conversations yet
+    assert r.fine_tune == "blocked"  # no conversations yet
     assert r.to_dict()["goals"] == ["workflow"]

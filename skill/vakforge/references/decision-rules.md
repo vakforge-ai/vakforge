@@ -25,13 +25,26 @@ Most real requests are two or three goals. Each has its own data need and metric
 | tables, CRM | tools; synthetic dialogues that exercise every tool |
 | chat logs, transcripts | behaviour fine-tune of the language side; render to audio with synth |
 | mono call recordings | diarize first; speech-to-text and turn-based recipes; weak for duplex |
-| stereo recordings (agent and customer on separate channels) | everything, including duplex |
-| clean studio recordings of one voice | voice cloning |
+| two-channel recordings (agent and customer on separate channels) | everything, including adapting an already-duplex model |
+| clean studio recordings of one voice | voice cloning, from seconds of audio |
 
-Quantity: a few hundred to a few thousand *turns* covering every branch of the flow for
-behaviour; tens of hours of real conversation for voice, style or duplex. The CLI uses 600
-turns as the behaviour target, refuses to recommend training under 200, and wants 10+ hours
-for voice or duplex.
+Quantity, in the unit each goal actually uses. `vakforge recommend` prints the same bars with
+their evidence, and labels the ones we chose ourselves as `heuristic`:
+
+| Goal | Floor | Target | Confidence |
+|---|---|---|---|
+| knowledge | — | never fine-tune; retrieval instead | measured |
+| workflow / behaviour | 200 turns | ~600 turns | heuristic — ours, nothing validates it |
+| tools | 200 turns | 8,000+ turns (published corpora run 8k–60k) | measured |
+| recognition | 10 h | 20 h, after trying contextual biasing for free | measured |
+| voice | 3 s | ~60 s | measured |
+| duplex | — | not a training budget: pick an already-duplex base model | measured |
+| language | 200 turns | natural code-switched data; synthetic alone is not enough | measured |
+
+Two things follow that used to be got wrong here. Ten hours of calls does not buy duplex
+behaviour — PersonaPlex used ~1,217 hours of real audio plus 2,250+ synthetic on top of an
+already-duplex base. And voice cloning needs seconds, not hours; consent for that speaker's
+voice is the real gate.
 
 ## Constraints
 

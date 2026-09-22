@@ -290,11 +290,18 @@ def recommend(
     table.add_row("goals", ", ".join(rec.goals))
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
-    verdict = "[bold green]yes[/]" if rec.fine_tune else "[bold yellow]not yet[/]"
+    verdict = {
+        "blocked": "[bold red]no[/]",
+        "baseline_first": "[bold yellow]baseline first[/]",
+        "candidate": "[bold green]worth trying[/]",
+    }[rec.fine_tune]
     table.add_row("fine-tune?", f"{verdict}  {rec.fine_tune_reason}")
+    # The confidence label matters as much as the verdict: a threshold we invented and one
+    # a paper measured should not read the same way.
+    table.add_row(f"evidence ({rec.evidence_confidence})", rec.evidence)
     table.add_row("recipe", f"{rec.recipe or 'none'}  {rec.recipe_reason}")
-    if rec.turns_need:
-        table.add_row("conversation turns", f"{rec.turns_have} of ~{rec.turns_need} needed")
+    if rec.need is not None:
+        table.add_row(f"data ({rec.need_unit})", f"{rec.have:g} of ~{rec.need:g}")
     console.print(table)
     if rec.consent:
         console.print("[bold]consent and privacy[/] (not legal advice)")
