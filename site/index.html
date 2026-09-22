@@ -326,8 +326,8 @@
   @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
   .results { display: grid; grid-template-columns: 1.5fr .8fr; gap: 12px; }
-  .panel { border: 1px solid var(--line-soft); border-radius: var(--r-md); background: var(--bg-2); padding: 16px; }
-  .panel-title { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; color: var(--dim); font-family: var(--mono); font-size: .64rem; text-transform: uppercase; letter-spacing: .1em; }
+  .panel { min-width: 0; border: 1px solid var(--line-soft); border-radius: var(--r-md); background: var(--bg-2); padding: 16px; }
+  .panel-title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 14px; color: var(--dim); font-family: var(--mono); font-size: .64rem; text-transform: uppercase; letter-spacing: .1em; }
   .route-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: .72rem; transition: opacity .45s ease, transform .45s ease; }
   .demo.armed .route-row.hidden { opacity: 0; transform: translateY(6px); }
   .route-row:first-of-type { border-top: 0; padding-top: 0; }
@@ -928,7 +928,7 @@
                 <div class="route-row"><span>Call audio · 12 h</span><span class="route">redact + consent</span></div>
               </div>
               <div class="panel">
-                <div class="panel-title"><span>Completion</span><span>illustrative</span></div>
+                <div class="panel-title"><span>Completion</span><span>example</span></div>
                 <div class="score" id="demo-score"><i class="bar" data-v="61%"></i><i class="bar tuned" data-v="84%"></i></div>
                 <div class="score-labels"><span>base</span><span>tuned</span></div>
               </div>
