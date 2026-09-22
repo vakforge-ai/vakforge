@@ -112,6 +112,9 @@
   h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.015em; }
   p { margin: 0; }
   .lede { color: var(--muted); font-size: clamp(1.05rem, 1.6vw, 1.2rem); max-width: 60ch; }
+  .evidence-line { margin-top: 12px; font-size: .92rem; color: var(--dim); }
+  .evidence-line a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--cyan) 35%, transparent); }
+  .evidence-line a:hover { border-bottom-color: var(--cyan); }
   .kicker {
     display: inline-block; font-family: var(--mono); font-size: .74rem; font-weight: 500;
     letter-spacing: .14em; text-transform: uppercase; color: var(--cyan);
@@ -291,6 +294,10 @@
   .step-ring { margin-left: auto; width: 11px; height: 11px; border: 1.5px solid var(--faint); border-radius: 50%; transition: background .6s, border-color .6s, box-shadow .6s; }
   .step h3 { font-size: 1.2rem; }
   .step code { font-family: var(--mono); font-size: .78rem; color: var(--cyan); }
+  .step-state { align-self: flex-start; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: rgba(8,13,25,.55); color: var(--dim); font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; }
+  .step-state.now { border-color: color-mix(in srgb, var(--cyan) 45%, transparent); color: var(--tint); }
+  .path-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; color: var(--dim); font-size: .82rem; line-height: 1.5; }
+  .path-legend b { color: var(--tint); font-weight: 500; }
   .step p { color: var(--muted); font-size: .93rem; line-height: 1.55; }
 
   .step.gate { border-color: color-mix(in srgb, var(--coral) 55%, transparent); background: linear-gradient(180deg, rgba(58, 27, 36, .55), rgba(20, 18, 30, .85)); }
@@ -492,6 +499,7 @@
   .metric-row.worse .metric-value { color: var(--coral); }
   @keyframes fill { to { width: var(--w); } }
   .report-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding-top: 11px; color: var(--dim); font-family: var(--ui-mono); font-size: .72rem; }
+.report-note { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--dim); font-size: .78rem; line-height: 1.5; }
 
   /* privacy */
   /* data safety: redaction console + plain guardrail list */
@@ -814,7 +822,7 @@
       <div class="window demo" id="demo" aria-label="Example run of the vakforge pipeline">
         <div class="window-bar">
           <div class="dots"><i></i><i></i><i></i></div>
-          <span class="window-title">my-assistant · example run</span>
+          <span class="window-title">my-assistant · illustrative run, not a benchmark</span>
           <span class="window-status"><i></i> <span id="demo-status">eval complete</span></span>
         </div>
         <div class="console">
@@ -827,12 +835,12 @@
               <div class="panel" id="demo-routes">
                 <div class="panel-title"><span>Recommended routing</span><span>4 sources</span></div>
                 <div class="route-row"><span>Product docs · 3 PDFs</span><span class="route">retrieval</span></div>
-                <div class="route-row"><span>CRM tables · 3 tools</span><span class="route coral">fine-tune</span></div>
+                <div class="route-row"><span>CRM tables · 3 tools</span><span class="route">tools</span></div>
                 <div class="route-row"><span>Hinglish callers</span><span class="route">locale pack</span></div>
                 <div class="route-row"><span>Call audio · 12 h</span><span class="route">redact + consent</span></div>
               </div>
               <div class="panel">
-                <div class="panel-title"><span>Completion</span><span>n=180</span></div>
+                <div class="panel-title"><span>Completion</span><span>illustrative</span></div>
                 <div class="score" id="demo-score"><i class="bar" data-v="61%"></i><i class="bar tuned" data-v="84%"></i></div>
                 <div class="score-labels"><span>base</span><span>tuned</span></div>
               </div>
@@ -854,18 +862,19 @@
 <section class="section" id="how">
   <div class="wrap">
     <div class="heading-row">
-      <div class="stack"><span class="kicker">One opinionated path</span><h2>Seven commands, two decision gates, no menu of four hundred models.</h2></div>
+      <div class="stack"><span class="kicker">One opinionated path</span><h2>Seven steps, two decision gates, no menu of four hundred models.</h2></div>
       <p class="lede">Open speech-to-speech models exist. Fine-tuning scripts exist. Eval tools and serving frameworks exist. What was missing is one path from &ldquo;here is what my company knows&rdquo; to a served assistant you can prove beats the base model.</p>
+      <p class="path-legend"><span><b>In the CLI</b> &mdash; ships today in the <code>vakforge</code> package, installable now.</span><span><b>Skill generates</b> &mdash; the agent skill writes this step into your project, against your data and your models. vakforge does not ship a training or serving stack.</span></p>
     </div>
     <div class="path" id="path" role="list">
-      <article class="step" role="listitem"><div class="step-head"><span class="step-num">01</span><span class="step-ring" aria-hidden="true"></span></div><h3>Inspect</h3><code>vakforge inspect ./data</code><p>Formats, languages, quality and consent status of every document, table, chat export and recording.</p><span class="link" aria-hidden="true"><i></i></span></article>
-      <article class="step gate" role="listitem"><div class="step-head"><span class="step-num">02</span><span class="step-gate">decision gate</span><span class="step-ring" aria-hidden="true"></span></div><h3>Recommend</h3><code>vakforge recommend</code><p>Knowledge to retrieval, behaviour to tuning, language to a locale pack. Says “don’t fine-tune” when that is the answer.</p><span class="link" aria-hidden="true"><i></i></span></article>
-      <article class="step" role="listitem"><div class="step-head"><span class="step-num">03</span><span class="step-ring" aria-hidden="true"></span></div><h3>Prepare</h3><code>vakforge prepare</code><p>Ingest, transcribe, diarize, redact PII, record consent, write one canonical dataset.</p><span class="link" aria-hidden="true"><i></i></span></article>
-      <article class="step" role="listitem"><div class="step-head"><span class="step-num">04</span><span class="step-ring" aria-hidden="true"></span></div><h3>Synth</h3><code>vakforge synth</code><p>Grounded dialogues in your locale that exercise every tool and scenario you are missing.</p></article>
+      <article class="step" role="listitem"><div class="step-head"><span class="step-num">01</span><span class="step-ring" aria-hidden="true"></span></div><h3>Inspect</h3><code>vakforge inspect ./data</code><span class="step-state now">in the CLI</span><p>Formats, languages, quality and consent status of every document, table, chat export and recording.</p><span class="link" aria-hidden="true"><i></i></span></article>
+      <article class="step gate" role="listitem"><div class="step-head"><span class="step-num">02</span><span class="step-gate">decision gate</span><span class="step-ring" aria-hidden="true"></span></div><h3>Recommend</h3><code>vakforge recommend</code><span class="step-state now">in the CLI</span><p>Knowledge to retrieval, behaviour to tuning, language to a locale pack. Says “don’t fine-tune” when that is the answer, and cites what the answer rests on.</p><span class="link" aria-hidden="true"><i></i></span></article>
+      <article class="step" role="listitem"><div class="step-head"><span class="step-num">03</span><span class="step-ring" aria-hidden="true"></span></div><h3>Prepare</h3><code>prepare/</code><span class="step-state">skill generates</span><p>Ingest, transcribe, diarize, redact PII, record consent, write one canonical dataset.</p><span class="link" aria-hidden="true"><i></i></span></article>
+      <article class="step" role="listitem"><div class="step-head"><span class="step-num">04</span><span class="step-ring" aria-hidden="true"></span></div><h3>Synth</h3><code>synth/</code><span class="step-state">skill generates</span><p>Grounded dialogues in your locale that exercise every tool and scenario you are missing. Coverage, not a substitute for real data.</p></article>
       <div class="turn" id="path-turn" aria-hidden="true"><span></span></div>
-      <article class="step" role="listitem"><div class="step-head"><span class="step-num">05</span><span class="step-ring" aria-hidden="true"></span></div><h3>Train</h3><code>vakforge train --recipe</code><p>One tested recipe per base model, each in an isolated environment because model libraries conflict.</p><span class="link" aria-hidden="true"><i></i></span></article>
-      <article class="step gate" role="listitem"><div class="step-head"><span class="step-num">06</span><span class="step-gate">decision gate</span><span class="step-ring" aria-hidden="true"></span></div><h3>Evaluate</h3><code>vakforge eval</code><p>Base and tuned on the same held-out split. No metric is reported without its baseline.</p><span class="link" aria-hidden="true"><i></i></span></article>
-      <article class="step out" role="listitem"><div class="step-head"><span class="step-num">07</span><span class="step-ring" aria-hidden="true"></span></div><h3>Serve</h3><code>vakforge serve</code><p>Your open model on your hardware, behind protocols your clients already speak. Nothing calls a hosted API.</p><div class="protocols" aria-label="Serving protocols"><span class="proto now">OpenAI Realtime WebSocket<b>first</b></span><span class="proto">WebRTC · LiveKit, Pipecat<b>next</b></span><span class="proto">SIP · telephony<b>next</b></span><span class="proto">HTTP · one turn per request<b>planned</b></span></div></article>
+      <article class="step" role="listitem"><div class="step-head"><span class="step-num">05</span><span class="step-ring" aria-hidden="true"></span></div><h3>Train</h3><code>train/</code><span class="step-state">skill generates</span><p>One recipe per base model, each in an isolated environment because model libraries pin conflicting versions.</p><span class="link" aria-hidden="true"><i></i></span></article>
+      <article class="step gate" role="listitem"><div class="step-head"><span class="step-num">06</span><span class="step-gate">decision gate</span><span class="step-ring" aria-hidden="true"></span></div><h3>Evaluate</h3><code>eval/</code><span class="step-state">skill generates</span><p>Base and tuned on the same held-out split, and the split stays real. No metric is reported without its baseline.</p><span class="link" aria-hidden="true"><i></i></span></article>
+      <article class="step out" role="listitem"><div class="step-head"><span class="step-num">07</span><span class="step-ring" aria-hidden="true"></span></div><h3>Serve</h3><code>serve/</code><span class="step-state">skill generates</span><p>Your open model on your hardware, behind protocols your clients already speak. Nothing calls a hosted API.</p><div class="protocols" aria-label="Serving protocols"><span class="proto now">OpenAI Realtime WebSocket<b>first</b></span><span class="proto">WebRTC · LiveKit, Pipecat<b>next</b></span><span class="proto">SIP · telephony<b>next</b></span><span class="proto">HTTP · one turn per request<b>planned</b></span></div></article>
     </div>
   </div>
 </section>
@@ -875,14 +884,15 @@
     <div class="heading-row">
       <div class="stack"><span class="kicker">Bring any data</span><h2>Start with what you have. Even nothing.</h2></div>
       <p class="lede">Fine-tuning is not the default answer. Every kind of input gets the least expensive fix that can actually solve it. Pick a source to see its route.</p>
+      <p class="lede evidence-line">Every threshold behind these routes is written down with its source, and the ones we chose ourselves are labelled as guesses rather than requirements: <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/RESEARCH.md">the evidence, and what it changed &rarr;</a></p>
     </div>
     <div class="router" id="router">
       <svg class="r-wires" id="r-wires" aria-hidden="true"></svg>
       <div class="r-col r-src" role="group" aria-label="Your data">
         <button type="button" class="r-item" data-r="0" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span><span><b>Documents, FAQs, SOPs</b><small>PDFs, wikis, help centre</small><span class="r-to">&rarr; retrieval</span></span></button>
-        <button type="button" class="r-item" data-r="1" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></span><span><b>Database tables, CRM, catalogue</b><small>orders, tickets, inventory</small><span class="r-to coral">&rarr; tool-use fine-tune</span></span></button>
+        <button type="button" class="r-item" data-r="1" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></span><span><b>Database tables, CRM, catalogue</b><small>orders, tickets, inventory</small><span class="r-to">&rarr; tools, then fine-tune only if it misses</span></span></button>
         <button type="button" class="r-item" data-r="2" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/></svg></span><span><b>Chat logs, transcripts</b><small>support chats, email threads</small><span class="r-to coral">&rarr; behaviour fine-tune</span></span></button>
-        <button type="button" class="r-item" data-r="3" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 11v2"/></svg></span><span><b>Recorded calls</b><small>mono or stereo, any line quality</small><span class="r-to coral">&rarr; voice and full-duplex</span></span></button>
+        <button type="button" class="r-item" data-r="3" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 11v2"/></svg></span><span><b>Recorded calls</b><small>mono or stereo, any line quality</small><span class="r-to coral">&rarr; biasing, then recognition</span></span></button>
         <button type="button" class="r-item" data-r="4" aria-describedby="r-why"><span class="r-icon"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span><b>Nothing yet</b><small>just a use case</small><span class="r-to">&rarr; synthetic data</span></span></button>
       </div>
       <div class="r-hub" id="r-hub">
@@ -893,9 +903,9 @@
       </div>
       <div class="r-col r-dst" aria-label="What it gets">
         <div class="r-item free" data-r="0"><span><b>Retrieval</b><small>Facts stay out of weights; answers come from your source.</small></span><span class="r-kind">no training</span></div>
-        <div class="r-item train" data-r="1"><span><b>Tool-use fine-tune</b><small>Tools over your tables, dialogues that call every one.</small></span><span class="r-kind">fine-tune</span></div>
+        <div class="r-item free" data-r="1"><span><b>Tools over your tables</b><small>A schema and a prompt first. Published tool-use corpora run 8k&ndash;60k examples, so fine-tune only what the tools still miss.</small></span><span class="r-kind">usually no training</span></div>
         <div class="r-item train" data-r="2"><span><b>Behaviour fine-tune</b><small>Your call flow, tone and hand-offs, rendered to audio.</small></span><span class="r-kind">fine-tune</span></div>
-        <div class="r-item train" data-r="3"><span><b>Voice and full-duplex</b><small>Accents, timing, interruptions, backchannels.</small></span><span class="r-kind">fine-tune</span></div>
+        <div class="r-item train" data-r="3"><span><b>Contextual biasing, then recognition</b><small>Biasing towards your product and customer names cuts entity errors with no training. Collect accent hours only if it still misses.</small></span><span class="r-kind">free first</span></div>
         <div class="r-item free" data-r="4"><span><b>Synthetic data</b><small>Scenario templates in your locale for a v0.</small></span><span class="r-kind">no training</span></div>
       </div>
     </div>
@@ -922,7 +932,7 @@
           <div class="repo-eyebrow"><span>Foundation</span><code>vakforge/</code></div>
           <h3>Core library and CLI</h3>
           <p>Canonical dataset schema, validator, data inspector, decision engine, locale packs. Zero ML dependencies. Tested on CPU with no downloads.</p>
-          <div class="repo-status"><b>phase 0 done</b> · 32 CPU tests</div>
+          <div class="repo-status"><b>working today</b> · 226 CPU tests, no downloads</div>
         </article>
         <article class="repo-col">
           <div class="repo-icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM5 19l.7 1.3L7 21l-1.3.7L5 23l-.7-1.3L3 21l1.3-.7z"/></svg></div>
@@ -979,7 +989,7 @@
     <div class="report" aria-label="Example evaluation report">
       <div class="report-head">
         <h3>report.md</h3>
-        <span class="report-ctx">en-IN &middot; phone &middot; n=180</span>
+        <span class="report-ctx">layout only &middot; numbers illustrative</span>
         <span class="verdict">SHIP <span>&middot; 1 regression ok</span></span>
       </div>
       <div class="kpis">
@@ -992,6 +1002,7 @@
       <div class="metric-row"><span>hallucination &darr;<small>lower is better</small></span><span class="metric-bars"><i style="--w:14%"></i><i style="--w:5%"></i></span><b class="metric-value">&minus;9 pts</b></div>
       <div class="metric-row worse"><span>TTFA p50 &darr;<small>time to first audio</small></span><span class="metric-bars"><i style="--w:63%"></i><i style="--w:70%"></i></span><b class="metric-value">+40 ms</b></div>
       <div class="report-foot"><span>same split for base and tuned</span><span>no number without its baseline</span></div>
+      <p class="report-note">These figures show the shape of the report, not a benchmark. vakforge does not publish numbers it has not measured; yours come from your own held-out split.</p>
     </div>
   </div>
 </section>
@@ -1004,7 +1015,7 @@
       <p class="lede">Every record carries its consent basis and redaction status. Personal data is cut from text and audio by locale-aware patterns and NER, and logged, before anything reaches a training row.</p>
     </div>
       <div class="rx done" id="rx" aria-label="Example of redaction during prepare">
-        <div class="rx-bar"><b>vakforge prepare</b><span class="rx-id">conv_0142 &middot; hi-Latn-IN</span><span class="rx-status"><i></i><span id="rx-status">3 spans redacted</span></span></div>
+        <div class="rx-bar"><b>prepare &middot; generated for your project</b><span class="rx-id">conv_0142 &middot; hi-Latn-IN</span><span class="rx-status"><i></i><span id="rx-status">3 spans redacted</span></span></div>
         <div class="rx-body">
           <div class="rx-turn" id="rx-turn">
             <span class="rx-who"><b>user</b>0:03.8</span>
@@ -1021,7 +1032,7 @@
       </div>
       </div>
       <aside class="guards">
-        <h3>Guardrails that run, not guidelines</h3>
+        <h3>What the spec requires of every prepare step</h3>
         <div class="check-list">
           <div class="check"><i>&#10003;</i><span>The locale pack supplies the patterns: SSN, NI number, Aadhaar, PAN, resident ID, phones, cards.</span></div>
           <div class="check"><i>&#10003;</i><span>Placeholders stay consistent within a conversation, so the dialogue still trains.</span></div>
@@ -1290,7 +1301,7 @@
     var srcs = router.querySelectorAll(".r-src .r-item");
     var dsts = router.querySelectorAll(".r-dst .r-item");
     var names = ["documents", "tables", "chat logs", "calls", "nothing yet"];
-    var R = [{f:"Retrieval",t:false,w:"Prices and policies change weekly. Weights don’t. Retrieval keeps answers current without retraining."},{f:"Tool-use fine-tune",t:true,w:"The assistant has to look things up and act, reliably, over a noisy line. That is behaviour worth training."},{f:"Behaviour fine-tune",t:true,w:"How your best agents handle a conversation is behaviour. Prompts drift under pressure; a small fine-tune holds."},{f:"Voice and full-duplex",t:true,w:"Only real conversations teach turn-taking and local accents. Redaction and consent run before anything trains."},{f:"Synthetic data",t:false,w:"Ship a v0 on generated dialogues, collect real data from it, then run recommend again."}];
+    var R = [{f:"Retrieval",t:false,w:"Prices and policies change weekly. Weights don’t. Retrieval keeps answers current without retraining, and training on facts measurably raises hallucination."},{f:"Tools over your tables",t:false,w:"A clear schema and prompt handle most lookups. Published tool-use corpora run 8k–60k examples, so fine-tune only the calls the tools still get wrong."},{f:"Behaviour fine-tune",t:true,w:"How your best agents handle a conversation is behaviour. Prompts drift under pressure; a small fine-tune holds. Measure the prompt baseline first — it is what proves the training was needed."},{f:"Contextual biasing, then recognition",t:true,w:"Biasing the recogniser towards your product and customer names cuts entity errors with no training at all. Collect accent hours only if that still misses. Full duplex is a base-model choice, not something your calls teach."},{f:"Synthetic data",t:false,w:"Ship a v0 on generated dialogues, collect real data from it, then run recommend again. Synthetic buys coverage; the evaluation set stays real."}];
     var NS = "http://www.w3.org/2000/svg";
     var paths = [], current = 0, userTouched = false;
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
