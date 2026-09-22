@@ -36,3 +36,7 @@ Thumbs.db
 
 # local layout probes
 site/_*.html
+
+# raw literature-review outputs; the conclusions live in docs/RESEARCH.md
+Research outcomes/
+image.png
