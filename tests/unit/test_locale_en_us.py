@@ -30,6 +30,24 @@ def test_invalid_ssn_ranges_ignored(bad):
     assert [t for t, _ in found(f"id {bad}")] != ["ssn"]
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "ssn 536221234",
+        "my SSN is 536221234",
+        "social security number is 536221234",
+        "TIN: 536221234",
+    ],
+)
+def test_compact_ssn_detected_after_a_cue(text):
+    assert found(text) == [("ssn", "536221234")]
+
+
+@pytest.mark.parametrize("text", ["order 536221234", "reference 536221234", "536221234"])
+def test_compact_ssn_needs_a_cue(text):
+    assert found(text) == []
+
+
 @pytest.mark.parametrize("phone", ["(415) 555-0134", "+1 212.555.0199", "650-253-0000"])
 def test_us_phone_detected(phone):
     assert found(f"call {phone} tomorrow") == [("phone", phone)]

@@ -23,6 +23,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Pack `en-IN`: rupees with lakh/crore and Indian digit grouping, Aadhaar (Verhoeff), PAN, +91 mobiles, DPDP notes
 - [x] Pack `hi-Latn-IN`: Roman-Hindi vs English vs Devanagari detection, `lang_mix`, Devanagari-safe normalizer with spelling variants
 - [ ] Pack `hi-Latn-IN`: Devanagari to Roman transliteration, Indian name/address generator
+- [x] PII patterns survive real transcripts: case-insensitive NI number and PAN (ASR output is lowercase), compact SSN behind a cue word, reference numbers not mistaken for Indian mobiles, IBAN country registry so invented countries fail
 - [x] Golden tests for every pack (normalizer, detect_lang, PII positive/negative)
 - [x] `vakforge locales` to list packs and show resolved settings
 - [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal

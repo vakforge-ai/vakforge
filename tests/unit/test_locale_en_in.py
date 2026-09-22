@@ -51,6 +51,11 @@ def test_pan_detected(pan):
     assert found(f"PAN {pan} please") == [("pan", pan)]
 
 
+@pytest.mark.parametrize("pan", ["abcpe1234f", "AbcPe1234F"])
+def test_pan_detected_in_lowercase_transcripts(pan):
+    assert found(f"pan {pan} please") == [("pan", pan)]
+
+
 @pytest.mark.parametrize("bad", ["ABCXE1234F", "ABCP1234F", "ABCPE12345"])
 def test_invalid_pan_ignored(bad):
     assert found(f"ref {bad}") == []
@@ -64,6 +69,19 @@ def test_indian_mobile_detected(phone):
 @pytest.mark.parametrize("text", ["PIN 560001", "5876543210 is not a mobile", "order 12345 67890"])
 def test_no_false_positives(text):
     assert found(text) == []
+
+
+# Indian reference numbers are ten digits too, so the preceding word decides.
+@pytest.mark.parametrize(
+    "text",
+    ["order 9876543210", "invoice 9876543210", "AWB 9876543210", "txn 9876543210"],
+)
+def test_reference_numbers_are_not_phones(text):
+    assert found(text) == []
+
+
+def test_a_phone_after_an_unrelated_reference_still_matches():
+    assert found("order 12345, call me on 9876543210") == [("phone", "9876543210")]
 
 
 def test_pack_metadata():

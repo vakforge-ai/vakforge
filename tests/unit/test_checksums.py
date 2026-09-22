@@ -40,3 +40,21 @@ def test_iban_accepts_registry_examples(iban):
 @pytest.mark.parametrize("iban", ["GB82 WEST 1234 5698 7654 33", "GB82", "1234567890123456"])
 def test_iban_rejects(iban):
     assert not iban_valid(iban)
+
+
+def _mod97(s: str) -> int:
+    rearranged = s[4:] + s[:4]
+    return int("".join(str(int(ch, 36)) for ch in rearranged)) % 97
+
+
+def test_iban_rejects_invented_country_that_passes_mod_97():
+    # Built so the mod-97 check succeeds; only the country registry rejects it.
+    candidates = [f"ZZ{check:02d}AAAAAAAAAAAAAAAA" for check in range(2, 100)]
+    passing = [c for c in candidates if _mod97(c) == 1]
+    assert passing, "no check digit made the mod-97 pass"
+    assert not any(iban_valid(c) for c in passing)
+
+
+def test_iban_rejects_right_country_wrong_length():
+    # GB is 22 characters; a 24-character GB number is not an IBAN whatever mod-97 says.
+    assert not iban_valid("GB82 WEST 1234 5698 7654 3200")

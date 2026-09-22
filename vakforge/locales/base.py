@@ -20,18 +20,37 @@ Support = Literal["native", "understand_only", "cascade", "unsupported"]
 DateOrder = Literal["MDY", "DMY", "YMD"]
 
 
+# Characters before a match that the context patterns inspect. Long enough to hold a full
+# cue phrase such as "my social security number is ".
+CONTEXT_WINDOW = 40
+
+
 @dataclass(frozen=True)
 class PIIPattern:
-    """A regex for one kind of personal data, with an optional checksum to cut false hits."""
+    """A regex for one kind of personal data, with optional checks to cut false hits.
+
+    `validate` runs a checksum on the matched text. The two context patterns look at the
+    characters just before a match: `context_deny` rejects it ("order 9876543210" is not a
+    phone number), `context_require` demands a cue ("ssn 123456789" is, a bare nine-digit
+    string is not).
+    """
 
     name: str
     regex: re.Pattern[str]
     validate: Callable[[str], bool] | None = None
+    context_deny: re.Pattern[str] | None = None
+    context_require: re.Pattern[str] | None = None
 
     def finditer(self, text: str):
         for m in self.regex.finditer(text):
-            if self.validate is None or self.validate(m.group(0)):
-                yield m
+            if self.validate is not None and not self.validate(m.group(0)):
+                continue
+            before = text[max(0, m.start() - CONTEXT_WINDOW) : m.start()]
+            if self.context_deny is not None and self.context_deny.search(before):
+                continue
+            if self.context_require is not None and not self.context_require.search(before):
+                continue
+            yield m
 
 
 @dataclass(frozen=True)
@@ -108,6 +127,14 @@ class LocalePack:
     def detect_lang(self, text: str) -> str:
         """Per-turn language tag. Default: the pack's first language."""
         return self.languages[0]
+
+    def lang_mix(self, text: str) -> list[str]:
+        """Every language present in a turn, primary first.
+
+        Packs for code-switched locales override this. The default reports one language,
+        which is correct for packs whose speakers do not mix languages mid-turn.
+        """
+        return [self.detect_lang(text)]
 
     def normalize_text(self, text: str) -> str:
         """Text normalization for WER. Default: lowercase, strip punctuation, collapse spaces."""

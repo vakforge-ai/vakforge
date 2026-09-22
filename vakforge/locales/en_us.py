@@ -12,6 +12,17 @@ SSN = PIIPattern(
     "ssn",
     re.compile(r"\b(?!000|666|9\d\d)\d{3}[- ](?!00)\d{2}[- ](?!0000)\d{4}\b"),
 )
+# Nine digits with no separators are only an SSN when something nearby says so; bare
+# nine-digit strings are far more often order or account numbers.
+SSN_COMPACT = PIIPattern(
+    "ssn",
+    re.compile(r"\b(?!000|666|9\d\d)\d{3}(?!00)\d{2}(?!0000)\d{4}\b"),
+    # Anything but a digit may sit between the cue and the number ("ssn is", "ssn number:"),
+    # because missing a real SSN is worse than redacting one order number too many.
+    context_require=re.compile(
+        r"(?i)\b(ssn|social(?:\s+security)?(?:\s+number)?|tin)\b[^0-9]{0,12}$"
+    ),
+)
 # NANP: area and exchange codes start 2-9; optional +1 and common separators.
 PHONE_US = PIIPattern(
     "phone",
@@ -32,7 +43,7 @@ class EnUS(EnglishPack):
         phone_example="(415) 555-0134",
         postal_example="94107 or 94107-1234",
     )
-    pii_patterns = [SSN, PHONE_US]
+    pii_patterns = [SSN, SSN_COMPACT, PHONE_US]
     call_recording_consent = "varies_by_state"
     privacy_notes = PrivacyNotes(
         summary=(
