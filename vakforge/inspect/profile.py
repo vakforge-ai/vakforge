@@ -2,6 +2,11 @@
 
 Documents: words, languages, PII counts. Tables: columns, rows, id-like columns (tool
 candidates). Chats: messages and speakers. Audio: duration, format, clipping, silence.
+
+Every number here is measured, never inferred. A low silence ratio, for example, is
+reported as it is and not turned into a verdict of "noisy", because unbroken energy is
+equally what dense speech looks like. Judgement calls belong to `recommend` and the agent
+skill, which say what evidence they used.
 """
 
 from __future__ import annotations
@@ -22,12 +27,33 @@ _TAG = re.compile(r"<[^>]+>")
 _WORD = re.compile(r"\w+", re.UNICODE)
 _CREATE_TABLE = re.compile(r"create\s+table\s+(?:if\s+not\s+exists\s+)?[`\"\[]?(\w+)", re.I)
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
-MAX_BYTES = 2_000_000  # read at most this much text per file
+MAX_CHARS = 2_000_000  # read at most this much text per file
 
 
-def _read_text(path: Path) -> str:
+class FileTooLarge(ValueError):
+    """Raised for a file that only parses as a whole and is over `MAX_CHARS`.
+
+    Truncating such a file and parsing the fragment produces a syntax error that blames the
+    file's contents for a limit we imposed, so `inspect` says what really happened instead.
+    """
+
+
+def _read_text(path: Path) -> tuple[str, bool]:
+    """Up to `MAX_CHARS` of text, and whether the file was longer than that."""
     with path.open(encoding="utf-8-sig", errors="replace") as fh:
-        return fh.read(MAX_BYTES)
+        text = fh.read(MAX_CHARS + 1)
+    return (text[:MAX_CHARS], True) if len(text) > MAX_CHARS else (text, False)
+
+
+def _whole_text(path: Path) -> str:
+    """Text of a file that has to be parsed in one piece, or `FileTooLarge`."""
+    text, truncated = _read_text(path)
+    if truncated:
+        raise FileTooLarge(
+            f"over {MAX_CHARS:,} characters and must be parsed whole; "
+            "split it or convert it to JSONL"
+        )
+    return text
 
 
 def _text_facts(text: str, pack: LocalePack) -> dict[str, Any]:
@@ -42,10 +68,15 @@ def _text_facts(text: str, pack: LocalePack) -> dict[str, Any]:
 
 
 def profile_document(src: Source, pack: LocalePack) -> dict[str, Any]:
-    text = _read_text(src.path)
+    text, truncated = _read_text(src.path)
     if src.format in {"html", "htm"}:
         text = _TAG.sub(" ", text)
-    return _text_facts(text, pack)
+    facts = _text_facts(text, pack)
+    if truncated:
+        # Word and PII counts describe the part we read, so say so rather than let a
+        # downstream reader treat them as whole-file totals.
+        facts["truncated"] = True
+    return facts
 
 
 def _columns_from_rows(rows: list[dict[str, Any]]) -> list[str]:
@@ -55,55 +86,74 @@ def _columns_from_rows(rows: list[dict[str, Any]]) -> list[str]:
     return list(cols)
 
 
+def _jsonl_rows(text: str, truncated: bool) -> list[Any]:
+    """One record per line. A truncated read cuts the last line mid-way, so drop it."""
+    lines = text.splitlines()
+    if truncated and lines:
+        lines.pop()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
 def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     tables: dict[str, dict[str, Any]] = {}
+    truncated = False
     if src.format in {"csv", "tsv"}:
         with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
             reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
             rows = list(reader)
         tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": len(rows)}
     elif src.format == "sql":
-        sql = _read_text(src.path)
+        sql, truncated = _read_text(src.path)
         for match in _CREATE_TABLE.finditer(sql):
             body = sql[match.end() : sql.find(";", match.end())]
             cols = re.findall(r"^\s*[`\"\[]?(\w+)[`\"\]]?\s+\w+", body, re.M)
             tables[match.group(1)] = {"columns": cols, "rows": None}
-    else:  # json / jsonl records
-        text = _read_text(src.path)
-        if src.format == "json":
-            data = json.loads(text)
-            rows = (
-                data
-                if isinstance(data, list)
-                else next((v for v in data.values() if isinstance(v, list)), [data])
-            )
-        else:
-            rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    elif src.format == "json":
+        data = json.loads(_whole_text(src.path))
+        rows = (
+            data
+            if isinstance(data, list)
+            else next((v for v in data.values() if isinstance(v, list)), [data])
+        )
         rows = [r for r in rows if isinstance(r, dict)]
+        tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
+    else:  # jsonl / ndjson records
+        text, truncated = _read_text(src.path)
+        rows = [r for r in _jsonl_rows(text, truncated) if isinstance(r, dict)]
         tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
     for name, t in tables.items():
         t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(c)]
         t["tool_candidates"] = [f"lookup_{name}_by_{c}" for c in t["id_columns"][:3]]
-    return {"tables": tables}
+    facts: dict[str, Any] = {"tables": tables}
+    if truncated:
+        facts["truncated"] = True  # row counts cover the part we read, not the whole file
+    return facts
 
 
 def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
-    text = _read_text(src.path)
     speakers: Counter[str] = Counter()
     messages: list[str] = []
+    truncated = False
     if src.format == "whatsapp":
+        text, truncated = _read_text(src.path)
         for line in text.splitlines():
             if m := _WHATSAPP_LINE.match(line):
                 speaker = re.split(r"\s[-–]\s", m.group(0))[-1].rstrip(": ").strip()
                 speakers[speaker] += 1
                 messages.append(line[m.end() :])
+            elif messages:
+                # A message that wrapped onto its own line carries no timestamp header; it
+                # belongs to the message above, and dropping it loses most long messages.
+                messages[-1] += "\n" + line
     else:
-        lines = [text] if src.format == "json" else text.splitlines()
         records: list[Any] = []
-        for line in lines:
-            if line.strip():
-                data = json.loads(line)
-                records += data if isinstance(data, list) else [data]
+        if src.format == "json":
+            data = json.loads(_whole_text(src.path))
+            records += data if isinstance(data, list) else [data]
+        else:
+            text, truncated = _read_text(src.path)
+            for row in _jsonl_rows(text, truncated):
+                records += row if isinstance(row, list) else [row]
         for rec in records:
             turns = rec.get("messages", [rec]) if isinstance(rec, dict) else []
             for turn in turns:
@@ -117,6 +167,8 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
                 messages.append(str(body))
     facts = _text_facts("\n\n".join(messages), pack)
     facts.update(messages=len(messages), speakers=dict(speakers.most_common(10)))
+    if truncated:
+        facts["truncated"] = True  # message count covers the part we read
     return facts
 
 
@@ -135,15 +187,14 @@ def profile_audio(src: Source, pack: LocalePack) -> dict[str, Any]:
     )
     silence = float((20 * np.log10(rms) < -40).mean()) if n else 1.0
     clipping = float((np.abs(data) >= 0.999).mean()) if data.size else 0.0
-    condition = "phone" if sr <= 8000 else "noisy" if silence < 0.05 else "clean"
     return {
         "duration_s": round(info.duration, 2),
         "sample_rate": info.samplerate,
         "channels": info.channels,
-        "stereo_split_possible": info.channels == 2,
+        # True for telephone-band audio, which limits which models can be trained on it.
+        "narrowband": info.samplerate <= 8000,
         "clipping_ratio": round(clipping, 5),
         "silence_ratio": round(silence, 3),
-        "condition_guess": condition,
     }
 
 

@@ -28,8 +28,9 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `vakforge locales` to list packs and show resolved settings
 - [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal
 - [x] `inspect` for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports
-- [x] `inspect` for audio: duration, sample rate, channels, clipping, silence, condition guess (no SNR or spoken-language guess: those need ASR, out of core scope)
-- [x] `inspect.json` report for `recommend` and the agent skill
+- [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
+- [x] `inspect.json` report for `recommend` and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover
+- [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals
 - [ ] `inspect`: PDF / DOCX / XLSX text (listed as unreadable with a hint today)
 - [x] `recommend`: rules from `DECISION_GUIDE.md` as code; reads `inspect.json` or a folder; routes per source, fine-tune verdict, recipe filtered by locale `recipe_support` and GPU, data gap, consent checklist; writes `recommend.json`
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)

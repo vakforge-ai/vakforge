@@ -183,12 +183,16 @@ def inspect(
     table.add_column(style="dim")
     table.add_column()
     counts = ", ".join(f"{n} {k}" for k, n in s["counts"].items() if n)
+    found = sum(s["counts"].values())
+    profiled = sum(s["profiled"].values())
     table.add_row("files", counts or "none")
+    # Every total below is built from the profiled files only, so show how many that is.
+    table.add_row("profiled", f"{profiled} of {found}")
     table.add_row("documents", f"{s['document_words']} words")
     table.add_row("chats", f"{s['chat_messages']} messages")
     hours = s["audio_hours"]
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
-    table.add_row("audio", f"{length}, {s['stereo_audio_files']} stereo file(s)")
+    table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
     table.add_row(
         "personal data", ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
@@ -199,6 +203,10 @@ def inspect(
         if not f["readable"]:
             reason = f.get("error") or f.get("note") or "unsupported type"
             err_console.print(f"[yellow]skipped[/] {f['path']}: {reason}")
+        elif f.get("facts", {}).get("truncated"):
+            err_console.print(
+                f"[yellow]partial[/] {f['path']}: too large to read whole, counts cover the start"
+            )
     write_report(report, out)
     console.print(f"[green]wrote[/] {out}")
 
