@@ -51,6 +51,11 @@ my-agent/
 
   "tools": [
     {
+      "name": "check_status",
+      "description": "Look up the current status of a customer's installation",
+      "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}}, "required": ["customer_id"]}
+    },
+    {
       "name": "book_appointment",
       "description": "Book a technician visit",
       "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}, "date": {"type": "string", "format": "date"}, "slot": {"type": "string", "enum": ["morning", "afternoon"]}}, "required": ["customer_id", "date", "slot"]}
@@ -59,7 +64,7 @@ my-agent/
 
   "turns": [
     {"speaker": "agent", "start": 0.0, "end": 2.8, "text": "Namaste, SunCare Solar se Priya bol rahi hoon. Kaise madad kar sakti hoon?", "lang": "hi-Latn"},
-    {"speaker": "user", "start": 2.9, "end": 7.4, "text": "Haan, mera inverter kal se off hai, customer ID SC-4471.", "lang": "hi-Latn", "entities": [{"type": "customer_id", "text": "SC-4471", "start_char": 44, "end_char": 51}]},
+    {"speaker": "user", "start": 2.9, "end": 7.4, "text": "Haan, mera inverter kal se off hai, customer ID SC-4471.", "lang": "hi-Latn", "entities": [{"type": "customer_id", "text": "SC-4471", "start_char": 48, "end_char": 55}]},
     {"speaker": "agent", "start": 7.2, "end": 8.1, "text": "Ek minute, check karti hoon.", "lang": "hi-Latn", "overlap": true},
     {"speaker": "agent", "start": 8.1, "end": 8.1, "tool_call": {"id": "call_1", "name": "check_status", "arguments": {"customer_id": "SC-4471"}}},
     {"speaker": "tool", "start": 8.1, "end": 8.1, "tool_result": {"id": "call_1", "content": {"status": "fault_reported", "last_service": "2026-06-02"}}},
@@ -72,6 +77,7 @@ my-agent/
     "source": "real",
     "consent": "recorded_verbal",
     "consent_ref": "policy-v3-2026",
+    "voice_consent_ref": "voice-consent-v1-2026",
     "license": "proprietary-internal",
     "pii_redacted": true,
     "redaction_log": "redactions/conv_000123.json",
@@ -87,9 +93,11 @@ my-agent/
 
 **audio** — optional. Records built from documents, tables or chat logs have no recording until `synth` renders one; audio-requiring adapters skip or reject such rows and say so.
 
-**audio.channels / channel_map** — `2` with a channel map means true dual-stream audio (required by `moshi-lora`). `1` means mixed mono; turns then come from diarization and `adapters/moshi.py` will refuse it unless `--allow-synthetic-stereo` reconstructs streams from cut segments (lower quality; flagged in the report).
+**audio.path** — always relative to the manifest's directory. Absolute paths and any `..` segment are rejected: a manifest is data, often generated or handed over, and must not be able to name a file outside the dataset.
 
-**audio.condition** — `studio | clean | phone | noisy`. Set by `inspect` heuristics, overridable. Used to stratify eval.
+**audio.channels / channel_map** — `2` with a channel map means true dual-stream audio (required by `moshi-lora`), and the map must assign one channel to `user` and the other to `agent`; two channels of the same speaker cannot be split into a conversation. `1` means mixed mono; turns then come from diarization and `adapters/moshi.py` will refuse it unless `--allow-synthetic-stereo` reconstructs streams from cut segments (lower quality; flagged in the report).
+
+**audio.condition** — `studio | clean | phone | noisy`. Set by whoever prepares the data. `inspect` does not guess it: it reports sample rate, silence and clipping, because unbroken energy is what dense speech looks like as much as noise.
 
 **locale** — id of the locale pack that governs normalization, entity types, PII rules, and benchmark assignment for this conversation (`en-US`, `en-GB`, `en-IN`, `hi-Latn-IN`, `zh-CN` …). A project may mix locales; eval always breaks down by it.
 
@@ -101,13 +109,24 @@ my-agent/
 
 **turns[].tool_call / tool_result** — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result.
 
-**turns[].entities** — optional but strongly recommended for business data: `customer_id`, `phone`, `amount_inr`, `date`, `person_name`, `address`, `order_id`. Entity accuracy is one of the headline eval metrics.
+**turns[].entities** — optional but strongly recommended for business data: `customer_id`, `phone`, `amount_inr`, `date`, `person_name`, `address`, `order_id`. Entity accuracy is one of the headline eval metrics. `start_char` and `end_char` are optional, but when present they are both required and `text[start_char:end_char]` must equal the entity's own `text`: redaction and entity scoring both slice by these offsets, so a stale offset corrupts the record silently.
 
 **meta.source** — `real | synthetic | public`. Never mix without this tag; eval reports break results down by source.
 
 **meta.consent** — `recorded_verbal | written | synthetic | public_license | none`. `none` is allowed only with `--allow-unconsented` and is excluded from any published artifact. See `DATA_ETHICS.md`.
 
-**meta.pii_redacted** — `prepare` refuses to write `train` rows with `false` unless `--skip-redaction` is set, which logs a loud warning.
+### Provenance claims must carry their evidence
+
+These fields are the only record of whether a row may lawfully be trained on, so the schema
+fails a record that claims something it cannot show:
+
+- `consent: recorded_verbal` or `written` requires `consent_ref`.
+- `consent: public_license` requires `license`.
+- `consent: synthetic` is only valid with `source: synthetic`.
+- `source: real` requires `pii_redacted: true` **and** a `redaction_log` naming what was removed. Redaction is not optional for real data; `prepare` only skips it under `--skip-redaction`, which logs a loud warning and marks the rows.
+- `source: real` with audio requires `voice_consent_ref`. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.
+
+Synthetic rows are exempt from the redaction rules because they contain no real person's data.
 
 ## Splits
 
