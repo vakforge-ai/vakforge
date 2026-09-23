@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contributing · vakforge docs</title>
+<meta name="description" content="How to work on vakforge">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html" aria-current="page">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="contributing-to-vakforge">Contributing to vakforge</h1>
+<h2 id="ground-rules">Ground rules</h2>
+<ul>
+<li>We ship recipes we have actually run. A PR adding a model that &quot;should work&quot; is not mergeable; a PR adding a model with a committed <code>report.json</code> on the demo dataset is.</li>
+<li>Core stays dependency-light. If your change makes <code>import vakforge.schema</code> pull in torch, it will be rejected.</li>
+<li>Language- or market-specific logic goes in a locale pack (<code>docs/LOCALE_PACKS.md</code>). A PR that adds <code>if lang == &quot;...&quot;</code> to core will be asked to move it.</li>
+<li>Upstream APIs are verified against source, and the version is pinned. Say where you verified it in the PR description.</li>
+<li>Data safety code paths (redaction, consent) cannot be bypassed silently. Any new flag that weakens them must log a warning.</li>
+</ul>
+<h2 id="setup">Setup</h2>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/vakforge-ai/vakforge<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>vakforge
+uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev
+uvx<span class="w"> </span>pre-commit<span class="w"> </span>install<span class="w">   </span><span class="c1"># runs ruff and file checks on every commit</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w">            </span><span class="c1"># must pass on CPU with no downloads</span>
+uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>--check<span class="w"> </span>.
+</code></pre></div>
+<p>Recipe work. The extras are declared but still empty — each one gets its pins when that recipe is
+actually built, so these commands work today and install nothing extra:</p>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev<span class="w"> </span>--extra<span class="w"> </span>lfm25<span class="w">      </span><span class="c1"># or --extra moshi / --extra qwen / --extra cascade</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>model<span class="w">                 </span><span class="c1"># opt-in, downloads models</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>gpu<span class="w">                   </span><span class="c1"># opt-in, needs CUDA</span>
+</code></pre></div>
+<p>Docs site (<code>site/docs/</code> is generated and committed, so rebuild before you push):</p>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>python<span class="w"> </span>scripts/build_docs.py
+</code></pre></div>
+<h2 id="branches-and-commits">Branches and commits</h2>
+<ul>
+<li><strong>Features and anything substantial</strong> go on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>ci/…</code>, <code>docs/…</code>) and land through a pull request. Merge only when CI is green.</li>
+<li><strong>Small fixes</strong> (typos, one-line corrections, copy tweaks) may go straight to <code>main</code>.</li>
+<li><code>main</code> has no branch protection while the repository is private on the free plan, so these rules are enforced by review, not by GitHub. Do not force-push <code>main</code>.</li>
+<li>Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.</li>
+<li>Conventional commit messages: <code>feat(prepare): roman-hindi language tagging</code>.</li>
+<li>One logical change per PR. Large recipes land as a sequence: adapter → train wrapper → eval → serve.</li>
+</ul>
+<h2 id="releases">Releases</h2>
+<ol>
+<li>Bump <code>version</code> in <code>pyproject.toml</code> and <code>__version__</code> in <code>vakforge/__init__.py</code>, run <code>uv lock</code>, commit as <code>chore(release): X.Y.Z</code>.</li>
+<li>Push a matching tag: <code>git tag -a vX.Y.Z -m &quot;vX.Y.Z&quot; &amp;&amp; git push origin vX.Y.Z</code>.</li>
+<li>The <code>release</code> workflow checks the tag against the version, runs tests, builds, and publishes to PyPI through trusted publishing. No token is involved.</li>
+</ol>
+<p>PyPI never lets a published version change, so check the README renders (images must use public URLs) before tagging.</p>
+<h2 id="security">Security</h2>
+<p>Report vulnerabilities privately as described in <a href="https://github.com/vakforge-ai/vakforge/blob/main/SECURITY.md" target="_blank" rel="noopener"><code>SECURITY.md</code></a>, never in a public issue.</p>
+<h2 id="pull-request-checklist">Pull request checklist</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> Tests added/updated; CPU suite green</li>
+<li class="task"><input type="checkbox" disabled> <code>ruff</code> clean</li>
+<li class="task"><input type="checkbox" disabled> Docs updated (<code>docs/*.md</code>, <code>README.md</code> recipe table if applicable)</li>
+<li class="task"><input type="checkbox" disabled> <code>docs/ROADMAP.md</code> checkbox ticked</li>
+<li class="task"><input type="checkbox" disabled> For upstream integrations: version pinned, verification noted, <code>UPSTREAM_NOTES.md</code> updated</li>
+<li class="task"><input type="checkbox" disabled> For recipes: <code>LICENSE_NOTES.md</code> present; per-locale support declared in launch packs</li>
+<li class="task"><input type="checkbox" disabled> For locale packs: golden tests for normalizer, <code>detect_lang</code>, and every PII pattern; <code>privacy_notes</code> sourced</li>
+<li class="task"><input type="checkbox" disabled> No audio binaries, checkpoints, or real customer data in the diff</li>
+</ul>
+<h2 id="reporting-model-or-data-issues">Reporting model or data issues</h2>
+<p>Open an issue with: recipe, config hash, manifest hash, <code>versions.txt</code>, and the relevant slice of <code>report.json</code>. Do not attach real customer audio to issues.</p>
+<h2 id="code-style">Code style</h2>
+<p>Python 3.11+, type hints, docstrings on public functions, <code>pydantic</code> for anything that crosses a boundary, <code>rich</code> for user-facing output, no print debugging left behind.</p>
+<h2 id="licence">Licence</h2>
+<p>By contributing you agree your code is released under Apache-2.0. Model weights and datasets keep their own licences.</p>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="roadmap.html"><small>Previous</small><b>Roadmap</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#ground-rules">Ground rules</a></li><li class="lvl2"><a href="#setup">Setup</a></li><li class="lvl2"><a href="#branches-and-commits">Branches and commits</a></li><li class="lvl2"><a href="#releases">Releases</a></li><li class="lvl2"><a href="#security">Security</a></li><li class="lvl2"><a href="#pull-request-checklist">Pull request checklist</a></li><li class="lvl2"><a href="#reporting-model-or-data-issues">Reporting model or data issues</a></li><li class="lvl2"><a href="#code-style">Code style</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

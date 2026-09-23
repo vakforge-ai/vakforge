@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recipes · vakforge docs</title>
+<meta name="description" content="Per-model training recipes and their status">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html" aria-current="page">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/RECIPES.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="recipes">Recipes</h1>
+<p>A recipe is a path from base model → adapter → training → eval → serve.</p>
+<blockquote>
+<p><strong>Status: none of these are built.</strong> This file is research, not documentation of working code. Facts were checked in September 2026 against model cards and upstream repositories; <strong>re-verify versions, APIs and licences at implementation time</strong> and update this file. Anything marked <em>(reported)</em> comes from third-party write-ups and has not been measured by us.</p>
+<p>A recipe only stops being research when it has run end to end on a demo dataset with its <code>report.json</code> committed — see the checklist at the bottom.</p>
+</blockquote>
+<p>Locale packs declare per-recipe support (<code>native | understand_only | cascade | unsupported</code>); <code>recommend</code> reads that, not this file.</p>
+<hr />
+<h2 id="recipe-a-lfm25-audio-default-ship-first">Recipe A — <code>lfm25-audio</code> (default, ship first)</h2>
+<p><strong>Base:</strong> <code>LiquidAI/LFM2.5-Audio-1.5B</code> (Hugging Face). End-to-end audio–text model: FastConformer audio encoder → LFM2.5 1.2B backbone → depth transformer emitting Mimi codec tokens (8 codebooks, 24 kHz) → lightweight detokenizer. No separate ASR/TTS. GGUF builds exist for llama.cpp CPU inference; ONNX/WebGPU demos exist. A Japanese variant exists; broader multilingual output is announced — check current releases.</p>
+<p><strong>Why first:</strong> small enough for one 24 GB GPU (or two 4090s), upstream Python trainer (<code>liquid_audio</code> package), community full fine-tunes already demonstrate tool-aware voice flows trained in ~20 minutes on ~3k examples <em>(reported)</em>, and it deploys on CPU/edge.</p>
+<p><strong>What it can learn from a few thousand turns:</strong> workflow adherence, short tool acknowledgements, narrating injected tool results, refusals when a tool is missing, tone/style, accent and code-switch <em>understanding</em> (e.g. Indian English, Hinglish input).</p>
+<p><strong>What it cannot learn cheaply:</strong> a new output language on the English base checkpoint, factual knowledge, full-duplex behaviour.</p>
+<p><strong>Locales:</strong> <code>en-*</code> native; <code>hi-Latn-IN</code> understand_only; others unsupported until multilingual checkpoints ship.</p>
+<p><strong>Data adapter:</strong> each user turn → one training session: system text (persona + tool list + &quot;Known facts you must use&quot; block when the previous turn was a tool result) → user audio clip → assistant target (text + audio). Tool calls are represented as the text convention chosen for this recipe and parsed back at serve time. Keep a &quot;no-tool chitchat&quot; class in the mix so the model does not over-trigger tools.</p>
+<p><strong>Training:</strong> full fine-tune in bf16 via upstream trainer (LoRA via PEFT as an option if upstream supports it — verify). Defaults to start from: AdamW, lr 5e-5, cosine, ~50-step warmup, effective batch 8, 3–4 epochs, context ≈ 320 tokens <em>(reported starting point, tune on our eval)</em>.</p>
+<p><strong>Hardware:</strong> 1× 24 GB (batch 2–4) or 2× 24 GB DDP. Colab L4/A100 works.</p>
+<p><strong>Eval focus:</strong> tool-call accuracy by class, entity accuracy (names, IDs, amounts, dates per locale), ASR round-trip WER of generated speech, TTFA.</p>
+<p><strong>Serve:</strong> native streaming via <code>liquid_audio</code> for GPU; GGUF path via llama.cpp for CPU (verify audio-out support in the llama.cpp build you pin).</p>
+<p><strong>Licence:</strong> Liquid AI's model licence — read it before commercial use; document in <code>recipes/lfm25_audio/LICENSE_NOTES.md</code>.</p>
+<p><strong>Known risks:</strong> upstream API churn (the <code>liquid_audio</code> package is young); non-English text targets may degrade the English-centric speech decoder — measure.</p>
+<hr />
+<h2 id="recipe-b-moshi-lora-advanced-full-duplex">Recipe B — <code>moshi-lora</code> (advanced, full-duplex)</h2>
+<p><strong>Base options:</strong></p>
+<ul>
+<li><code>kyutai/moshiko-pytorch-bf16</code> / <code>moshika</code> (Kyutai Moshi, 7B, CC-BY-4.0, English).</li>
+<li><code>nvidia/personaplex-7b-v1</code> (Moshi architecture + weights, fine-tuned by NVIDIA for persona/voice control via text prompt + voice sample; code MIT, weights under NVIDIA Open Model License, gated on HF).</li>
+</ul>
+<p><strong>Why:</strong> the only open path to real interruptions, backchannels, and natural timing. PersonaPlex is the better starting point for agents because persona prompting already works; its documented gap is that the text prompt shapes persona only and does not carry content — which is exactly what domain fine-tuning addresses.</p>
+<p><strong>Locales:</strong> <code>en-*</code> native; <code>hi-Latn-IN</code> understand_only (measure); others unsupported. Kyutai has said multilingual variants are in development — revisit.</p>
+<p><strong>Data requirement:</strong> stereo dual-stream conversations (channel 0 user, channel 1 agent) with transcripts. Mono call recordings are not enough; <code>synth</code> can produce stereo, and <code>prepare</code> can reconstruct pseudo-stereo from diarized mono (lower quality; flagged).</p>
+<p><strong>Training:</strong> <code>kyutai-labs/moshi-finetune</code> (official, LoRA, includes dataset annotation tooling and a Colab). Pin a commit. Official example reports ~40 GB peak memory on one H100 for its recommended config <em>(reported)</em>. <code>nu-dialogue/moshi-finetune</code> (unofficial, Accelerate/DeepSpeed, trains the user stream too) is an alternative for multi-GPU; J-Moshi shows language transfer is possible but needed 69k hours and 128 GPUs — do not promise new-language support from this recipe.</p>
+<p><strong>Adapter:</strong> canonical stereo → moshi-finetune layout (stereo WAV + JSON transcript with timestamps). Verify exact JSON keys against the pinned commit.</p>
+<p><strong>Eval focus:</strong> everything in Recipe A plus duplex metrics: interruption response time, barge-in stop time, overlap rate vs human reference, false-interruption rate.</p>
+<p><strong>Serve:</strong> Moshi's own server (PyTorch/Rust) or vLLM-omni's PersonaPlex duplex serving; LiveKit has an experimental PersonaPlex plugin. Wrap one of these behind our Realtime-compatible WebSocket; mark which path is verified.</p>
+<p><strong>Hardware:</strong> 40–80 GB GPU for training; ~19 GB bf16 for inference <em>(reported)</em>, quantized ONNX variants exist.</p>
+<p><strong>Licence notes:</strong> CC-BY-4.0 (Moshi) vs NVIDIA Open Model License (PersonaPlex) — different obligations; surface at <code>vakforge train</code> time.</p>
+<hr />
+<h2 id="recipe-d-qwen-omni-multilingual-mandarin-first">Recipe D — <code>qwen-omni</code> (multilingual, Mandarin first)</h2>
+<p><strong>Base:</strong> <code>Qwen/Qwen3-Omni-30B-A3B-Instruct</code> (MoE, ~3B active) or the current Qwen3.5-Omni release. Thinker–Talker architecture: the Thinker is a text/multimodal LLM (long context, tool calling via <code>&lt;tool_call&gt;</code> tags), the Talker turns its hidden states into streaming speech. Multilingual speech in and out including Mandarin; the only open native S2S family with function calling today. Weights are also on ModelScope (matters for users without Hugging Face access).</p>
+<p><strong>Why:</strong> unlocks non-English locale packs with native speech output, plus tool calling — the closest open analogue to GPT Realtime for global use.</p>
+<p><strong>Locales:</strong> <code>zh-CN</code> native; <code>en-*</code> native; <code>hi-Latn-IN</code>, <code>es</code>, <code>de</code>, <code>fr</code>, <code>ja</code>, <code>ar</code> — verify per language before marking native.</p>
+<p><strong>Training approach:</strong> <strong>Thinker LoRA with Talker frozen</strong>, via ms-swift (supports Qwen3-Omni). This teaches workflow, tool use, and understanding without touching speech generation. Talker adaptation (speaker fine-tune stage) is upstream's multi-stage pipeline and is <em>out of scope</em> until packaged. Known pitfall: Thinker-only checkpoints saved by some frameworks use a key layout the full model cannot load without re-keying and merging Talker/code2wav from the vanilla checkpoint — the adapter must handle this and test it.</p>
+<p><strong>Adapter:</strong> canonical → ms-swift multimodal chat JSONL (system, user audio, assistant text + tool calls). Audio-only training targets for the Thinker; speech output comes from the frozen Talker at inference.</p>
+<p><strong>Hardware:</strong> large. bf16 weights for the 30B-A3B are tens of GB; LoRA training realistically needs an 80 GB GPU or multi-GPU; inference via vLLM-omni. Measure and record before publishing numbers.</p>
+<p><strong>Eval focus:</strong> tool-call accuracy, entity accuracy per locale, intelligibility of Talker output in the target language (ASR round-trip with a locale STT), latency (near-duplex, expect higher than Moshi).</p>
+<p><strong>Serve:</strong> vLLM-omni (supports Qwen3-Omni); wrap behind the Realtime WS. Note that streaming audio support in local serving may lag the hosted API — verify and document what actually streams.</p>
+<p><strong>Licence:</strong> Apache-2.0 for Qwen3-Omni at time of writing — confirm for the exact checkpoint.</p>
+<p><strong>Known risks:</strong> framework version sensitivity (ms-swift/transformers/vLLM-omni move fast); hardware cost puts it out of reach for hobbyists — position it as the &quot;team with a server&quot; recipe.</p>
+<hr />
+<h2 id="recipe-c-cascade-any-language">Recipe C — <code>cascade</code> (any language)</h2>
+<p><strong>Why:</strong> for any locale without a good native speech-to-speech model, a cascade of fine-tunable open parts works today, and each part is independently trainable and swappable. The locale pack picks the parts.</p>
+<p><strong>Components:</strong></p>
+<ul>
+<li><strong>STT:</strong> Whisper fine-tune (transformers / Unsloth) as the default; pack overrides — AI4Bharat IndicConformer (NeMo) for Indic, Paraformer/SenseVoice for zh, NVIDIA Canary/Parakeet for en throughput.</li>
+<li><strong>LLM:</strong> any small instruct model (3–8B, Qwen3/Gemma/Llama-class) with LoRA via Unsloth or LLaMA-Factory on chat records from the canonical manifest; tool calling in OpenAI shape.</li>
+<li><strong>TTS:</strong> pack default — Indic Parler-TTS / IndicF5 for Indic, CosyVoice / Qwen3-TTS for zh, Orpheus / Sesame CSM / Kokoro-class for en; speaker fine-tune where the licence allows.</li>
+<li><strong>Orchestration:</strong> Pipecat pipeline with sentence-boundary aggregation; VAD for turn-taking.</li>
+</ul>
+<p><strong>Data:</strong> public corpora chosen by the pack (Common Voice, AI4Bharat Vistaar/IndicVoices, WenetSpeech, etc.) plus your domain data.</p>
+<p><strong>Eval focus:</strong> STT WER/CER by language and entity type; LLM tool-call accuracy; end-to-end task completion; total latency (the cascade's weakness).</p>
+<p><strong>Hardware:</strong> 1× 24 GB for each component's fine-tune; inference fits on one GPU.</p>
+<hr />
+<h2 id="considered-not-yet-a-recipe">Considered, not (yet) a recipe</h2>
+<ul>
+<li><strong>Step-Audio2, MiniCPM-o 4.5, GLM-4-Voice, LLaMA-Omni2:</strong> track; add when an end-to-end run is validated.</li>
+<li><strong>Ultravox:</strong> speech-in, text-out with a published training pipeline — a good STT+LLM replacement inside the cascade, not a standalone S2S recipe.</li>
+<li><strong>Talker / speaker fine-tuning for Qwen-Omni:</strong> when upstream packages it.</li>
+</ul>
+<h2 id="adding-a-recipe-checklist">Adding a recipe (checklist)</h2>
+<ol>
+<li>Implements <code>Recipe</code> and <code>Adapter</code> protocols (<code>ARCHITECTURE.md</code>).</li>
+<li>Optional extra in <code>pyproject.toml</code>; lazy imports; <code>check_env()</code> reports missing pieces clearly.</li>
+<li>Unit tests on CPU with fixtures; one <code>@pytest.mark.model</code> integration test.</li>
+<li>Config YAML with documented defaults.</li>
+<li>Ran end to end on a public demo dataset; <code>report.md</code> committed under <code>benchmarks/</code>.</li>
+<li><code>LICENSE_NOTES.md</code> for the base model.</li>
+<li>Per-locale support declared in each launch pack.</li>
+<li>Section in this file and a row in <code>README.md</code>.</li>
+</ol>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="architecture.html"><small>Previous</small><b>Architecture</b></a><a class="pn next" href="evaluation.html"><small>Next</small><b>Evaluation</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/RECIPES.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#recipe-a-lfm25-audio-default-ship-first">Recipe A — lfm25-audio (default, ship first)</a></li><li class="lvl2"><a href="#recipe-b-moshi-lora-advanced-full-duplex">Recipe B — moshi-lora (advanced, full-duplex)</a></li><li class="lvl2"><a href="#recipe-d-qwen-omni-multilingual-mandarin-first">Recipe D — qwen-omni (multilingual, Mandarin first)</a></li><li class="lvl2"><a href="#recipe-c-cascade-any-language">Recipe C — cascade (any language)</a></li><li class="lvl2"><a href="#considered-not-yet-a-recipe">Considered, not (yet) a recipe</a></li><li class="lvl2"><a href="#adding-a-recipe-checklist">Adding a recipe (checklist)</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

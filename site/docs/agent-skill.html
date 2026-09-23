@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent skill · vakforge docs</title>
+<meta name="description" content="The workflow a coding agent follows for your project">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html" aria-current="page">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/skill/vakforge/SKILL.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="agent-skill">Agent skill</h1>
+<p>The text below is <code>skill/vakforge/SKILL.md</code> verbatim: the instructions a coding agent follows when the vakforge skill is installed.</p>
+<p>You are turning a company's data into a voice assistant that runs on their hardware, with the
+<code>vakforge</code> CLI making the decisions and you writing the per-project glue. The knowledge is in
+this skill and its references; the pipeline code does not exist until you generate it.</p>
+<p>Two gates rule the whole job. <strong>Nothing is trained before <code>recommend</code> says so. Nothing ships
+before <code>eval</code> shows the tuned model beats the base model on held-out data.</strong></p>
+<h2 id="hard-rules">Hard rules</h2>
+<ul>
+<li><strong>Verify before you call.</strong> Before using any upstream library (<code>liquid_audio</code>, <code>moshi</code>,
+<code>moshi-finetune</code>, <code>ms-swift</code>, <code>transformers</code>, <code>peft</code>, <code>pyannote</code>, <code>faster_whisper</code>, Pipecat,
+LiveKit), open its installed source (<code>python -c &quot;import x; print(x.__file__)&quot;</code>, then read
+the signatures you need) or the pinned GitHub commit. Signatures you could not read get a
+<code># TODO(verify)</code> comment, a skipped test, and a sentence to the user. Never guess an API.</li>
+<li><strong>Locale packs, not if-statements.</strong> Currency, dates, phone and ID formats, scripts, names,
+consent rules and preferred models come from <code>vakforge locales &lt;id&gt;</code>
+(<code>references/locales.md</code> lists the Python hooks). Core-style code you write never
+branches on a language string.</li>
+<li><strong>Redaction and consent are steps, not options.</strong> Every training row carries a consent
+basis and a redaction status. A flag that weakens either logs a loud warning. Never put real
+customer data, names, IDs or audio in tests, issues, prompts you send elsewhere, or files you
+publish.</li>
+<li><strong>Open models on the user's hardware.</strong> Nothing calls OpenAI or another hosted API for the
+assistant itself. &quot;Realtime compatible&quot; means the wire format only.</li>
+<li><strong>Ask before spending.</strong> Any model download over 500 MB, any GPU job over a few minutes,
+any paid API call for synthetic data: ask first, with the size and the cost.</li>
+<li><strong>CPU-testable.</strong> Everything you write has a test that passes on CPU with no downloads.
+GPU and model-download tests are marked <code>@pytest.mark.gpu</code> / <code>@pytest.mark.model</code>.</li>
+</ul>
+<h2 id="workflow">Workflow</h2>
+<p>Run the steps in order. Each step names what &quot;done&quot; means; do not start the next before it.</p>
+<h3 id="1-set-up">1. Set up</h3>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge<span class="w">            </span><span class="c1"># or: uv add vakforge</span>
+vakforge<span class="w"> </span>locales<span class="w">                </span><span class="c1"># pick the locale pack(s) for the user's market</span>
+vakforge<span class="w"> </span>init<span class="w"> </span>&lt;project&gt;<span class="w"> </span>--locale<span class="w"> </span>&lt;id&gt;<span class="w"> </span><span class="o">[</span>--locale<span class="w"> </span>&lt;id2&gt;<span class="o">]</span>
+</code></pre></div>
+<p>Done when the project folder exists and the user has put their data under
+<code>&lt;project&gt;/data/raw/</code> (or told you where it is).</p>
+<h3 id="2-inspect">2. Inspect</h3>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>inspect<span class="w"> </span>&lt;project&gt;/data/raw
+</code></pre></div>
+<p>Read <code>inspect.json</code> in full. Done when you can state, in one paragraph to the user: which
+source kinds exist, how many conversation turns and audio hours, which languages appear,
+what personal data was found, which files were skipped and why, and which tool candidates
+the tables suggest.</p>
+<h3 id="3-recommend">3. Recommend</h3>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span><span class="o">[</span>--goal<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--gpu<span class="w"> </span><span class="m">24</span><span class="p">|</span><span class="m">48</span><span class="p">|</span><span class="m">80</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--duplex<span class="o">]</span>
+</code></pre></div>
+<p>Ask the user for the three constraints if you do not know them: what should improve (see
+<code>references/decision-rules.md</code> for the goal list), the largest GPU they can train on, and
+whether callers must be able to interrupt. Read <code>recommend.json</code>. Done when the user has
+approved a plan that states: the routes per source, whether a fine-tune is on the table at
+all, the recipe and its locale support level, the data gap, the consent checklist, and the
+hardware and cost.</p>
+<p><code>fine_tune</code> is one of three values, and each means a different plan:</p>
+<ul>
+<li><code>blocked</code> — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
+why, quoting the <code>evidence</code> field.</li>
+<li><code>baseline_first</code> — build and ship the retrieval and tools version, measure it in step 7,
+and only then revisit training. Do not write training code in this pass.</li>
+<li><code>candidate</code> — the data clears the bar. Still measure the baseline first; step 6 exists to
+beat it, and a fine-tune that does not beat it gets thrown away.</li>
+</ul>
+<p>Quote <code>evidence</code> and <code>evidence_confidence</code> to the user. A target marked <code>heuristic</code> is ours
+and the user is entitled to argue with it; one marked <code>measured</code> comes from a cited paper.</p>
+<h3 id="4-prepare">4. Prepare</h3>
+<p>Write <code>&lt;project&gt;/prepare/</code> so that it turns the raw sources into <code>data/vakforge.jsonl</code> in
+the canonical format (<code>references/data-format.md</code>), following <code>references/data-safety.md</code>:
+consent prompt once per source folder, redaction of text and audio with a log and a
+keep-list, per-turn language tags from the locale pack, splits by conversation and speaker.</p>
+<p>Done when <code>vakforge validate &lt;project&gt;/data/vakforge.jsonl</code> reports zero issues and your
+CPU tests pass on a synthetic fixture.</p>
+<h3 id="5-synthesise-when-the-data-gap-says-so">5. Synthesise (when the data gap says so)</h3>
+<p>Write <code>&lt;project&gt;/synth/</code>: scenario templates in the user's locale, a provider-agnostic
+dialogue generator (any OpenAI-compatible endpoint or a local model, the user chooses and
+you ask before paid calls), explicit tool calls plus a no-tool chitchat class, rendered with
+an open TTS from <code>vakforge locales &lt;id&gt;</code> when audio is needed. Rows carry
+<code>meta.source = &quot;synthetic&quot;</code> and <code>meta.consent = &quot;synthetic&quot;</code>.</p>
+<p>Done when the manifest validates and the turn count meets the gap <code>recommend</code> reported.</p>
+<h3 id="6-baseline-then-train-only-what-was-recommended">6. Baseline, then train only what was recommended</h3>
+<p>Always measure first: the base model with the system prompt, retrieval over the documents
+and the tool definitions, on the held-out split, using the metrics in
+<code>references/eval.md</code>. Show the user the numbers. Then, only if <code>recommend</code> said yes and the
+baseline still fails, write <code>&lt;project&gt;/train/</code> for the chosen recipe from
+<code>references/recipes.md</code>, pinning every upstream version.</p>
+<p>Done when a run directory holds the resolved config, the manifest hash, <code>versions.txt</code>, the
+checkpoint, and a training log.</p>
+<h3 id="7-evaluate">7. Evaluate</h3>
+<p>Write <code>&lt;project&gt;/eval/</code> that emits <code>report.md</code> and <code>report.json</code> in the shape given in
+<code>references/eval.md</code>, broken down by locale, language, audio condition and source. Two
+branches:</p>
+<ul>
+<li><strong>No fine-tune</strong> (step 6 was skipped): score the retrieval + tools stack on the held-out
+split against the acceptance targets the user agreed to in step 3.</li>
+<li><strong>Fine-tune</strong>: score base and tuned on the same held-out split; the tuned model must beat
+the base on the metrics <code>recommend</code> named, with regressions inside the agreed budget.</li>
+</ul>
+<p>Done when the report exists and you have told the user, in plain words, what got better,
+what got worse, and whether it should ship.</p>
+<h3 id="8-serve">8. Serve</h3>
+<p>Only after eval says ship. Write <code>&lt;project&gt;/serve/</code> following <code>references/eval.md</code>
+(protocol section): the model backend behind an OpenAI Realtime WebSocket front end with the
+documented event subset, a 50-line Python client, and a Dockerfile. Done when the client
+completes one round trip against the running server and latency is measured through it.</p>
+<h2 id="reporting-to-the-user">Reporting to the user</h2>
+<p>At the end of every step: what works, what is stubbed with <code>TODO(verify)</code>, what you verified
+against upstream source and where, and what it will cost to continue. Numbers in a table;
+one recommendation, not a menu.</p>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="decision-guide.html"><small>Previous</small><b>Decision guide</b></a><a class="pn next" href="data-format.html"><small>Next</small><b>Data format</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/skill/vakforge/SKILL.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#hard-rules">Hard rules</a></li><li class="lvl2"><a href="#workflow">Workflow</a></li><li class="lvl3"><a href="#1-set-up">1. Set up</a></li><li class="lvl3"><a href="#2-inspect">2. Inspect</a></li><li class="lvl3"><a href="#3-recommend">3. Recommend</a></li><li class="lvl3"><a href="#4-prepare">4. Prepare</a></li><li class="lvl3"><a href="#5-synthesise-when-the-data-gap-says-so">5. Synthesise (when the data gap says so)</a></li><li class="lvl3"><a href="#6-baseline-then-train-only-what-was-recommended">6. Baseline, then train only what was recommended</a></li><li class="lvl3"><a href="#7-evaluate">7. Evaluate</a></li><li class="lvl3"><a href="#8-serve">8. Serve</a></li><li class="lvl2"><a href="#reporting-to-the-user">Reporting to the user</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview · vakforge docs</title>
+<meta name="description" content="What vakforge is and how the decision is made">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./" aria-current="page">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      
+<h1 id="vakforge">vakforge</h1>
+<p><strong>The decision layer for open voice AI.</strong></p>
+<p>vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.</p>
+<p align="center">
+  <img src="https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." width="100%">
+</p>
+<ul>
+<li><strong>Bring any data:</strong> documents, FAQs, database tables, chat logs, CRM records, recorded calls.</li>
+<li><strong>Open models only:</strong> the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)</li>
+<li><strong>Any language:</strong> through locale packs. Launching with English (US, UK, India) and Hinglish.</li>
+</ul>
+<blockquote>
+<p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>validate</code> and the locale packs work today. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
+</blockquote>
+<h2 id="why-vakforge-exists">Why vakforge exists</h2>
+<p>Open voice models are good enough today. Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni can listen and talk, and strong open speech-to-text and text-to-speech models exist too. Yet most companies still pay per minute for a closed voice API.</p>
+<p>That is not because the open models are worse. It is because nobody helps them answer four questions:</p>
+<ul>
+<li>Should we fine-tune, or is retrieval enough?</li>
+<li>Which model fits our language, our speed needs and our hardware?</li>
+<li>What data do we need, and are we allowed to train on our calls?</li>
+<li>How do we prove the result is better before a customer hears it?</li>
+</ul>
+<p>vakforge answers them from your own data.</p>
+<p>The hard part was never the models. It was the decision.</p>
+<blockquote>
+<p>&quot;Open models strengthen safety and cybersecurity, accelerate innovation and diffusion, and enable sovereignty.&quot;
+Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/jensen-huang-just-used-first-175154980.html" target="_blank" rel="noopener">on X, 24 July 2026</a></p>
+</blockquote>
+<p>vakforge is about that last word: owning your voice AI instead of renting it.</p>
+<h2 id="how-it-works">How it works</h2>
+<p align="center">
+  <img src="https://vakforge.pages.dev/assets/diagrams/workflow-light.webp" alt="Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates." width="100%">
+</p>
+<ol>
+<li><strong><code>init</code></strong> creates a project folder for your language and market.</li>
+<li><strong><code>inspect</code></strong> reads your data folder and reports what is in it: languages, personal data, tables that could become tools, audio quality.</li>
+<li><strong><code>recommend</code></strong> decides what needs changing. Often the answer is retrieval and tools, with no training at all.</li>
+<li><strong><code>prepare</code>, <code>train</code>, <code>eval</code>, <code>serve</code></strong> are built for your project by a coding agent using the vakforge skill. It trains only what <code>recommend</code> asked for, and ships only if <code>eval</code> shows the result beats the base model.</li>
+</ol>
+<p>Today the CLI covers <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>validate</code> and the locale packs.</p>
+<h2 id="how-the-decision-is-made">How the decision is made</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>If the assistant should...</th>
+<th>The fix is</th>
+<th>Training?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>know your prices, policies and FAQs</td>
+<td>retrieval: look facts up at answer time</td>
+<td>none</td>
+</tr>
+<tr>
+<td>look things up, book, open tickets</td>
+<td>tools over your tables</td>
+<td>only if it keeps missing</td>
+</tr>
+<tr>
+<td>follow your call flow and tone</td>
+<td>behaviour fine-tune of the language model</td>
+<td>small</td>
+</tr>
+<tr>
+<td>understand your callers' accents, names, amounts</td>
+<td>speech-to-text fine-tune</td>
+<td>small</td>
+</tr>
+<tr>
+<td>sound like your brand</td>
+<td>voice cloning, with written consent</td>
+<td>voice only</td>
+</tr>
+<tr>
+<td>handle interruptions naturally</td>
+<td>a full-duplex model trained on real calls</td>
+<td>large</td>
+</tr>
+<tr>
+<td>speak another language</td>
+<td>a locale pack plus a model that speaks it</td>
+<td>depends</td>
+</tr>
+</tbody>
+</table></div>
+<p>Every route ends the same way: test it against your own held-out data, and ship only if it beats the base model.</p>
+<p>Each goal has its own fix, and most of them are not a full fine-tune. The detailed rules, with how much data each route needs and what hardware it takes, are in <a href="decision-guide.html"><code>docs/DECISION_GUIDE.md</code></a>.</p>
+<h2 id="the-problem-for-engineers">The problem, for engineers</h2>
+<p>Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. Evaluation tools and serving frameworks exist. What is missing is one path from <em>&quot;here is what my company knows&quot;</em> to <em>&quot;here is a voice assistant that handles my workflow, I can prove it is better than the base model, and my existing voice client can talk to it without a rewrite.&quot;</em> Every team rebuilds that path, and most of them fine-tune when they should have used retrieval.</p>
+<h2 id="whats-in-the-repo">What's in the repo</h2>
+<ol>
+<li><strong>A small library and command-line tool</strong> (<code>pip install vakforge</code>). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.</li>
+<li><strong>An agent skill</strong> (<code>skill/vakforge/</code>). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.</li>
+<li><strong>Recipes</strong> (<a href="recipes.html"><code>docs/RECIPES.md</code></a>). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.</li>
+</ol>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vakforge init</code></td>
+<td>Create a project folder for your language and market</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge inspect</code></td>
+<td>Report what is in your data folder</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge validate</code></td>
+<td>Check a dataset file against the vakforge format</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge locales</code></td>
+<td>List language packs and show their rules</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge schema</code></td>
+<td>Export the dataset format as JSON Schema</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge recommend</code></td>
+<td>Decide what needs changing, often &quot;retrieval, not training&quot;</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>prepare</code>, <code>synth</code>, <code>train</code>, <code>eval</code>, <code>serve</code></td>
+<td>Build, test and host the assistant</td>
+<td>written per project by the agent skill</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="use-it-with-a-coding-agent">Use it with a coding agent</h2>
+<p>The skill is where the knowledge lives. Copy it into your project and the agent follows the
+vakforge workflow: inspect, recommend, then write and test the prepare, train, eval and serve
+code for your case, verifying every upstream API against installed source first.</p>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="c1"># Claude Code: project-level skill (or ~/.claude/skills/vakforge for every project)</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>.claude/skills
+cp<span class="w"> </span>-r<span class="w"> </span>path/to/vakforge/skill/vakforge<span class="w"> </span>.claude/skills/vakforge
+</code></pre></div>
+<p>Then ask: <em>&quot;Build a Hinglish support assistant from the data in data/raw.&quot;</em> Other agents that
+read <code>SKILL.md</code>-style instructions work the same way; point them at the folder.</p>
+<h2 id="bring-any-data">Bring any data</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You have</th>
+<th>What vakforge does with it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Documents, FAQs, policies</td>
+<td>Looks facts up at answer time (retrieval), so prices and policies stay current without retraining.</td>
+</tr>
+<tr>
+<td>Database tables, CRM, product catalogue</td>
+<td>Turns them into tools the assistant can call, like &quot;look up order by order id&quot;.</td>
+</tr>
+<tr>
+<td>Chat logs, transcripts</td>
+<td>Teaches the assistant how your team handles a conversation: steps, tone, hand-offs.</td>
+</tr>
+<tr>
+<td>Recorded calls</td>
+<td>Everything above, plus your callers' accents and the natural timing of real calls. Personal data is removed first.</td>
+</tr>
+<tr>
+<td>Nothing yet</td>
+<td>Generates example conversations in your language, so you can ship a first version and collect real data.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="locale-packs">Locale packs</h2>
+<p>The core works in any language. Everything that changes by language or country lives in a locale pack: how money, dates and phone numbers are written, which ID numbers count as personal data, the local privacy and call-recording rules, and which open models support the language. Adding a new market means adding a pack, not changing the core. See <a href="locale-packs.html"><code>docs/LOCALE_PACKS.md</code></a>, or run <code>vakforge locales</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pack</th>
+<th>Covers</th>
+<th>Can the assistant speak it?</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>en-US</code>, <code>en-GB</code>, <code>en-IN</code></td>
+<td>US, UK and Indian English</td>
+<td>yes, with every recipe</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>hi-Latn-IN</code></td>
+<td>Hinglish: Hindi and English mixed, in Roman or Devanagari script</td>
+<td>understands it; speaks English, or Hindi through the cascade recipe</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>zh-CN</code></td>
+<td>Mandarin</td>
+<td>via <code>qwen-omni</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td><code>es</code>, <code>de</code>, <code>fr</code>, <code>pt-BR</code>, <code>ja</code>, <code>ar</code></td>
+<td></td>
+<td>via <code>qwen-omni</code> or cascade</td>
+<td>planned, contributions welcome</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="recipes">Recipes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Recipe</th>
+<th>Base model</th>
+<th>Good for</th>
+<th>Duplex</th>
+<th>Hardware (train)</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lfm25-audio</code></td>
+<td>LiquidAI LFM2.5-Audio-1.5B</td>
+<td>workflow, tool use, style, CPU deploy</td>
+<td>turn-based</td>
+<td>1x 24 GB GPU</td>
+<td>planned (first)</td>
+</tr>
+<tr>
+<td><code>moshi-lora</code></td>
+<td>Kyutai Moshi / NVIDIA PersonaPlex</td>
+<td>interruptions, natural timing, persona</td>
+<td>full-duplex</td>
+<td>1x 40-80 GB GPU</td>
+<td>planned</td>
+</tr>
+<tr>
+<td><code>qwen-omni</code></td>
+<td>Qwen3-Omni</td>
+<td>multilingual incl. Mandarin, function calling</td>
+<td>near-duplex</td>
+<td>80 GB / multi-GPU</td>
+<td>planned</td>
+</tr>
+<tr>
+<td><code>cascade</code></td>
+<td>STT + LLM LoRA + TTS chosen by locale</td>
+<td>any language with a good STT+TTS pair</td>
+<td>turn-based</td>
+<td>1x 24 GB GPU</td>
+<td>planned</td>
+</tr>
+</tbody>
+</table></div>
+<p>&quot;Duplex&quot; means the assistant can listen while it talks, so callers can interrupt it naturally. Details in <a href="recipes.html"><code>docs/RECIPES.md</code></a>.</p>
+<h2 id="connecting-your-app">Connecting your app</h2>
+<p>Your assistant runs an open model on your own servers. Nothing calls OpenAI or any other hosted API.</p>
+<p>To make switching easy, the server accepts the same WebSocket messages as OpenAI's Realtime API. If your app already talks to GPT Realtime, you change one URL. Tools like Pipecat, LiveKit and Twilio keep working as they are. More connection types can be added without touching the model:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>For</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI Realtime WebSocket (documented subset)</td>
+<td>teams migrating off GPT Realtime; Pipecat, LiveKit, Twilio clients</td>
+<td>first</td>
+</tr>
+<tr>
+<td>WebRTC via LiveKit or Pipecat transports</td>
+<td>browser and mobile apps, lowest latency</td>
+<td>next</td>
+</tr>
+<tr>
+<td>SIP / telephony</td>
+<td>call centres and phone lines</td>
+<td>next</td>
+</tr>
+<tr>
+<td>Plain HTTP, one turn per request</td>
+<td>batch jobs, simple integrations</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>Gemini Live API format</td>
+<td>teams on Google's stack</td>
+<td>on request</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="why-english-and-hinglish-first">Why English and Hinglish first</h2>
+<p>English has the strongest open voice models, so every recipe works for US, UK and Indian English. Hinglish is the hard test: people switch between Hindi and English mid-sentence, write Hindi in Roman or Devanagari script, and say amounts like &quot;2 lakh rupees&quot; on noisy phone lines. If vakforge handles that, adding another language is mostly filling in a new pack.</p>
+<h2 id="quick-start">Quick start</h2>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
+vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>hi-Latn-IN
+<span class="c1"># put your documents, tables, chat exports and call recordings in my-assistant/data/raw/</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw
+</code></pre></div>
+<p><code>inspect</code> prints a summary and writes <code>inspect.json</code>. <code>vakforge recommend inspect.json</code> reads it and writes <code>recommend.json</code>.</p>
+<p>No data of your own yet? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.</p>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li><a href="decision-guide.html"><code>docs/DECISION_GUIDE.md</code></a>: what needs customizing, and when not to fine-tune</li>
+<li><a href="locale-packs.html"><code>docs/LOCALE_PACKS.md</code></a>: what a locale pack contains, and how to add one</li>
+<li><a href="data-format.html"><code>docs/DATA_FORMAT.md</code></a>: the dataset format</li>
+<li><a href="architecture.html"><code>docs/ARCHITECTURE.md</code></a>: how the code fits together, with diagrams</li>
+<li><a href="recipes.html"><code>docs/RECIPES.md</code></a>: per-model training recipes</li>
+<li><a href="evaluation.html"><code>docs/EVALUATION.md</code></a>: metrics, report format, per-locale benchmarks</li>
+<li><a href="data-ethics.html"><code>docs/DATA_ETHICS.md</code></a>: consent, PII, licences, privacy law by region</li>
+<li><a href="roadmap.html"><code>docs/ROADMAP.md</code></a>: status</li>
+<li><a href="contributing.html"><code>CONTRIBUTING.md</code></a></li>
+</ul>
+<h2 id="related-projects-we-build-on-these-not-against-them">Related projects (we build on these, not against them)</h2>
+<p>Unsloth, LLaMA-Factory, ms-swift, kyutai-labs/moshi-finetune, NVIDIA PersonaPlex, liquid-audio, Qwen-Omni, Pipecat, LiveKit Agents, vLLM-omni, UltraEval-Audio, AI4Bharat, Common Voice</p>
+<h2 id="licence">Licence</h2>
+<p>Apache-2.0 for this code. Each open model keeps its own licence; see <a href="recipes.html"><code>docs/RECIPES.md</code></a>. Datasets you create with vakforge are yours. The consent records vakforge asks for are there to keep it that way.</p>
+
+    </article>
+    <div class="prev-next"><span></span><a class="pn next" href="decision-guide.html"><small>Next</small><b>Decision guide</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#why-vakforge-exists">Why vakforge exists</a></li><li class="lvl2"><a href="#how-it-works">How it works</a></li><li class="lvl2"><a href="#how-the-decision-is-made">How the decision is made</a></li><li class="lvl2"><a href="#the-problem-for-engineers">The problem, for engineers</a></li><li class="lvl2"><a href="#whats-in-the-repo">What&#x27;s in the repo</a></li><li class="lvl2"><a href="#use-it-with-a-coding-agent">Use it with a coding agent</a></li><li class="lvl2"><a href="#bring-any-data">Bring any data</a></li><li class="lvl2"><a href="#locale-packs">Locale packs</a></li><li class="lvl2"><a href="#recipes">Recipes</a></li><li class="lvl2"><a href="#connecting-your-app">Connecting your app</a></li><li class="lvl2"><a href="#why-english-and-hinglish-first">Why English and Hinglish first</a></li><li class="lvl2"><a href="#quick-start">Quick start</a></li><li class="lvl2"><a href="#documentation">Documentation</a></li><li class="lvl2"><a href="#related-projects-we-build-on-these-not-against-them">Related projects (we build on these, not against them)</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

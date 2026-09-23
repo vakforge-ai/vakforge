@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision guide · vakforge docs</title>
+<meta name="description" content="What needs customizing, and when not to fine-tune">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html" aria-current="page">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="decision-guide-what-actually-needs-customizing">Decision guide — what actually needs customizing?</h1>
+<p><code>vakforge recommend</code> implements this guide. It exists because &quot;fine-tune on my data&quot; hides six different problems, and fine-tuning is the right answer to only some of them.</p>
+<h2 id="step-1-what-do-you-want-to-change">Step 1 — What do you want to change?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>You want the agent to…</th>
+<th>The real problem is…</th>
+<th>Do this</th>
+<th>Not this</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Know your products, prices, policies, FAQs</td>
+<td>Knowledge</td>
+<td>RAG / context injection at inference; keep facts out of weights</td>
+<td>Fine-tuning (facts go stale, hallucinate)</td>
+</tr>
+<tr>
+<td>Follow your call flow (greet → verify → act → confirm)</td>
+<td>Behaviour / workflow</td>
+<td>Measure the prompt first; fine-tune the language component (<code>lfm25-audio</code> or LLM LoRA) for what it still fails</td>
+<td>Assuming a prompt cannot hold, without measuring</td>
+</tr>
+<tr>
+<td>Call your tools reliably (book, check status, ticket)</td>
+<td>Tool-use behaviour</td>
+<td>Fine-tune with tool-call examples + result-narration examples</td>
+<td>Hoping prompt engineering holds under noisy audio</td>
+</tr>
+<tr>
+<td>Understand local names, addresses, amounts, accents, code-switching</td>
+<td>Recognition / audio encoder</td>
+<td>Fine-tune STT (<code>cascade</code>) or the audio encoder in an end-to-end model</td>
+<td>Fine-tuning only the text side</td>
+</tr>
+<tr>
+<td>Speak in a specific voice</td>
+<td>Voice identity</td>
+<td>Voice cloning / TTS speaker fine-tune</td>
+<td>Retraining a conversation model</td>
+</tr>
+<tr>
+<td>Sound natural: timing, backchannels, emotion</td>
+<td>Conversational style</td>
+<td>Speech-to-speech fine-tune on real conversations (<code>moshi-lora</code>)</td>
+<td>Cascaded pipeline (loses paralinguistics)</td>
+</tr>
+<tr>
+<td>Handle interruptions, stop talking when the user talks</td>
+<td>Turn-taking</td>
+<td>Full-duplex model + duplex training data (<code>moshi-lora</code>)</td>
+<td>Turn-based model with VAD hacks</td>
+</tr>
+<tr>
+<td>Speak a non-English language natively (Hindi, Mandarin, Spanish …)</td>
+<td>Language coverage</td>
+<td><code>qwen-omni</code> where it covers the language; otherwise <code>cascade</code> with the locale pack's STT/TTS</td>
+<td>Fine-tuning an English-only S2S model to a new language on a small dataset</td>
+</tr>
+</tbody>
+</table></div>
+<p>Most real requests are two or three rows at once. That is fine — but each row has its own recipe, data requirement, and evaluation.</p>
+<h2 id="step-2-what-data-do-you-have">Step 2 — What data do you have?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Usable for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Documents / FAQs / SOPs / knowledge base</td>
+<td>Retrieval at inference; synthetic dialogues grounded in them (<code>synth</code>) → then any recipe</td>
+</tr>
+<tr>
+<td>Database tables / CRM / product catalogue</td>
+<td>Tool definitions over the data; <code>synth</code> dialogues that exercise every tool; behaviour fine-tune for reliable tool use</td>
+</tr>
+<tr>
+<td>Mono call recordings (both parties mixed)</td>
+<td>Needs diarization; usable for STT and turn-based recipes; weak for duplex</td>
+</tr>
+<tr>
+<td>Stereo recordings (agent/customer separated)</td>
+<td>Everything, including <code>moshi-lora</code></td>
+</tr>
+<tr>
+<td>Clean studio recordings of one voice</td>
+<td>Voice cloning; TTS fine-tune</td>
+</tr>
+<tr>
+<td>Chat logs / transcripts</td>
+<td>Behaviour fine-tuning of the language component; render to audio via <code>synth</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>How much data each goal needs is not one number, so <code>recommend</code> carries a separate bar per goal with the evidence behind it and a label saying how well supported it is. Two of these are counter-intuitive and worth stating here:</p>
+<ul>
+<li><strong>Voice cloning is measured in seconds, not hours.</strong> VALL-E clones from a three-second prompt. The gate on voice is consent for that speaker, not volume.</li>
+<li><strong>No amount of your calls buys full duplex.</strong> It is a property of the base model: PersonaPlex used ~1,217 hours of real telephone audio plus 2,250+ synthetic on top of an already-duplex base. Pick a duplex model, then adapt lightly.</li>
+</ul>
+<p>For behaviour and workflow, a few hundred to a few thousand <em>turns</em> covering every branch of your flow is the working assumption — ours, and nothing in the literature validates it. Quality and branch coverage beat volume. See <a href="research.html"><code>RESEARCH.md</code></a> for every bar and its source.</p>
+<h2 id="step-3-constraints">Step 3 — Constraints</h2>
+<ul>
+<li><strong>Latency:</strong> need sub-300 ms and interruptions → duplex (<code>moshi-lora</code>). Turn-based 500–900 ms acceptable → <code>lfm25-audio</code> or cascade.</li>
+<li><strong>Hardware:</strong> one 24 GB consumer GPU → <code>lfm25-audio</code>, <code>cascade</code>. 40 GB+ → <code>moshi-lora</code>. 80 GB / multi-GPU → <code>qwen-omni</code>.</li>
+<li><strong>Deployment target:</strong> CPU / edge / browser → <code>lfm25-audio</code> (GGUF, ONNX). Server GPU → any.</li>
+<li><strong>Language / locale:</strong> the locale pack declares which recipes are <code>native</code>, <code>understand_only</code>, <code>cascade</code>, or <code>unsupported</code> (see <code>docs/LOCALE_PACKS.md</code>). Today: English (US/UK/IN) → every recipe; Hinglish → <code>lfm25-audio</code>/<code>moshi-lora</code> understand Hinglish input but speak English, <code>cascade</code> for Hindi output; Mandarin → <code>qwen-omni</code> or <code>cascade</code>; other languages → <code>cascade</code> until native support lands.</li>
+<li><strong>Market / data residency:</strong> the pack's <code>privacy_notes</code> and <code>call_recording_consent</code> tell you what <code>prepare</code> must collect; some regions (e.g. China, EU) constrain where data and checkpoints may live.</li>
+<li><strong>Licence:</strong> commercial use → check <code>docs/RECIPES.md</code>; PersonaPlex weights are under NVIDIA's open model licence, Moshi under CC-BY-4.0, LFM2.5-Audio under Liquid's licence, Qwen-Omni under Apache-2.0 (confirm per checkpoint) — read them.</li>
+</ul>
+<h2 id="step-4-should-you-fine-tune-at-all">Step 4 — Should you fine-tune at all?</h2>
+<p>Do <strong>not</strong> fine-tune if:</p>
+<ul>
+<li>The failure is factual (wrong price, wrong policy) → RAG.</li>
+<li>You have not measured the base model on your held-out set yet → measure it first. The evaluation stage is written into your project by the agent skill (<a href="evaluation.html"><code>EVALUATION.md</code></a> is its contract); there is no <code>vakforge eval</code> command. It is common for a good prompt plus retrieval to close much of the gap, and that baseline is the only thing that proves training was needed.</li>
+<li>Your data has no consent trail → fix that first (<code>docs/DATA_ETHICS.md</code>).</li>
+</ul>
+<p>Fine-tune if, after prompt + RAG, the base model still fails a scripted-flow or tool-call test set at a rate you can't ship, or the accent/entity recognition errors are dominated by things a prompt cannot fix.</p>
+<h2 id="output-of-vakforge-recommend">Output of <code>vakforge recommend</code></h2>
+<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w">                    </span><span class="c1"># or a data folder; locale from the project</span>
+vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>-g<span class="w"> </span>workflow<span class="w"> </span>--gpu<span class="w"> </span><span class="m">24</span>
+vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>--duplex<span class="w"> </span>--gpu<span class="w"> </span><span class="m">80</span>
+</code></pre></div>
+<p>The command prints, and writes to <code>recommend.json</code>:</p>
+<ul>
+<li><strong>primary problem</strong> and the full list of goals (inferred from the data, or set with <code>--goal</code>)</li>
+<li><strong>routes</strong>: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack</li>
+<li><strong>fine-tune?</strong> one of three answers, never a bare yes:
+<ul>
+<li><code>no</code> — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from</li>
+<li><code>baseline first</code> — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all</li>
+<li><code>worth trying</code> — the data clears the bar, so try it after measuring the baseline, and compare the two</li>
+</ul>
+</li>
+<li><strong>evidence</strong>, with a confidence label: <code>measured</code> (a cited paper reports the number), <code>reported</code> (a model team stated it) or <code>heuristic</code> (we chose it and nothing supports or refutes it)</li>
+<li><strong>recipe</strong>, filtered by the locale pack's <code>recipe_support</code> and your <code>--gpu</code>; <code>understand_only</code> is called out so nobody expects Hindi speech from an English-output model</li>
+<li><strong>data</strong>, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning</li>
+<li><strong>consent and privacy</strong>: the pack's call-recording rule, any personal data <code>inspect</code> found, the pack's privacy notes</li>
+<li><strong>next steps</strong>, always starting with &quot;measure the base model with prompt + retrieval first&quot;</li>
+</ul>
+<p>The rules live in <code>vakforge/recommend/rules.py</code>. Each goal is one entry in the <code>BARS</code> table
+carrying its unit, floor, target, confidence and citation, so a number you disagree with is
+one line to change and it argues its own case. <code>docs/RESEARCH.md</code> records where each came
+from and which ones are ours rather than the literature's.</p>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="./"><small>Previous</small><b>Overview</b></a><a class="pn next" href="agent-skill.html"><small>Next</small><b>Agent skill</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#step-1-what-do-you-want-to-change">Step 1 — What do you want to change?</a></li><li class="lvl2"><a href="#step-2-what-data-do-you-have">Step 2 — What data do you have?</a></li><li class="lvl2"><a href="#step-3-constraints">Step 3 — Constraints</a></li><li class="lvl2"><a href="#step-4-should-you-fine-tune-at-all">Step 4 — Should you fine-tune at all?</a></li><li class="lvl2"><a href="#output-of-vakforge-recommend">Output of vakforge recommend</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

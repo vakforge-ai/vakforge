@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap · vakforge docs</title>
+<meta name="description" content="What works today and what is next">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html" aria-current="page">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="roadmap">Roadmap</h1>
+<p>Single source of truth for status. Update checkboxes in the same commit as the work. &quot;Done&quot; means: tests pass on CPU, docs updated, verified against upstream source where an upstream is involved.</p>
+<p>Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowledge, and a landing page. Recipes that need a GPU come after, largely from contributors who have one.</p>
+<h2 id="phase-0-core-scaffold">Phase 0 — Core scaffold</h2>
+<ul>
+<li class="task done"><input type="checkbox" checked disabled> <code>pyproject.toml</code> with core deps; recipe extras declared but empty until each recipe pins its upstream</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>uv.lock</code>, <code>.gitignore</code>, <code>LICENSE</code> (Apache-2.0), <code>Makefile</code></li>
+<li class="task done"><input type="checkbox" checked disabled> Package layout (only what Phase 0 needs), <code>locales/</code> with <code>LocalePack</code> base + registry + <code>en</code>, <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code> skeletons</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>vakforge --version</code>, <code>vakforge init --locale</code> (writes <code>vakforge.yaml</code>, data dirs, <code>.gitignore</code>)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>schema.py</code> (pydantic v2, incl. <code>locale</code>; audio optional for text-sourced records) + <code>vakforge schema</code> JSON Schema export</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>vakforge validate</code>: schema, audio file vs declaration, locale/lang registry, tool args vs JSON Schema, consent, <code>splits.json</code></li>
+<li class="task done"><input type="checkbox" checked disabled> Schema fails closed on provenance: consent needs its reference or licence, real data needs redaction plus a log, real recordings need <code>voice_consent_ref</code>, entity offsets must match the text they point at, <code>audio.path</code> cannot escape the dataset, duplicate tool names and same-speaker stereo maps rejected</li>
+<li class="task done"><input type="checkbox" checked disabled> Generated test fixtures (WAVs synthesized in <code>tests/conftest.py</code>)</li>
+<li class="task done"><input type="checkbox" checked disabled> GitHub Actions: ruff + pytest, Python 3.11/3.12</li>
+</ul>
+<h2 id="phase-1-locale-packs-inspect-recommend">Phase 1 — Locale packs · Inspect · Recommend</h2>
+<ul>
+<li class="task done"><input type="checkbox" checked disabled> Pack model: formats, PII patterns with checksum validators, consent, privacy notes, recipe support, inheritance</li>
+<li class="task done"><input type="checkbox" checked disabled> Pack <code>en</code> (parent): English WER normalizer, email / card (Luhn) / IBAN (mod-97) patterns</li>
+<li class="task"><input type="checkbox" disabled> Pack <code>en</code> (parent): NER for names and addresses, base scenarios</li>
+<li class="task done"><input type="checkbox" checked disabled> Pack <code>en-US</code>: dollars, MDY, SSN, NANP phones, state consent notes</li>
+<li class="task done"><input type="checkbox" checked disabled> Pack <code>en-GB</code>: pounds, DMY, NI number, UK phones, UK GDPR notes</li>
+<li class="task done"><input type="checkbox" checked disabled> Pack <code>en-IN</code>: rupees with lakh/crore and Indian digit grouping, Aadhaar (Verhoeff), PAN, +91 mobiles, DPDP notes</li>
+<li class="task done"><input type="checkbox" checked disabled> Pack <code>hi-Latn-IN</code>: Roman-Hindi vs English vs Devanagari detection, <code>lang_mix</code>, Devanagari-safe normalizer with spelling variants</li>
+<li class="task"><input type="checkbox" disabled> Pack <code>hi-Latn-IN</code>: Devanagari to Roman transliteration, Indian name/address generator</li>
+<li class="task done"><input type="checkbox" checked disabled> PII patterns survive real transcripts: case-insensitive NI number and PAN (ASR output is lowercase), compact SSN behind a cue word, reference numbers not mistaken for Indian mobiles, IBAN country registry so invented countries fail</li>
+<li class="task done"><input type="checkbox" checked disabled> Golden tests for every pack (normalizer, detect_lang, PII positive/negative)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>vakforge locales</code> to list packs and show resolved settings</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code>: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect.json</code> report for <code>recommend</code> and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code>: files too large to parse whole are skipped with that as the reason, and partial reads are flagged <code>truncated</code> rather than reported as totals</li>
+<li class="task"><input type="checkbox" disabled> <code>inspect</code>: PDF / DOCX / XLSX text (listed as unreadable with a hint today)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: rules from <code>DECISION_GUIDE.md</code> as code; reads <code>inspect.json</code> or a folder; routes per source, fine-tune verdict, recipe filtered by locale <code>recipe_support</code> and GPU, data gap, consent checklist; writes <code>recommend.json</code></li>
+<li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: per-goal bars with their own unit, floor, target, confidence label and citation (<code>BARS</code>); three-state verdict (<code>blocked</code> / <code>baseline_first</code> / <code>candidate</code>) instead of a boolean, per <code>docs/RESEARCH.md</code></li>
+<li class="task"><input type="checkbox" disabled> <code>recommend</code>: interactive questionnaire (flags <code>--goal</code>, <code>--gpu</code>, <code>--duplex</code> cover it non-interactively today)</li>
+</ul>
+<h2 id="phase-2-agent-skill">Phase 2 — Agent skill</h2>
+<ul>
+<li class="task done"><input type="checkbox" checked disabled> <code>skill/vakforge/SKILL.md</code>: hard rules plus the eight-step workflow with a completion criterion per step</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>skill/vakforge/references/</code>: decision rules, data format, data safety, recipes with verify-first checklist, eval and serving, locale hooks</li>
+<li class="task done"><input type="checkbox" checked disabled> Skill calls the core CLI for init, locales, inspect, recommend and validate; generates recipe glue per project</li>
+<li class="task done"><input type="checkbox" checked disabled> Consistency test: frontmatter, referenced files, CLI commands named in the skill exist</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>examples/hinglish-shop</code>: synthetic documents + tables + chat project with <code>inspect.json</code> and <code>recommend.json</code> committed and diffed by a test on every run</li>
+<li class="task"><input type="checkbox" disabled> Tested on one real project end to end (documents + tables, no audio) and one with call recordings</li>
+</ul>
+<h2 id="phase-3-landing-page">Phase 3 — Landing page</h2>
+<ul>
+<li class="task done"><input type="checkbox" checked disabled> <code>site/</code> static landing page (Cloudflare Pages): hero demo, pipeline, data router, repo parts, locale explorer, eval report, redaction console, agent skill, CTA</li>
+<li class="task done"><input type="checkbox" checked disabled> Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)</li>
+<li class="task done"><input type="checkbox" checked disabled> Deploy to Cloudflare Pages: https://vakforge.pages.dev, auto-deploys from main</li>
+<li class="task done"><input type="checkbox" checked disabled> Brand assets: mark, favicons, app icon, social and OG images under <code>site/assets/</code> (originals stay local in <code>assets-src/</code>)</li>
+<li class="task done"><input type="checkbox" checked disabled> Light theme for the landing page: <code>prefers-color-scheme</code> default, nav toggle saved per browser and applied before first paint (the site embeds no diagrams, so none to swap)</li>
+<li class="task done"><input type="checkbox" checked disabled> Site copy audit: every step labelled <code>in the CLI</code> or <code>skill generates</code>, example report and hero run marked illustrative, routing matches <code>docs/RESEARCH.md</code>, evidence linked from the data router</li>
+</ul>
+<h2 id="phase-4-prepare-synth">Phase 4 — Prepare · Synth</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> <code>prepare</code>: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations</li>
+<li class="task"><input type="checkbox" disabled> <code>prepare</code>: audio path: normalize (24 kHz), channels, transcription (faster-whisper; pack override), diarization (pyannote optional)</li>
+<li class="task"><input type="checkbox" disabled> <code>prepare</code>: per-turn language tagging, PII redaction with logs and keep-list, consent metadata, leak-free splits</li>
+<li class="task"><input type="checkbox" disabled> <code>synth</code>: scenario templates + locale variants; provider-agnostic LLM dialogue generator with tool calls and chitchat class</li>
+<li class="task"><input type="checkbox" disabled> <code>synth</code>: TTS rendering via pack defaults, stereo mixing, augmentation</li>
+<li class="task"><input type="checkbox" disabled> Public demo datasets: <code>en-US</code> (~200 turns), <code>hi-Latn-IN</code> (~200 turns)</li>
+</ul>
+<h2 id="phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5 — Recipe A: <code>lfm25-audio</code> · Eval · Serve</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> Verify <code>liquid_audio</code> API against pinned version; <code>UPSTREAM_NOTES.md</code></li>
+<li class="task"><input type="checkbox" disabled> Adapter, <code>train</code>, eval metrics, <code>report.md</code>/<code>report.json</code> base vs tuned</li>
+<li class="task"><input type="checkbox" disabled> Colab notebook end to end on <code>en-US</code> demo; second run on <code>hi-Latn-IN</code></li>
+<li class="task"><input type="checkbox" disabled> <code>serve</code> backend/protocol split; OpenAI Realtime WebSocket front end (documented event subset), Python client, Pipecat and LiveKit examples, Dockerfile</li>
+</ul>
+<h2 id="phase-6-more-protocol-front-ends">Phase 6 — More protocol front ends</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> WebRTC front end via LiveKit or Pipecat transports</li>
+<li class="task"><input type="checkbox" disabled> SIP / telephony front end</li>
+<li class="task"><input type="checkbox" disabled> Plain HTTP one-turn front end</li>
+<li class="task"><input type="checkbox" disabled> Gemini Live format (on request)</li>
+</ul>
+<h2 id="phase-6b-more-recipes-contributor-friendly">Phase 6b — More recipes (contributor-friendly)</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> Recipe B <code>moshi-lora</code>: adapter, train wrapper, duplex eval, serve path</li>
+<li class="task"><input type="checkbox" disabled> Recipe D <code>qwen-omni</code> + pack <code>zh-CN</code></li>
+<li class="task"><input type="checkbox" disabled> Recipe C <code>cascade</code></li>
+</ul>
+<h2 id="phase-7-benchmarks">Phase 7 — Benchmarks</h2>
+<ul>
+<li class="task"><input type="checkbox" disabled> <code>vakforge-bench-en-v0</code>, <code>vakforge-bench-hi-latn-v0</code>, later <code>zh-v0</code></li>
+<li class="task"><input type="checkbox" disabled> Results per recipe per locale under <code>benchmarks/</code>; README results table; one-command reproduction</li>
+</ul>
+<h2 id="later-ideas-not-committed">Later / ideas (not committed)</h2>
+<ul>
+<li>Packs <code>es</code>, <code>de</code>, <code>fr</code>, <code>pt-BR</code>, <code>ja</code>, <code>ar</code></li>
+<li>Web demo (browser client to <code>serve</code>)</li>
+<li>Telephony (SIP) example</li>
+<li>Hosted version</li>
+</ul>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="research.html"><small>Previous</small><b>Research</b></a><a class="pn next" href="contributing.html"><small>Next</small><b>Contributing</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#phase-0-core-scaffold">Phase 0 — Core scaffold</a></li><li class="lvl2"><a href="#phase-1-locale-packs-inspect-recommend">Phase 1 — Locale packs · Inspect · Recommend</a></li><li class="lvl2"><a href="#phase-2-agent-skill">Phase 2 — Agent skill</a></li><li class="lvl2"><a href="#phase-3-landing-page">Phase 3 — Landing page</a></li><li class="lvl2"><a href="#phase-4-prepare-synth">Phase 4 — Prepare · Synth</a></li><li class="lvl2"><a href="#phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5 — Recipe A: lfm25-audio · Eval · Serve</a></li><li class="lvl2"><a href="#phase-6-more-protocol-front-ends">Phase 6 — More protocol front ends</a></li><li class="lvl2"><a href="#phase-6b-more-recipes-contributor-friendly">Phase 6b — More recipes (contributor-friendly)</a></li><li class="lvl2"><a href="#phase-7-benchmarks">Phase 7 — Benchmarks</a></li><li class="lvl2"><a href="#later-ideas-not-committed">Later / ideas (not committed)</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

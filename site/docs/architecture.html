@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture · vakforge docs</title>
+<meta name="description" content="How the code fits together">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html" aria-current="page">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="architecture">Architecture</h1>
+<h2 id="principles">Principles</h2>
+<ol>
+<li><strong>One canonical format in the middle.</strong> Raw data → canonical manifest → recipe adapters. Nothing crosses that line sideways.
+1b. <strong>Locale packs own everything language- or market-specific.</strong> Core asks the pack; it never branches on a language string.</li>
+<li><strong>Core has no ML dependencies.</strong> <code>schema</code>, <code>validate</code>, <code>inspect</code>, <code>recommend</code>, <code>report</code> import only the standard library, pydantic, numpy, soundfile, rich, typer.</li>
+<li><strong>Recipes are plugins.</strong> Each lives in its own package with its own optional extra, lazy imports, and its own integration tests. Adding a recipe never touches core.</li>
+<li><strong>Wrap upstream, don't fork.</strong> <code>moshi-finetune</code>, <code>liquid-audio</code>, Unsloth, NeMo are pinned dependencies called through thin adapters. If an upstream needs a patch, keep it as a <code>patches/*.patch</code> applied at install time, and open an upstream PR.</li>
+<li><strong>Everything is reproducible from a manifest hash + config file + pinned versions.</strong></li>
+</ol>
+<h2 id="system-view">System view</h2>
+<p>What vakforge owns, what the coding agent generates per project, and what comes from upstream open source.</p>
+<figure class="diagram-figure"><svg class="diagram" viewBox="0 0 780 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sysT sysD">
+  <title id="sysT">vakforge system view</title>
+  <desc id="sysD">Three layers. Your project holds a coding agent that runs the vakforge CLI and writes the per-project glue for prepare, synth, train, eval and serve. The vakforge core is a CLI over schema and validate, inspect and recommend, each of which asks the locale packs. The generated glue reads the core's output and calls the open-source models, trainers and serving stacks, which are pinned per recipe.</desc>
+  <defs>
+    <marker id="sysHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- layer: your project -->
+  <rect class="d-band" x="48" y="34" width="672" height="126" rx="14"/>
+  <text class="d-rail" x="34" y="97" transform="rotate(-90 34 97)">YOUR PROJECT</text>
+
+  <rect class="d-box d-accent" x="68" y="76" width="280" height="68" rx="10"/>
+  <text class="d-t" x="208" y="105">Coding agent + vakforge skill</text>
+  <text class="d-s" x="208" y="125">follows SKILL.md, step by step</text>
+
+  <rect class="d-box d-dashed" x="420" y="76" width="280" height="68" rx="10"/>
+  <text class="d-t" x="560" y="105">Generated per project</text>
+  <text class="d-s" x="560" y="125">prepare · synth · train · eval · serve</text>
+
+  <path class="d-line" d="M348 110 L412 110" marker-end="url(#sysHead)"/>
+  <text class="d-lbl" x="380" y="101">writes</text>
+
+  <!-- layer: vakforge core -->
+  <rect class="d-band" x="48" y="196" width="672" height="190" rx="14"/>
+  <text class="d-rail" x="34" y="291" transform="rotate(-90 34 291)">VAKFORGE CORE</text>
+  <text class="d-note" x="68" y="216">pip install vakforge · no ML dependencies</text>
+
+  <rect class="d-box d-accent" x="68" y="263" width="104" height="58" rx="10"/>
+  <text class="d-t" x="120" y="288">CLI</text>
+  <text class="d-s" x="120" y="306">typer</text>
+
+  <rect class="d-box" x="228" y="222" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="249">schema + validate</text>
+  <rect class="d-box" x="228" y="270" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="297">inspect</text>
+  <rect class="d-box" x="228" y="318" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="345">recommend</text>
+
+  <rect class="d-box d-accent" x="496" y="263" width="180" height="58" rx="10"/>
+  <text class="d-t" x="586" y="288">locale packs</text>
+  <text class="d-s" x="586" y="306">everything local lives here</text>
+
+  <path class="d-line" d="M172 292 C200 292 200 244 222 244" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M172 292 L222 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M172 292 C200 292 200 340 222 340" marker-end="url(#sysHead)"/>
+
+  <path class="d-line" d="M408 244 C452 244 452 292 490 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M408 292 L490 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M408 340 C452 340 452 292 490 292" marker-end="url(#sysHead)"/>
+
+  <!-- layer: upstream -->
+  <rect class="d-band" x="48" y="422" width="672" height="104" rx="14"/>
+  <text class="d-rail" x="34" y="474" transform="rotate(-90 34 474)">OPEN SOURCE</text>
+  <text class="d-note" x="68" y="442">pinned per recipe, wrapped never forked</text>
+
+  <rect class="d-box" x="68" y="452" width="196" height="58" rx="10"/>
+  <text class="d-t" x="166" y="477">Voice models</text>
+  <text class="d-s" x="166" y="495">LFM2.5 · Moshi · Qwen-Omni</text>
+
+  <rect class="d-box" x="284" y="452" width="196" height="58" rx="10"/>
+  <text class="d-t" x="382" y="477">Trainers</text>
+  <text class="d-s" x="382" y="495">liquid-audio · ms-swift</text>
+
+  <rect class="d-box" x="500" y="452" width="200" height="58" rx="10"/>
+  <text class="d-t" x="600" y="477">Serving</text>
+  <text class="d-s" x="600" y="495">Pipecat · LiveKit · vLLM</text>
+
+  <!-- cross-layer -->
+  <path class="d-line" d="M120 144 L120 259" marker-end="url(#sysHead)"/>
+  <text class="d-lbl d-left" x="130" y="206">runs</text>
+
+  <path class="d-line d-soft" d="M560 144 L560 192" marker-end="url(#sysHead)"/>
+  <text class="d-lbl d-left" x="572" y="164">reads inspect.json</text>
+  <text class="d-lbl d-left" x="572" y="178">and vakforge.jsonl</text>
+
+  <path class="d-line d-soft" d="M700 110 L744 110 L744 474 L726 474" marker-end="url(#sysHead)"/>
+  <text class="d-lbl" x="756" y="300" transform="rotate(-90 756 300)">calls</text>
+</svg></figure>
+<h2 id="locale-pack-inheritance">Locale pack inheritance</h2>
+<p>Children merge language tags and PII patterns from their parent and override scalar settings (<code>formats</code>, consent rule, privacy notes).</p>
+<figure class="diagram-figure"><svg class="diagram" viewBox="0 0 740 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="locT locD">
+  <title id="locT">Locale pack inheritance</title>
+  <desc id="locD">A tree. LocalePack is the base, holding formats, PII patterns, consent, privacy notes and recipe support. The en pack inherits from it and adds email, card and IBAN patterns plus an English word-error-rate normalizer. en-US, en-GB and en-IN inherit from en, each adding its own national identifiers, phone formats and currency. hi-Latn-IN inherits from en-IN and adds Roman-Hindi detection, lang_mix and a Devanagari-safe normalizer.</desc>
+  <defs>
+    <marker id="locHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <rect class="d-box d-accent" x="160" y="20" width="420" height="64" rx="11"/>
+  <text class="d-t" x="370" y="46">LocalePack</text>
+  <text class="d-s" x="370" y="66">formats · PII patterns · consent · privacy notes · recipe support</text>
+
+  <path class="d-line" d="M370 84 L370 118" marker-end="url(#locHead)"/>
+
+  <rect class="d-box" x="245" y="122" width="250" height="62" rx="11"/>
+  <text class="d-t" x="370" y="147">en</text>
+  <text class="d-s" x="370" y="167">email · card (Luhn) · IBAN · WER</text>
+
+  <path class="d-line" d="M370 184 L370 204"/>
+  <path class="d-line" d="M135 204 L605 204"/>
+  <path class="d-line" d="M135 204 L135 220" marker-end="url(#locHead)"/>
+  <path class="d-line" d="M370 204 L370 220" marker-end="url(#locHead)"/>
+  <path class="d-line" d="M605 204 L605 220" marker-end="url(#locHead)"/>
+
+  <rect class="d-box" x="30" y="224" width="210" height="72" rx="11"/>
+  <text class="d-t" x="135" y="252">en-US</text>
+  <text class="d-s" x="135" y="272">SSN · NANP phones</text>
+  <text class="d-s" x="135" y="287">dollars · MDY dates</text>
+
+  <rect class="d-box" x="265" y="224" width="210" height="72" rx="11"/>
+  <text class="d-t" x="370" y="252">en-GB</text>
+  <text class="d-s" x="370" y="272">NI number · UK phones</text>
+  <text class="d-s" x="370" y="287">pounds · DMY dates</text>
+
+  <rect class="d-box" x="500" y="224" width="210" height="72" rx="11"/>
+  <text class="d-t" x="605" y="252">en-IN</text>
+  <text class="d-s" x="605" y="272">Aadhaar (Verhoeff) · PAN</text>
+  <text class="d-s" x="605" y="287">+91 mobiles · lakh/crore</text>
+
+  <path class="d-line" d="M605 296 L605 320 L575 320 L575 336" marker-end="url(#locHead)"/>
+
+  <rect class="d-box d-coral" x="440" y="340" width="270" height="76" rx="11"/>
+  <text class="d-t" x="575" y="368">hi-Latn-IN</text>
+  <text class="d-s" x="575" y="388">Roman-Hindi detection · lang_mix</text>
+  <text class="d-s" x="575" y="403">Devanagari-safe normalizer</text>
+
+  <text class="d-note d-left" x="30" y="356">A child merges its parent's language</text>
+  <text class="d-note d-left" x="30" y="372">tags and PII patterns, and overrides</text>
+  <text class="d-note d-left" x="30" y="388">the scalar settings it names.</text>
+</svg></figure>
+<h2 id="an-agent-run-step-by-step">An agent run, step by step</h2>
+<figure class="diagram-figure"><svg class="diagram" viewBox="0 0 850 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="seqT seqD">
+  <title id="seqT">An agent run, step by step</title>
+  <desc id="seqD">A sequence between four participants: the developer, the coding agent running the vakforge skill, the vakforge CLI, and the open models and trainers. In the decide phase the developer asks for a Hinglish assistant and the agent runs init, inspect and recommend, with the CLI returning the data report and the decision. In the agree phase the agent brings a plan, cost, consent basis and hardware question back to the developer, who approves. In the build phase the agent verifies every upstream API against installed source, writes the glue, and validates the dataset. In the prove phase it trains only what recommend asked for, evaluates base against tuned, and reports back with an endpoint only if the tuned model wins.</desc>
+  <defs>
+    <marker id="seqHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- phases -->
+  <path class="d-phase-bar" d="M60 96 L60 308"/>
+  <text class="d-phase" x="38" y="202" transform="rotate(-90 38 202)">DECIDE</text>
+  <path class="d-phase-bar" d="M60 332 L60 392"/>
+  <text class="d-phase" x="38" y="362" transform="rotate(-90 38 362)">AGREE</text>
+  <path class="d-phase-bar" d="M60 422 L60 482"/>
+  <text class="d-phase" x="38" y="452" transform="rotate(-90 38 452)">BUILD</text>
+  <path class="d-phase-bar" d="M60 508 L60 568"/>
+  <text class="d-phase" x="38" y="538" transform="rotate(-90 38 538)">PROVE</text>
+
+  <!-- lifelines -->
+  <path class="d-life" d="M150 66 L150 576"/>
+  <path class="d-life" d="M355 66 L355 576"/>
+  <path class="d-life" d="M575 66 L575 576"/>
+  <path class="d-life" d="M760 66 L760 576"/>
+  <path class="d-end" d="M141 576 L159 576"/>
+  <path class="d-end" d="M346 576 L364 576"/>
+  <path class="d-end" d="M566 576 L584 576"/>
+  <path class="d-end" d="M751 576 L769 576"/>
+
+  <!-- participants -->
+  <rect class="d-box" x="85" y="20" width="130" height="46" rx="10"/>
+  <text class="d-t" x="150" y="48">Developer</text>
+  <rect class="d-box d-accent" x="245" y="20" width="220" height="46" rx="10"/>
+  <text class="d-t" x="355" y="48">Coding agent + skill</text>
+  <rect class="d-box d-accent" x="498" y="20" width="154" height="46" rx="10"/>
+  <text class="d-t" x="575" y="48">vakforge CLI</text>
+  <rect class="d-box" x="680" y="20" width="160" height="46" rx="10"/>
+  <text class="d-t" x="760" y="48">Models + trainers</text>
+
+  <!-- activations: who is doing work, and for how long -->
+  <rect class="d-act d-accent" x="350.5" y="112" width="9" height="446" rx="2"/>
+  <rect class="d-act" x="145.5" y="104" width="9" height="16" rx="2"/>
+  <rect class="d-act" x="145.5" y="348" width="9" height="36" rx="2"/>
+  <rect class="d-act" x="145.5" y="558" width="9" height="14" rx="2"/>
+  <rect class="d-act" x="570.5" y="152" width="9" height="76" rx="2"/>
+  <rect class="d-act" x="570.5" y="268" width="9" height="36" rx="2"/>
+  <rect class="d-act" x="570.5" y="474" width="9" height="22" rx="2"/>
+  <rect class="d-act" x="755.5" y="438" width="9" height="16" rx="2"/>
+  <rect class="d-act" x="755.5" y="524" width="9" height="16" rx="2"/>
+
+  <!-- decide -->
+  <path class="d-line" d="M155 112 L350 112" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="103">Build a Hinglish assistant from data/raw</text>
+
+  <path class="d-line" d="M360 152 L570 152" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="143">vakforge init -l hi-Latn-IN</text>
+
+  <path class="d-line" d="M360 192 L570 192" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="183">vakforge inspect data/raw</text>
+
+  <path class="d-line d-return" d="M570 228 L360 228" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="465" y="219">sources, languages, PII, tool candidates</text>
+
+  <path class="d-line" d="M360 268 L570 268" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="259">vakforge recommend</text>
+
+  <path class="d-line d-return" d="M570 304 L360 304" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="465" y="295">retrieval and tools first; fine-tune only if it misses</text>
+
+  <!-- agree -->
+  <path class="d-line" d="M350 348 L155 348" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="339">Plan, cost, consent basis, hardware</text>
+
+  <path class="d-line d-return" d="M155 384 L350 384" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="375">Approve</text>
+
+  <!-- build -->
+  <path class="d-line" d="M360 438 L755 438" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="557" y="429">Verify every API against installed source, then write the glue</text>
+
+  <path class="d-line" d="M360 474 L570 474" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="465">vakforge validate vakforge.jsonl</text>
+
+  <!-- prove -->
+  <path class="d-line" d="M360 524 L755 524" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="557" y="515">Train only what recommend asked for, then eval base vs tuned</text>
+
+  <path class="d-line d-return" d="M350 558 L155 558" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="549">Report, and an endpoint only if it beats the base</text>
+</svg></figure>
+<h2 id="package-layout">Package layout</h2>
+<p>Everything below exists today, runs on CPU and imports no ML dependencies.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Module</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cli.py</code></td>
+<td>typer app, one subcommand per stage; thin, delegates everything</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td><code>vakforge.yaml</code> loading, pydantic settings, CLI override merge</td>
+</tr>
+<tr>
+<td><code>schema.py</code></td>
+<td>the canonical models: <code>Conversation</code>, <code>Turn</code>, <code>ToolCall</code>, <code>Meta</code>, and the JSON Schema export</td>
+</tr>
+<tr>
+<td><code>validate.py</code></td>
+<td>the file-level rules from <code>DATA_FORMAT.md</code>, returned as structured errors</td>
+</tr>
+<tr>
+<td><code>locales/</code></td>
+<td><code>base.py</code> pack protocol and registry, <code>checksums.py</code>, then one module per pack</td>
+</tr>
+<tr>
+<td><code>inspect/</code></td>
+<td><code>sources.py</code> classifies, <code>profile.py</code> gets per-kind facts, <code>report.py</code> summarises the folder</td>
+</tr>
+<tr>
+<td><code>recommend/</code></td>
+<td><code>rules.py</code>: the decision guide as data, plus the bars and their evidence</td>
+</tr>
+</tbody>
+</table></div>
+<p>Outside the package: <code>skill/vakforge/</code> (the agent skill), <code>site/</code> (landing page and these docs),
+<code>examples/</code> (a synthetic project with its reports), <code>tests/unit/</code> (CPU, no downloads).</p>
+<p>The stages the skill generates — <code>prepare</code>, <code>synth</code>, <code>train</code>, <code>eval</code>, <code>serve</code> — are written into
+<em>your</em> project, not shipped here. <code>docs/ROADMAP.md</code> tracks which of them vakforge may ship itself
+later; the sections below are the design they would follow.</p>
+<h2 id="key-interfaces">Key interfaces</h2>
+<div class="code-block"><span class="code-lang">python</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="k">class</span><span class="w"> </span><span class="nc">Adapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">AdapterConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdapterOutput</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="c1"># AdapterOutput: out_dir, manifest_hash, stats (rows kept/dropped and why)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Recipe</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">extra</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># uv extra that provides deps</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_env</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EnvIssue</span><span class="p">]:</span> <span class="o">...</span>  <span class="c1"># missing deps, GPU, gated weights</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">AdapterOutput</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">TrainConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainResult</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_for_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Inferencer</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># None = base model</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">serve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">ServeConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StreamingBackend</span><span class="p">:</span> <span class="o">...</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Inferencer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">EvalSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EvalTurnResult</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="c1"># returns text, audio (24 kHz), tool_calls, timings (ttft, ttfa, total)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">StreamingBackend</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">append_audio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pcm16</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">commit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">responses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">RealtimeEvent</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tool_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">call_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>None of this is built yet. The point of writing it down now is the constraint it puts on the rest: <code>eval</code> and <code>serve</code> are to depend on these protocols and nothing else, so that a recipe implementing them gets the full report and every protocol front end without touching either.</p>
+<h2 id="data-flow">Data flow</h2>
+<figure class="diagram-figure"><svg class="diagram" viewBox="0 0 830 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flowT flowD">
+  <title id="flowT">Data flow, from raw files to a served endpoint</title>
+  <desc id="flowD">A vertical pipeline. Documents, tables, chats and audio go into inspect, which writes inspect.json. recommend reads it and returns a recipe and the data gaps. prepare takes any source, and synth fills the gaps; both write the one canonical manifest, data/vakforge.jsonl. From there an adapter builds the recipe's dataset, the recipe trains and writes a checkpoint, the eval runner compares base against tuned and writes a report, and serve exposes a realtime WebSocket endpoint. inspect and recommend ship in the CLI today; the rest is generated per project.</desc>
+  <defs>
+    <marker id="flowHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- inputs -->
+  <rect class="d-box d-ghost" x="20" y="45" width="200" height="44" rx="9"/>
+  <text class="d-s" x="120" y="64">documents · tables</text>
+  <text class="d-s" x="120" y="79">chats · audio</text>
+  <path class="d-line" d="M220 67 L244 67" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="20" y="208" width="200" height="38" rx="9"/>
+  <text class="d-s" x="120" y="232">any source</text>
+  <path class="d-line" d="M220 227 L244 227" marker-end="url(#flowHead)"/>
+
+  <!-- stages -->
+  <rect class="d-box d-accent" x="250" y="40" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="64">inspect</text>
+  <text class="d-s" x="410" y="81">classify and profile every file</text>
+
+  <rect class="d-box d-accent" x="250" y="120" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="144">recommend</text>
+  <text class="d-s" x="410" y="161">what to change, and the evidence</text>
+
+  <rect class="d-box d-dashed" x="250" y="200" width="150" height="54" rx="10"/>
+  <text class="d-code" x="325" y="232">prepare</text>
+  <rect class="d-box d-dashed" x="420" y="200" width="150" height="54" rx="10"/>
+  <text class="d-code" x="495" y="232">synth</text>
+
+  <rect class="d-box d-coral" x="250" y="280" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="304">data/vakforge.jsonl</text>
+  <text class="d-s" x="410" y="321">one canonical format in the middle</text>
+
+  <rect class="d-box d-dashed" x="250" y="360" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="392">adapters/&lt;recipe&gt;.build()</text>
+
+  <rect class="d-box d-dashed" x="250" y="440" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="472">recipes/&lt;recipe&gt;.train()</text>
+
+  <rect class="d-box d-dashed" x="250" y="520" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="544">eval.runner</text>
+  <text class="d-s" x="410" y="561">base vs tuned, same held-out split</text>
+
+  <rect class="d-box d-dashed" x="250" y="600" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="632">serve.realtime_ws</text>
+
+  <!-- artifacts -->
+  <rect class="d-box d-ghost" x="630" y="45" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="71">inspect.json</text>
+  <path class="d-line d-soft" d="M570 67 L624 67" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="125" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="151">recipe + data gaps</text>
+  <path class="d-line d-soft" d="M570 147 L624 147" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="445" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="464">runs/&lt;ts&gt;/checkpoint</text>
+  <text class="d-chip" x="720" y="479">+ train.json</text>
+  <path class="d-line d-soft" d="M570 467 L624 467" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="525" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="544">runs/&lt;ts&gt;/</text>
+  <text class="d-chip" x="720" y="559">report.{md,json}</text>
+  <path class="d-line d-soft" d="M570 547 L624 547" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="605" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="631">ws://…/v1/realtime</text>
+  <path class="d-line d-soft" d="M570 627 L624 627" marker-end="url(#flowHead)"/>
+
+  <!-- spine -->
+  <path class="d-line" d="M410 94 L410 116" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 174 L410 187"/>
+  <path class="d-line" d="M325 187 L495 187"/>
+  <path class="d-line" d="M325 187 L325 196" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M495 187 L495 196" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M325 254 L325 268"/>
+  <path class="d-line" d="M495 254 L495 268"/>
+  <path class="d-line" d="M325 268 L495 268"/>
+  <path class="d-line" d="M410 268 L410 276" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 334 L410 356" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 414 L410 436" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 494 L410 516" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 574 L410 596" marker-end="url(#flowHead)"/>
+
+  <!-- legend -->
+  <rect class="d-box d-accent" x="250" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="270" y="679">in the CLI today</text>
+  <rect class="d-box d-dashed" x="380" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="400" y="679">generated per project</text>
+  <rect class="d-box d-coral" x="570" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="590" y="679">canonical format</text>
+</svg></figure>
+<h2 id="serving-protocol-front-ends">Serving: protocol front ends</h2>
+<p>The model backend (<code>StreamingBackend</code>) knows nothing about the wire. Each protocol is a thin front end in <code>serve/protocols/</code> that translates its messages into <code>append_audio</code> / <code>commit</code> / <code>responses</code> / <code>tool_result</code>. Every model served is open and local; &quot;OpenAI Realtime compatible&quot; names a message format, not a dependency.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Front end</th>
+<th>Why</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI Realtime WebSocket</td>
+<td>de facto shape for voice agents; GPT Realtime users change one URL; Pipecat, LiveKit, Twilio clients work unchanged</td>
+<td>first</td>
+</tr>
+<tr>
+<td>WebRTC (LiveKit / Pipecat transports)</td>
+<td>browsers and mobile, lowest latency, echo cancellation for free</td>
+<td>next</td>
+</tr>
+<tr>
+<td>SIP</td>
+<td>telephony, the call-centre use case</td>
+<td>next</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>one turn per request for batch and simple integrations</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>Gemini Live format</td>
+<td>teams on Google's stack</td>
+<td>on request</td>
+</tr>
+</tbody>
+</table></div>
+<p>A new front end ships with its own event list in <code>serve/README.md</code> and a contract test against a fake backend.</p>
+<h3 id="openai-realtime-websocket-subset">OpenAI Realtime WebSocket subset</h3>
+<p>We implement a documented subset, enough for common clients:</p>
+<ul>
+<li>Client → server: <code>session.update</code>, <code>input_audio_buffer.append</code>, <code>input_audio_buffer.commit</code>, <code>input_audio_buffer.clear</code>, <code>response.create</code>, <code>response.cancel</code>, <code>conversation.item.create</code> (for <code>function_call_output</code>).</li>
+<li>Server → client: <code>session.created</code>, <code>input_audio_buffer.speech_started/stopped</code> (VAD), <code>response.created</code>, <code>response.audio.delta</code>, <code>response.audio_transcript.delta</code>, <code>response.function_call_arguments.done</code>, <code>response.done</code>, <code>error</code>.</li>
+<li>Audio: PCM16 24 kHz base64, matching the common default.</li>
+</ul>
+<p>Unsupported events return a structured <code>error</code> naming the event. The exact list lives in <code>serve/README.md</code> and is tested.</p>
+<h2 id="run-directory">Run directory</h2>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>runs/2026-09-16T10-12-00_lfm25-audio/
+  config.yaml            # fully resolved
+  manifest_hash.txt
+  versions.txt           # pip freeze of the recipe env
+  train.log
+  checkpoint/            # adapter or full weights
+  report.md / report.json
+</code></pre></div>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="locale-packs.html"><small>Previous</small><b>Locale packs</b></a><a class="pn next" href="recipes.html"><small>Next</small><b>Recipes</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#principles">Principles</a></li><li class="lvl2"><a href="#system-view">System view</a></li><li class="lvl2"><a href="#locale-pack-inheritance">Locale pack inheritance</a></li><li class="lvl2"><a href="#an-agent-run-step-by-step">An agent run, step by step</a></li><li class="lvl2"><a href="#package-layout">Package layout</a></li><li class="lvl2"><a href="#key-interfaces">Key interfaces</a></li><li class="lvl2"><a href="#data-flow">Data flow</a></li><li class="lvl2"><a href="#serving-protocol-front-ends">Serving: protocol front ends</a></li><li class="lvl3"><a href="#openai-realtime-websocket-subset">OpenAI Realtime WebSocket subset</a></li><li class="lvl2"><a href="#run-directory">Run directory</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>
