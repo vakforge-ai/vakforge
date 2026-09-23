@@ -207,7 +207,7 @@ vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<sp
 </li>
 <li><strong>evidence</strong>, with a confidence label: <code>measured</code> (a cited paper reports the number), <code>reported</code> (a model team stated it) or <code>heuristic</code> (we chose it and nothing supports or refutes it)</li>
 <li><strong>recipe</strong>, filtered by the locale pack's <code>recipe_support</code> and your <code>--gpu</code>; <code>understand_only</code> is called out so nobody expects Hindi speech from an English-output model</li>
-<li><strong>data</strong>, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning</li>
+<li><strong>data</strong>, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning — with what was counted to get there, and a <strong>not counted</strong> line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and <code>inspect</code> does neither. Evidence whose fitness is unproven stops the verdict at <code>baseline first</code>, however much of it there is</li>
 <li><strong>consent and privacy</strong>: the pack's call-recording rule, any personal data <code>inspect</code> found, the pack's privacy notes</li>
 <li><strong>next steps</strong>, always starting with &quot;measure the base model with prompt + retrieval first&quot;</li>
 </ul>
