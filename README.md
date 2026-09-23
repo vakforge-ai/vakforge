@@ -138,7 +138,9 @@ The core works in any language. Everything that changes by language or country l
 
 Your assistant runs an open model on your own servers. Nothing calls OpenAI or any other hosted API.
 
-To make switching easy, the server accepts the same WebSocket messages as OpenAI's Realtime API. If your app already talks to GPT Realtime, you change one URL. Tools like Pipecat, LiveKit and Twilio keep working as they are. More connection types can be added without touching the model:
+None of this is built yet — serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.
+
+The intent is that the server speaks the same WebSocket messages as OpenAI's Realtime API, so an app already talking to GPT Realtime changes one URL and clients like Pipecat, LiveKit and Twilio keep working. "Realtime compatible" describes a message format, never a dependency: the model is open and runs on your hardware. More connection types can be added without touching the model:
 
 | Protocol | For | Status |
 |---|---|---|
