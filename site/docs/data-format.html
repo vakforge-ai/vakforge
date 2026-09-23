@@ -171,6 +171,18 @@ fails a record that claims something it cannot show:</p>
 <li><code>consent: public_license</code> requires <code>license</code>.</li>
 <li><code>consent: synthetic</code> is only valid with <code>source: synthetic</code>.</li>
 <li><code>source: real</code> requires <code>pii_redacted: true</code> <strong>and</strong> a <code>redaction_log</code> naming what was removed. Redaction is not optional for real data; <code>prepare</code> only skips it under <code>--skip-redaction</code>, which logs a loud warning and marks the rows.</li>
+<li><code>pii_redacted: true</code> is <strong>re-checked, not trusted.</strong> <code>vakforge validate</code> runs the locale pack over <code>system_prompt</code>, every <code>turns[].text</code>, and the JSON of every <code>tool_call.arguments</code> and <code>tool_result.content</code>. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.</li>
+<li><code>redaction_log</code>, when named, must exist relative to the manifest and be a JSON object with a <code>spans</code> list:</li>
+</ul>
+<div class="code-block"><span class="code-lang">json</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"conversation_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"conv_000123"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"spans"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"turn"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"field"</span><span class="p">:</span><span class="w"> </span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"phone"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mi">44</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mi">56</span><span class="p">,</span>
+<span class="w">     </span><span class="nt">"placeholder"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;PHONE_1&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"audio"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"start_s"</span><span class="p">:</span><span class="w"> </span><span class="mf">12.8</span><span class="p">,</span><span class="w"> </span><span class="nt">"end_s"</span><span class="p">:</span><span class="w"> </span><span class="mf">14.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tone"</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<ul>
 <li><code>source: real</code> with audio requires <code>voice_consent_ref</code>. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.</li>
 </ul>
 <p>Synthetic rows are exempt from the redaction rules because they contain no real person's data.</p>
