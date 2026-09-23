@@ -46,7 +46,7 @@ uv run --group docs python scripts/build_docs.py
 
 1. Bump `version` in `pyproject.toml` and `__version__` in `vakforge/__init__.py`, run `uv lock`, commit as `chore(release): X.Y.Z`.
 2. Push a matching tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
-3. The `release` workflow checks the tag against the version, runs tests, builds, and publishes to PyPI through trusted publishing. No token is involved.
+3. The `release` workflow checks the tag against the version, runs tests, builds, publishes to PyPI through trusted publishing (no token is involved), and then creates the GitHub Release with generated notes and the same wheel and sdist attached.
 
 PyPI never lets a published version change, so check the README renders (images must use public URLs) before tagging.
 
