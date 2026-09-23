@@ -5,21 +5,58 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only by default; a job that needs more asks for it.
+permissions:
+  contents: read
+
+# A new push supersedes the run in progress for the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Actions are pinned to a commit SHA, the only immutable reference GitHub offers.
+# A moving tag like `v7` can be repointed at any commit by whoever owns the action.
+# Dependabot updates these SHAs; the trailing comment says which release each one is.
+
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  test-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12"]
+        python: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: ${{ matrix.python }}
-      - run: uv sync --group dev
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - run: uv sync --locked --group dev
+      - run: uv run pytest
+
+  # Windows is not a nicety here: paths, line endings and soundfile all behave
+  # differently, and the project is developed on Windows and tested on Linux.
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
       - run: uv run pytest
 
   docs:
@@ -27,9 +64,10 @@ jobs:
     # serves site/ as-is with no build step. Editing a doc without rebuilding would
     # silently publish the old page, so the build has to be reproducible in CI.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: "3.12"
       - run: uv run --group docs python scripts/build_docs.py
@@ -39,3 +77,57 @@ jobs:
             echo "::error::site/docs/ is stale. Run: uv run --group docs python scripts/build_docs.py"
             exit 1
           }
+
+  # Tests the artefact users actually install, not the source checkout.
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.12"
+      - run: uv build
+      - name: Metadata is valid for PyPI
+        run: uvx twine check dist/*
+      - name: Install the wheel into a clean environment
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install --upgrade pip
+          /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/pip check
+      - name: Smoke-test the installed CLI
+        run: |
+          cd /tmp   # outside the source tree, so nothing resolves from it
+          /tmp/clean/bin/vakforge --version
+          /tmp/clean/bin/vakforge --help
+          /tmp/clean/bin/vakforge locales
+          /tmp/clean/bin/vakforge schema -o /tmp/schema.json
+          /tmp/clean/bin/vakforge init smoke --locale en-US
+          echo 'Refunds take 5 days.' > smoke/data/raw/faq.md
+          /tmp/clean/bin/vakforge inspect smoke/data/raw -o /tmp/inspect.json
+          /tmp/clean/bin/vakforge recommend /tmp/inspect.json -o /tmp/rec.json
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
+      - run: uv run --with pytest-cov pytest --cov=vakforge --cov-branch --cov-fail-under=90
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.12"
+      - name: Audit the locked runtime dependencies
+        run: |
+          uv export --frozen --no-dev --no-emit-project --format requirements-txt > locked.txt
+          uvx pip-audit --requirement locked.txt --strict

@@ -10,9 +10,12 @@ keywords = ["voice-agent", "speech-to-speech", "fine-tuning", "realtime", "local
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
+  # Only versions CI actually runs the suite on. 3.14 is allowed by requires-python
+  # but untested, so it is not claimed here.
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 # Core must import with zero ML deps.
