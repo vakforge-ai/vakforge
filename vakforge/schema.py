@@ -86,7 +86,10 @@ class ToolCall(_Strict):
 
 class ToolResult(_Strict):
     id: str
-    content: dict[str, Any] = Field(default_factory=dict)
+    # Any JSON value. A real tool returns a list of matches, a bare string, a number or
+    # null as readily as an object, and forcing those into a dict misrepresents what the
+    # model was actually shown at training time.
+    content: Any = Field(default_factory=dict)
 
 
 class Entity(_Strict):
@@ -214,7 +217,9 @@ class Conversation(_Strict):
     logs have no recording until `synth` renders one."""
 
     id: str
-    schema_version: str = SCHEMA_VERSION
+    # Pinned, not free text: a row claiming a version this code has never seen cannot be
+    # read safely, and accepting it quietly is how a format migration corrupts a dataset.
+    schema_version: Literal["0.1"] = SCHEMA_VERSION
     audio: Audio | None = None
     locale: str
     language: Language
@@ -241,6 +246,10 @@ class Conversation(_Strict):
                 raise ValueError(f"tools[{i}]: duplicate tool name {tool.name!r}")
             tool_names.add(tool.name)
 
+        # A call has a lifecycle: issued once, answered at most once, and answered before
+        # the conversation ends. A duplicate answer or a call left hanging teaches the
+        # model a turn pattern that cannot happen at serving time.
+        answered: set[str] = set()
         call_ids: set[str] = set()
         for i, t in enumerate(self.turns):
             if t.tool_call:
@@ -251,10 +260,25 @@ class Conversation(_Strict):
                     raise ValueError(
                         f"turns[{i}]: tool_call {t.tool_call.name!r} not declared in tools"
                     )
-            if t.tool_result and t.tool_result.id not in call_ids:
-                raise ValueError(
-                    f"turns[{i}]: tool_result references unknown call id {t.tool_result.id!r}"
-                )
+            if t.tool_result:
+                if t.tool_result.id not in call_ids:
+                    raise ValueError(
+                        f"turns[{i}]: tool_result references unknown call id {t.tool_result.id!r}"
+                    )
+                if t.tool_result.id in answered:
+                    raise ValueError(
+                        f"turns[{i}]: tool_call {t.tool_result.id!r} already has a result"
+                    )
+                answered.add(t.tool_result.id)
+        # A trailing unanswered call is allowed: real transcripts get cut off mid-exchange,
+        # and rejecting those would push people to invent a result. A call left hanging
+        # while the conversation carries on is the actual defect.
+        trailing = self.turns[-1].tool_call.id if self.turns[-1].tool_call else None
+        if unanswered := call_ids - answered - {trailing}:
+            raise ValueError(
+                f"tool_call(s) {sorted(unanswered)} never get a result, and the "
+                "conversation continues past them"
+            )
 
         if self.audio and self.turns:
             last_end = max(t.end for t in self.turns)

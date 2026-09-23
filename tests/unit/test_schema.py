@@ -168,6 +168,42 @@ def test_real_recordings_need_separate_consent_for_the_voice():
     Conversation.model_validate(data)
 
 
+def test_unknown_schema_version_rejected():
+    # Reading a row written by a format this code has never seen cannot be done safely.
+    with pytest.raises(ValidationError, match="schema_version"):
+        Conversation.model_validate(conversation(schema_version="99.9"))
+
+
+def test_a_tool_call_cannot_be_answered_twice():
+    data = conversation()
+    data["turns"].insert(4, dict(data["turns"][3]))
+    with pytest.raises(ValidationError, match="already has a result"):
+        Conversation.model_validate(data)
+
+
+def test_a_call_left_hanging_mid_conversation_is_rejected():
+    data = conversation()
+    del data["turns"][3]  # drop the tool_result, leaving the call unanswered
+    with pytest.raises(ValidationError, match="never get a result"):
+        Conversation.model_validate(data)
+
+
+def test_a_trailing_unanswered_call_is_allowed():
+    # Real transcripts get cut off mid-exchange. Rejecting those would push people to
+    # invent a result, which is worse than recording that the answer never arrived.
+    data = conversation(audio=None)
+    data["turns"] = data["turns"][:3]  # ends on the tool_call
+    Conversation.model_validate(data)
+
+
+@pytest.mark.parametrize("content", [["a", "b"], "plain string", 42, None, {"ok": True}])
+def test_tool_results_may_be_any_json_value(content):
+    # A real tool returns a list of matches or a bare string as readily as an object.
+    data = conversation(audio=None)
+    data["turns"][3]["tool_result"]["content"] = content
+    Conversation.model_validate(data)
+
+
 def test_json_schema_export_is_draft_2020():
     s = json_schema()
     assert s["$schema"].endswith("2020-12/schema")

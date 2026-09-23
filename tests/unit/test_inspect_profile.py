@@ -114,6 +114,48 @@ def test_whatsapp_chat(tmp_path):
     assert "hi-Latn" in facts["languages"]
 
 
+def test_bracketed_whatsapp_export_names_the_speaker(tmp_path):
+    # iOS exports use "[date, time] Name:" with no dash. Recovering the name by splitting
+    # on " - " gave speakers called "[12/03/24, 10:15] Priya".
+    p = tmp_path / "export.txt"
+    p.write_text(
+        "[12/03/24, 10:15] Priya: Order kab aayega?\n"
+        "[12/03/24, 10:16] Acme Support: Kal tak\n"
+        "[12/03/24, 10:17] Priya: Theek hai\n",
+        encoding="utf-8",
+    )
+    facts = profile_chat(classify(p), HI)
+    assert facts["speakers"] == {"Priya": 2, "Acme Support": 1}
+
+
+def test_schema_qualified_sql_table_keeps_its_own_name(tmp_path):
+    p = tmp_path / "schema.sql"
+    p.write_text(
+        "CREATE TABLE public.orders (\n  order_id INT\n);\n"
+        'CREATE TABLE IF NOT EXISTS "shop"."customers" (\n  id INT\n);\n'
+        "CREATE TABLE tickets (\n  ticket_id INT\n);",
+        encoding="utf-8",
+    )
+    assert list(profile_table(classify(p), HI)["tables"]) == ["orders", "customers", "tickets"]
+
+
+def test_one_bad_jsonl_line_does_not_lose_the_file(tmp_path):
+    # One bad record used to raise, marking the whole export unreadable. Every other part
+    # of inspect keeps going and records what it skipped; this now does too.
+    p = tmp_path / "rows.jsonl"
+    p.write_text('{"sku": "A"}\n{BROKEN\n{"sku": "B"}\n', encoding="utf-8")
+    facts = profile_table(classify(p), HI)
+    assert facts["tables"]["rows"]["rows"] == 2
+    assert len(facts["parse_errors"]) == 1
+    assert facts["parse_errors"][0].startswith("line 2:")
+
+
+def test_a_clean_jsonl_file_reports_no_parse_errors(tmp_path):
+    p = tmp_path / "rows.jsonl"
+    p.write_text('{"sku": "A"}\n{"sku": "B"}\n', encoding="utf-8")
+    assert "parse_errors" not in profile_table(classify(p), HI)
+
+
 def test_whatsapp_multi_line_message_is_kept_whole(tmp_path):
     # Only the first line of a wrapped message carries a timestamp; the rest would
     # otherwise be dropped, which loses most of every long message in an export.
