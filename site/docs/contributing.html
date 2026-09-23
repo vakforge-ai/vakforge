@@ -105,7 +105,7 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <ol>
 <li>Bump <code>version</code> in <code>pyproject.toml</code> and <code>__version__</code> in <code>vakforge/__init__.py</code>, run <code>uv lock</code>, commit as <code>chore(release): X.Y.Z</code>.</li>
 <li>Push a matching tag: <code>git tag -a vX.Y.Z -m &quot;vX.Y.Z&quot; &amp;&amp; git push origin vX.Y.Z</code>.</li>
-<li>The <code>release</code> workflow checks the tag against the version, runs tests, builds, and publishes to PyPI through trusted publishing. No token is involved.</li>
+<li>The <code>release</code> workflow checks the tag against the version, runs tests, builds, publishes to PyPI through trusted publishing (no token is involved), and then creates the GitHub Release with generated notes and the same wheel and sdist attached.</li>
 </ol>
 <p>PyPI never lets a published version change, so check the README renders (images must use public URLs) before tagging.</p>
 <h2 id="security">Security</h2>
