@@ -30,8 +30,6 @@ GOALS: tuple[Goal, ...] = (
     "duplex",
     "language",
 )
-# Turns per hour of recorded conversation. Our own rule of thumb, not a measurement.
-TURNS_PER_AUDIO_HOUR = 300
 GPU_GB = {"none": 0, "24": 24, "48": 48, "80": 80}
 
 
@@ -168,6 +166,8 @@ class Recommendation:
     recipe_support: str | None
     recipe_reason: str
     have: float
+    have_from: str  # what was counted to get `have`, in words
+    uncounted: list[str]  # material that exists but cannot count yet, and what it needs
     need: float | None
     need_unit: str
     audio_hours: float
@@ -179,16 +179,20 @@ class Recommendation:
 
 
 def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
-    """What the data suggests the user wants, most likely first."""
+    """What the data suggests the user wants, most likely first.
+
+    Reads `profiled`, not `counts`: a file that was found but could not be read proves
+    nothing about what the user wants to build.
+    """
     goals: list[Goal] = []
-    counts = summary.get("counts", {})
+    profiled = summary.get("profiled") or summary.get("counts", {})
     if summary.get("tool_candidates"):
         goals.append("tools")
-    if summary.get("chat_messages", 0) or counts.get("audio", 0):
+    if summary.get("chat_messages", 0) or profiled.get("audio", 0):
         goals.append("workflow")
-    if counts.get("audio", 0):
+    if profiled.get("audio", 0):
         goals.append("recognition")
-    if counts.get("document", 0) or summary.get("document_words", 0):
+    if profiled.get("document", 0) or summary.get("document_words", 0):
         goals.append("knowledge")
     non_native = [lang for lang in summary.get("languages", {}) if not lang.startswith("en")]
     if non_native and any(v != "native" for v in pack.resolved("recipe_support").values()):
@@ -315,6 +319,53 @@ def _amount(value: float, unit: str) -> str:
     return f"{value:g} {_UNIT_NAME[unit]}"
 
 
+def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
+    """What the data can actually prove for this bar: (amount, counted, uncounted, verified).
+
+    Raw audio is never converted into conversation turns. An hour of recording is not 300
+    turns until something has transcribed and diarized it, and `inspect` does neither: it
+    reads duration, sample rate and channel count. Counting it as turns produced a
+    `candidate` verdict from material that cannot train anything yet, which is the single
+    most misleading thing this module used to do.
+
+    `verified` is False when the amount is real but its fitness is unproven, which stops
+    the verdict short of `candidate`.
+    """
+    audio_hours = float(summary.get("audio_hours", 0.0))
+    messages = int(summary.get("chat_messages", 0))
+
+    if bar.unit == "turns":
+        uncounted = []
+        if audio_hours:
+            uncounted.append(
+                f"{audio_hours:g} h of audio contributes no turns until it is transcribed "
+                "and diarized; inspect does neither"
+            )
+        return float(messages), f"{messages} parsed chat messages", uncounted, True
+
+    if bar.unit == "hours":
+        return (
+            audio_hours,
+            f"{audio_hours:g} h of recordings",
+            [
+                "duration only: no transcripts, no speaker labels and no consent record, "
+                "all of which recognition training needs"
+            ],
+            False,
+        )
+
+    seconds = audio_hours * 3600
+    return (
+        seconds,
+        f"{seconds:g} s of recordings",
+        [
+            "not verified as one consented speaker recorded under consistent conditions, "
+            "which is what a voice fine-tune actually needs"
+        ],
+        False,
+    )
+
+
 def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
     """Which of the three states this goal is in, and why, in the user's own numbers."""
     if primary == "knowledge":
@@ -362,10 +413,17 @@ def recommend(
     routes = _routes(summary, goals)
 
     audio_hours = float(summary.get("audio_hours", 0.0))
-    turns = int(summary.get("chat_messages", 0)) + int(audio_hours * TURNS_PER_AUDIO_HOUR)
     bar = BARS[primary]
-    have = {"turns": float(turns), "hours": audio_hours, "seconds": audio_hours * 3600}[bar.unit]
+    have, have_from, uncounted, verified = _evidence(bar, summary)
     verdict, reason = _verdict(primary, bar, have)
+    if verdict == "candidate" and not verified:
+        # The amount clears the bar, but nothing has shown the material is fit to train on.
+        verdict = "baseline_first"
+        reason = (
+            f"{_amount(have, bar.unit)} clears the bar for {primary}, but nothing has "
+            f"verified it is usable — {uncounted[0]}. Measure the baseline while you "
+            "establish that, and revisit"
+        )
 
     needs_recipe = verdict != "blocked" or primary == "duplex"
     two_channel = bool(summary.get("two_channel_audio_files", 0))
@@ -410,6 +468,8 @@ def recommend(
             "run synth over your documents and tools for coverage, and keep the "
             "evaluation set real"
         )
+    for note in uncounted:
+        steps.append(f"not counted yet: {note}")
     if verdict == "candidate" and recipe:
         steps.append(f"then fine-tune with {recipe} and compare base vs tuned with eval")
     else:
@@ -427,6 +487,8 @@ def recommend(
         recipe_support=level,
         recipe_reason=recipe_reason,
         have=round(have, 2),
+        have_from=have_from,
+        uncounted=uncounted,
         need=bar.target,
         need_unit=bar.unit,
         audio_hours=audio_hours,

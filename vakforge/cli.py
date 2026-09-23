@@ -302,7 +302,11 @@ def recommend(
     table.add_row(f"evidence ({rec.evidence_confidence})", rec.evidence)
     table.add_row("recipe", f"{rec.recipe or 'none'}  {rec.recipe_reason}")
     if rec.need is not None:
-        table.add_row(f"data ({rec.need_unit})", f"{rec.have:g} of ~{rec.need:g}")
+        table.add_row(
+            f"data ({rec.need_unit})", f"{rec.have:g} of ~{rec.need:g}  from {rec.have_from}"
+        )
+    for note in rec.uncounted:
+        table.add_row("[yellow]not counted[/]", note)
     console.print(table)
     if rec.consent:
         console.print("[bold]consent and privacy[/] (not legal advice)")

@@ -37,6 +37,8 @@
   "recipe_support": null,
   "recipe_reason": "no recipe needed: retrieval and tools carry this one",
   "have": 16.0,
+  "have_from": "16 parsed chat messages",
+  "uncounted": [],
   "need": 8000,
   "need_unit": "turns",
   "audio_hours": 0.0,

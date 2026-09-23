@@ -87,7 +87,13 @@ hardware and cost.
   beat it, and a fine-tune that does not beat it gets thrown away.
 
 Quote `evidence` and `evidence_confidence` to the user. A target marked `heuristic` is ours
-and the user is entitled to argue with it; one marked `measured` comes from a cited paper.
+and the user is entitled to argue with it; one marked `measured` comes from a cited paper,
+and `reported` means someone stated it without independent replication.
+
+Read `have_from` and `uncounted` before you repeat any number. `have` counts only what the
+data can prove today: raw audio is never counted as conversation turns, because `inspect`
+cannot transcribe or diarize it. Anything in `uncounted` is real material that needs work
+before it counts, and it belongs in the plan as a task, not as data the user already has.
 
 ### 4. Prepare
 
