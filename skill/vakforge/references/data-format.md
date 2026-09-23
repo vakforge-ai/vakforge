@@ -46,9 +46,10 @@ adapter; nothing reads raw user data directly. `vakforge schema` exports the JSO
 - `entities` are optional but drive the entity-accuracy metric: `customer_id`, `phone`, `amount_*`, `date`, `person_name`, `address`, `postal_code`, `order_id`. Offsets are optional; when given, both are required and `text[start_char:end_char]` must equal the entity's `text`.
 - `meta.source` ∈ `real | synthetic | public`; eval always breaks results down by it.
 - `meta.consent` ∈ `recorded_verbal | written | synthetic | public_license | none`. `none` needs `--allow-unconsented` and is never exported.
-- Provenance claims must carry evidence, or the record fails: `recorded_verbal`/`written` need `consent_ref`, `public_license` needs `license`, `synthetic` consent needs `synthetic` source. `source: real` needs `pii_redacted: true` **and** a `redaction_log`, and with audio also a `voice_consent_ref` — a voiceprint is biometric data, and consent to record is not consent to train a voice.
+- Provenance claims must carry evidence, or the record fails: `recorded_verbal`/`written` need `consent_ref`, `public_license` needs `license`, `synthetic` consent needs `synthetic` source. `source: real` needs `pii_redacted: true` **and** a `redaction_log`, and `validate` re-scans the text to prove that claim rather than trusting it.
+- `meta.allowed_uses` says what the row may be trained for (`asr`, `workflow`, `evaluation`, `voice_clone`), defaulting to the three ordinary uses. Adding `voice_clone` to real audio requires `voice_consent_ref`: consent to record a call is not consent to reproduce the caller's voice.
 - Duplicate tool names are rejected: two schemas under one name make every call to it ambiguous.
-- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed. No speaker appears in two splits.
+- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed. `validate` can only check the conversation half — the format carries no speaker identity — so keeping a speaker out of two splits is your pipeline's job, and it should record how it did it.
 
 ## Adapter targets (what `train/` produces from the manifest)
 

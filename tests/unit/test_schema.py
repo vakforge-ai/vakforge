@@ -151,9 +151,7 @@ def test_a_redaction_claim_on_real_data_needs_a_log():
         Conversation.model_validate(data)
 
 
-def test_real_recordings_need_separate_consent_for_the_voice():
-    # A voiceprint is biometric data; consent to record a call is not consent to train a
-    # voice on it.
+def _real_audio_row(**meta) -> dict:
     data = conversation()
     data["meta"].update(
         source="real",
@@ -161,10 +159,36 @@ def test_real_recordings_need_separate_consent_for_the_voice():
         consent_ref="forms/2026-01.pdf",
         pii_redacted=True,
         redaction_log="logs/redaction-0001.json",
+        **meta,
     )
+    return data
+
+
+def test_cloning_a_real_voice_needs_that_speakers_own_consent():
+    # Consent to record a call is not consent to reproduce the caller's voice.
+    data = _real_audio_row(allowed_uses=["workflow", "voice_clone"])
     with pytest.raises(ValidationError, match="voice_consent_ref"):
         Conversation.model_validate(data)
     data["meta"]["voice_consent_ref"] = "forms/voice-2026-01.pdf"
+    Conversation.model_validate(data)
+
+
+def test_ordinary_uses_of_a_real_recording_do_not_need_voice_consent():
+    # Demanding voice-cloning consent for audio only ever used to train recognition is a
+    # rule broad enough that the easy way past it is a dummy value — worse than no rule.
+    Conversation.model_validate(_real_audio_row(allowed_uses=["asr", "evaluation"]))
+    Conversation.model_validate(_real_audio_row())  # the default is the ordinary uses
+
+
+def test_a_row_allowed_for_nothing_is_rejected():
+    with pytest.raises(ValidationError, match="may not be trained on at all"):
+        Conversation.model_validate(_real_audio_row(allowed_uses=[]))
+
+
+def test_cloning_a_synthetic_voice_needs_no_consent_record():
+    # There is no speaker to ask; the TTS licence governs instead.
+    data = conversation(audio=None)
+    data["meta"]["allowed_uses"] = ["workflow", "voice_clone"]
     Conversation.model_validate(data)
 
 

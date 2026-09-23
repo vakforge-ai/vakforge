@@ -6,7 +6,7 @@ These are enforced in the code you write for `prepare`, not just documented. Ful
 ## Consent
 
 - `prepare` asks for the consent basis once per source folder and a `consent_ref` (policy name and version, or the notice played at call start). Every row carries `meta.consent`.
-- Voice is biometric data in many jurisdictions. Cloning a real person's voice needs a written consent record for that use, named in `meta.voice_consent_ref`.
+- A recording is not automatically biometric data: a voice becomes special-category under UK GDPR when it is processed *to identify someone*, and Illinois BIPA treats voiceprints as biometric identifiers. Set `meta.allowed_uses` to what the row is actually for. Cloning a real person's voice needs `voice_clone` plus a written consent record in `meta.voice_consent_ref`, and the schema rejects one without the other.
 - Print the locale pack's `privacy_notes` and `call_recording_consent` rule to the user before touching recordings (`vakforge locales <id>`). They are starting points, not legal advice:
 
 | Region | Starting point |

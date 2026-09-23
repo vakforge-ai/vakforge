@@ -74,7 +74,7 @@
 </blockquote>
 <h2 id="test-split-rules">Test split rules</h2>
 <ul>
-<li>Held out by conversation <strong>and</strong> speaker; never seen by <code>train</code> or <code>synth</code> prompt examples.</li>
+<li>Held out by conversation <strong>and</strong> speaker; never seen by <code>train</code> or <code>synth</code> prompt examples. The canonical format carries no speaker identity, so <code>vakforge validate</code> checks the conversation half of that and cannot check the speaker half — keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean <code>validate</code> as proof there is no speaker leak.</li>
 <li>Stratified by <code>locale</code>, <code>audio.condition</code> (clean / phone / noisy), <code>language.primary</code>, and <code>meta.source</code> (real / synthetic). Report breaks down by each, so a multi-locale dataset cannot hide a weak language behind a strong one.</li>
 <li>Minimum 100 turns for any headline number; fewer → report shows the number with a &quot;low-n&quot; badge and a bootstrap CI.</li>
 </ul>
