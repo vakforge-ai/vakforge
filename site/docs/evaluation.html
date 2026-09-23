@@ -63,7 +63,7 @@
 <li><a href="roadmap.html">Roadmap</a></li>
 <li><a href="contributing.html">Contributing</a></li>
 </ul></div>
-    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/EVALUATION.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.2.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/EVALUATION.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
@@ -218,7 +218,7 @@
 <li><strong>Samples</strong> — 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.</li>
 <li><strong>Provenance</strong> — manifest hash, config, versions, judge model/prompt hashes, seed.</li>
 </ol>
-<p><code>report.json</code> schema is in <code>eval/report_schema.json</code> so benchmarks across recipes are comparable.</p>
+<p><code>report.json</code> should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet — it gets written with the first recipe that produces a report.</p>
 <h2 id="public-benchmarks-vakforge-bench-locale-v0">Public benchmarks — <code>vakforge-bench-&lt;locale&gt;-v0</code></h2>
 <p>One small, consented, versioned benchmark per locale pack, with the same shape so recipes and locales are comparable:</p>
 <ul>

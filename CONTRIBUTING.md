@@ -33,6 +33,17 @@ Docs site (`site/docs/` is generated and committed, so rebuild before you push):
 uv run --group docs python scripts/build_docs.py
 ```
 
+## What CI checks
+
+`lint`, `test-linux` (3.11/3.12/3.13), `test-windows`, `docs` (the generated site must match
+`docs/`), `package` (build, `twine check`, install the wheel into a clean environment, run the
+CLI from it), `coverage` (branch coverage, 90% floor) and `dependency-audit` (`pip-audit` over
+the locked runtime set).
+
+Every action is pinned to a commit SHA — a moving tag like `v7` can be repointed at any commit
+by whoever owns the action. Dependabot updates the SHAs; keep the trailing `# v7` comment so the
+release is still readable.
+
 ## Branches and commits
 
 - **Features and anything substantial** go on a branch from `main` (`feat/<area>-<short>`, `ci/…`, `docs/…`) and land through a pull request. Merge only when CI is green.

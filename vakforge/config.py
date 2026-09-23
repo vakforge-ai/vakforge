@@ -15,7 +15,6 @@ class ProjectConfig(BaseModel):
 
     name: str
     locales: list[str] = Field(min_length=1)
-    data_dir: str = "data"
 
     @classmethod
     def load(cls, project_dir: Path) -> ProjectConfig:

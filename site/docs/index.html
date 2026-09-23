@@ -63,17 +63,19 @@
 <li><a href="roadmap.html">Roadmap</a></li>
 <li><a href="contributing.html">Contributing</a></li>
 </ul></div>
-    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.2.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
-      
+      <p>&lt;p align=&quot;center&quot;&gt;
+&lt;img src=&quot;https://vakforge.pages.dev/assets/social/readme-banner.png&quot; alt=&quot;vakforge: your data, your voice assistant, your hardware&quot; width=&quot;100%&quot;&gt;
+&lt;/p&gt;</p>
 <h1 id="vakforge">vakforge</h1>
 <p><strong>The decision layer for open voice AI.</strong></p>
 <p>vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.</p>
-<p align="center">
-  <img src="https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." width="100%">
-</p>
+<p>&lt;p align=&quot;center&quot;&gt;
+&lt;img src=&quot;https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp&quot; alt=&quot;Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers.&quot; width=&quot;100%&quot;&gt;
+&lt;/p&gt;</p>
 <ul>
 <li><strong>Bring any data:</strong> documents, FAQs, database tables, chat logs, CRM records, recorded calls.</li>
 <li><strong>Open models only:</strong> the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)</li>
@@ -99,9 +101,9 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 </blockquote>
 <p>vakforge is about that last word: owning your voice AI instead of renting it.</p>
 <h2 id="how-it-works">How it works</h2>
-<p align="center">
-  <img src="https://vakforge.pages.dev/assets/diagrams/workflow-light.webp" alt="Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates." width="100%">
-</p>
+<p>&lt;p align=&quot;center&quot;&gt;
+&lt;img src=&quot;https://vakforge.pages.dev/assets/diagrams/workflow-light.webp&quot; alt=&quot;Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates.&quot; width=&quot;100%&quot;&gt;
+&lt;/p&gt;</p>
 <ol>
 <li><strong><code>init</code></strong> creates a project folder for your language and market.</li>
 <li><strong><code>inspect</code></strong> reads your data folder and reports what is in it: languages, personal data, tables that could become tools, audio quality.</li>
@@ -341,7 +343,8 @@ read <code>SKILL.md</code>-style instructions work the same way; point them at t
 <p>&quot;Duplex&quot; means the assistant can listen while it talks, so callers can interrupt it naturally. Details in <a href="recipes.html"><code>docs/RECIPES.md</code></a>.</p>
 <h2 id="connecting-your-app">Connecting your app</h2>
 <p>Your assistant runs an open model on your own servers. Nothing calls OpenAI or any other hosted API.</p>
-<p>To make switching easy, the server accepts the same WebSocket messages as OpenAI's Realtime API. If your app already talks to GPT Realtime, you change one URL. Tools like Pipecat, LiveKit and Twilio keep working as they are. More connection types can be added without touching the model:</p>
+<p>None of this is built yet — serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.</p>
+<p>The intent is that the server speaks the same WebSocket messages as OpenAI's Realtime API, so an app already talking to GPT Realtime changes one URL and clients like Pipecat, LiveKit and Twilio keep working. &quot;Realtime compatible&quot; describes a message format, never a dependency: the model is open and runs on your hardware. More connection types can be added without touching the model:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>

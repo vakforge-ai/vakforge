@@ -9,6 +9,8 @@ __pycache__/
 dist/
 build/
 .pytest_cache/
+.coverage
+htmlcov/
 .ruff_cache/
 .mypy_cache/
 
@@ -40,3 +42,6 @@ site/_*.html
 # raw literature-review outputs; the conclusions live in docs/RESEARCH.md
 Research outcomes/
 image.png
+
+# local working list of audit findings; delete once merged
+audit-findings.md

@@ -1,0 +1,12 @@
+# Files where a mistake is expensive or hard to see in review: the build and release
+# path, the dependency set, and the code that decides whether data may be trained on.
+# A change to any of these needs an owner's approval once the ruleset requires it.
+
+/.github/                       @vakforge-ai
+/pyproject.toml                 @vakforge-ai
+/uv.lock                        @vakforge-ai
+/vakforge/schema.py             @vakforge-ai
+/vakforge/validate.py           @vakforge-ai
+/vakforge/locales/              @vakforge-ai
+/docs/DATA_ETHICS.md            @vakforge-ai
+/docs/RESEARCH.md               @vakforge-ai

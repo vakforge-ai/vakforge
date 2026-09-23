@@ -99,7 +99,7 @@ def test_stereo_channel_map_must_name_both_speakers():
     ("entity", "needle"),
     [
         ({"type": "id", "text": "A-1", "start_char": 9}, "both start_char and end_char"),
-        ({"type": "id", "text": "A-1", "start_char": 0, "end_char": 3}, "not 'A-1'"),
+        ({"type": "id", "text": "A-1", "start_char": 0, "end_char": 3}, "they disagree"),
         ({"type": "id", "text": "A-1", "start_char": 9, "end_char": 400}, "past the end"),
         ({"type": "id", "text": "A-1", "start_char": 9, "end_char": 2}, "start_char=9"),
     ],
@@ -109,6 +109,21 @@ def test_entity_offsets_must_point_at_the_entity(entity, needle):
     data["turns"][1]["entities"] = [entity]
     with pytest.raises(ValidationError, match=needle):
         Conversation.model_validate(data)
+
+
+def test_an_offset_mismatch_is_reported_without_printing_the_data():
+    # Entity types are phone, person_name, address, customer_id — personal data by
+    # definition — and this error reaches a terminal, a CI log and pasted bug reports.
+    data = conversation()
+    data["turns"][1]["text"] = "call me on 415-555-0134 today"
+    data["turns"][1]["entities"] = [
+        {"type": "phone", "text": "WRONG", "start_char": 11, "end_char": 23}
+    ]
+    with pytest.raises(ValidationError) as exc:
+        Conversation.model_validate(data)
+    message = next(e["msg"] for e in exc.value.errors() if "entities[0]" in e["msg"])
+    assert "415" not in message, message
+    assert "12 characters at [11:23]" in message
 
 
 def test_correct_entity_offsets_pass():

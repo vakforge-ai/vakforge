@@ -42,3 +42,54 @@ def test_cli_commands_named_in_skill_exist():
         re.findall(r"vakforge (init|inspect|recommend|validate|locales|schema)\b", text)
     ):
         assert cmd in names, cmd
+
+
+def test_every_recommendation_field_the_skill_names_exists():
+    """The skill tells an agent which fields to read; drift makes it hallucinate them.
+
+    Checking filenames and command names was not enough: `evidence_confidence` was renamed
+    to `confidence` and the skill kept naming the old one, because nothing compared the two.
+    """
+    from vakforge.locales import get_pack
+    from vakforge.recommend import recommend
+
+    rec = recommend(
+        {
+            "counts": {"chat": 1, "audio": 1},
+            "profiled": {"chat": 1, "audio": 1},
+            "chat_messages": 400,
+            "audio_hours": 2.0,
+            "document_words": 0,
+            "two_channel_audio_files": 0,
+            "languages": {},
+            "pii": {},
+            "tool_candidates": ["lookup_orders_by_order_id"],
+        },
+        get_pack("en-US"),
+    )
+    from vakforge.recommend.rules import GOALS
+
+    report = rec.to_dict()
+    # Field names, plus the values the skill is entitled to name: eligibility states,
+    # confidence labels and goals all appear in prose as `backticked` terms.
+    available = (
+        set(report)
+        | set(report["goal_decisions"][0])
+        | {"blocked", "baseline_first", "candidate"}
+        | {"measured", "reported", "heuristic"}
+        | set(GOALS)
+    )
+
+    # Only the Recommend step, because that is the section that names report fields;
+    # elsewhere a backticked snake_case word is a package or a path.
+    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    step = re.search(r"^### 3\. Recommend$(.*?)^### 4\.", text, re.S | re.M)
+    assert step, "SKILL.md no longer has a '### 3. Recommend' step"
+
+    named = {w for w in re.findall(r"`([a-z][a-z_]*[a-z])`", step.group(1)) if "_" in w}
+    known_not_fields = {"recommend_json", "inspect_json"}
+    for field in named - known_not_fields:
+        assert field in available, (
+            f"SKILL.md tells the agent to read {field!r}, which recommend() does not produce. "
+            f"Available: {sorted(available)}"
+        )

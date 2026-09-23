@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+
+# Rich wraps and truncates to the terminal width, so CLI output depends on where the
+# suite runs: a long `/tmp/pytest-of-runner/...` path on CI split a phrase across lines
+# that stayed on one line under a short Windows temp dir, and the assertion failed there
+# and nowhere else. Pin the width so output is the same everywhere.
+os.environ["COLUMNS"] = "200"
 
 import numpy as np
 import pytest

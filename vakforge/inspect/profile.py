@@ -166,6 +166,7 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     speakers: Counter[str] = Counter()
     messages: list[str] = []
     truncated = False
+    parse_errors: list[str] = []
     if src.format == "whatsapp":
         text, truncated = _read_text(src.path)
         for line in text.splitlines():
@@ -184,7 +185,8 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
             records += data if isinstance(data, list) else [data]
         else:
             text, truncated = _read_text(src.path)
-            for row in _jsonl_rows(text, truncated):
+            rows, parse_errors = _jsonl_rows(text, truncated)
+            for row in rows:
                 records += row if isinstance(row, list) else [row]
         for rec in records:
             turns = rec.get("messages", [rec]) if isinstance(rec, dict) else []
@@ -201,14 +203,22 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     facts.update(messages=len(messages), speakers=dict(speakers.most_common(10)))
     if truncated:
         facts["truncated"] = True  # message count covers the part we read
+    if parse_errors:
+        facts["parse_errors"] = parse_errors  # counted messages exclude these
     return facts
+
+
+STATS_SECONDS = 600  # silence and clipping are measured over at most this much audio
 
 
 def profile_audio(src: Source, pack: LocalePack) -> dict[str, Any]:
     import soundfile as sf
 
     info = sf.info(str(src.path))
-    data, sr = sf.read(str(src.path), dtype="float32", always_2d=True, frames=sr_cap(info))
+    # Read at most the first ten minutes: the statistics below are indicative, and a long
+    # recording should not have to fit in memory to be described.
+    frames = min(info.frames, info.samplerate * STATS_SECONDS)
+    data, sr = sf.read(str(src.path), dtype="float32", always_2d=True, frames=frames)
     mono = data.mean(axis=1)
     frame = max(1, sr // 50)  # 20 ms
     n = len(mono) // frame
@@ -219,6 +229,7 @@ def profile_audio(src: Source, pack: LocalePack) -> dict[str, Any]:
     )
     silence = float((20 * np.log10(rms) < -40).mean()) if n else 1.0
     clipping = float((np.abs(data) >= 0.999).mean()) if data.size else 0.0
+    sampled = round(frames / info.samplerate, 2) if info.samplerate else 0.0
     return {
         "duration_s": round(info.duration, 2),
         "sample_rate": info.samplerate,
@@ -227,12 +238,12 @@ def profile_audio(src: Source, pack: LocalePack) -> dict[str, Any]:
         "narrowband": info.samplerate <= 8000,
         "clipping_ratio": round(clipping, 5),
         "silence_ratio": round(silence, 3),
+        # The ratios above describe `stats_sampled_s`, which is not always `duration_s`.
+        # Printing a whole-file duration beside head-only statistics invites reading them
+        # as whole-file measurements.
+        "stats_sampled_s": sampled,
+        "stats_partial": sampled < round(info.duration, 2),
     }
-
-
-def sr_cap(info: Any) -> int:
-    """Read at most 10 minutes per file; stats on the head are representative enough."""
-    return min(info.frames, info.samplerate * 600)
 
 
 PROFILERS = {

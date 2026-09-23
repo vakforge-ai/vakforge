@@ -1120,7 +1120,7 @@
     <div class="privacy-left">
     <div class="heading-row">
       <div class="stack"><span class="kicker">Data safety</span><h2>Redact before you write.</h2></div>
-      <p class="lede">Every record carries its consent basis and redaction status. Personal data is cut from text and audio by locale-aware patterns and NER, and logged, before anything reaches a training row.</p>
+      <p class="lede">Every record carries its consent basis and redaction status, and <code>vakforge validate</code> re-scans the text to check that a redaction claim is true rather than trusting the flag. Cutting the personal data — from text and from audio, by locale-aware patterns and NER — is the <b>prepare</b> step the skill generates, shown below as the contract it has to meet.</p>
     </div>
       <div class="rx done" id="rx" aria-label="Example of redaction during prepare">
         <div class="rx-bar"><b>prepare &middot; generated for your project</b><span class="rx-id">conv_0142 &middot; hi-Latn-IN</span><span class="rx-status"><i></i><span id="rx-status">3 spans redacted</span></span></div>
