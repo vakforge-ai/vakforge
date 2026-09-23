@@ -17,6 +17,92 @@ def test_clean_manifest_has_no_issues(project):
     assert issues == []
 
 
+def _redacted_row(**turn_over) -> dict:
+    """A row that claims to be redacted, with one turn you can poison."""
+    row = conversation(audio=None)
+    turn = {"speaker": "user", "start": 0.0, "end": 1.0, "text": "All set.", "lang": "en-US"}
+    turn.update(turn_over)
+    row["turns"] = [turn]
+    row["meta"] = dict(row["meta"], pii_redacted=True)
+    return row
+
+
+def test_a_redaction_claim_is_rescanned_not_trusted(tmp_path):
+    # The exact hole: real PII in the text, pii_redacted true, and a log path that is a
+    # plain lie. Every structural rule passes, so only a rescan catches it.
+    row = _redacted_row(text="my ssn is 536221234 and my card is 4111 1111 1111 1111")
+    row["meta"] = dict(
+        row["meta"],
+        source="real",
+        consent="written",
+        consent_ref="f.pdf",
+        voice_consent_ref="v.pdf",
+        redaction_log="does/not/exist.json",
+    )
+    _, issues = validate_manifest(_write(tmp_path, row))
+    fields = {i.field for i in issues}
+    assert "meta.redaction_log" in fields
+    assert "turns[0].text" in fields
+    found = {
+        i.message.split("but ")[1].split(" is still")[0] for i in issues if "but " in i.message
+    }
+    assert found == {"ssn", "card_number"}
+
+
+def test_a_leak_is_reported_without_repeating_it(tmp_path):
+    # Reporting a leak must not copy the personal data into a log or a bug report.
+    row = _redacted_row(text="call me on 415-555-0134")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert issues, "expected the phone number to be caught"
+    for i in issues:
+        assert "415" not in str(i), str(i)
+    assert "phone is still present at characters" in issues[0].message
+
+
+def test_pii_hiding_in_tool_arguments_is_caught(tmp_path):
+    row = _redacted_row(
+        speaker="agent",
+        end=0.0,
+        text=None,
+        lang=None,
+        tool_call={
+            "id": "c1",
+            "name": "book_appointment",
+            "arguments": {"customer_id": "A-1", "callback": "415-555-0134"},
+        },
+    )
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert any(i.field == "turns[0].tool_call.arguments" for i in issues), [i.field for i in issues]
+
+
+def test_redaction_log_must_be_a_real_log(tmp_path):
+    (tmp_path / "log.json").write_text('{"notes": "trust me"}', encoding="utf-8")
+    row = _redacted_row()
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert [i.field for i in issues] == ["meta.redaction_log"]
+    assert "'spans' list" in issues[0].message
+
+
+def test_a_properly_redacted_row_passes(tmp_path):
+    (tmp_path / "log.json").write_text(
+        json.dumps({"spans": [{"turn": 0, "type": "ssn", "placeholder": "<SSN_1>"}]}),
+        encoding="utf-8",
+    )
+    row = _redacted_row(text="my ssn is <SSN_1>, thanks")
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert issues == []
+
+
+def test_unredacted_rows_are_not_rescanned(tmp_path):
+    # pii_redacted=false claims nothing, so there is nothing to disprove. Consent still is.
+    row = _redacted_row(text="my ssn is 536221234")
+    row["meta"] = dict(row["meta"], pii_redacted=False)
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert issues == []
+
+
 def test_missing_audio_file(tmp_path):
     m = _write(tmp_path, conversation())
     _, issues = validate_manifest(m)

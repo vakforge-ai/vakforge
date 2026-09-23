@@ -14,6 +14,7 @@ import jsonschema
 from pydantic import ValidationError
 
 from vakforge.locales import get_pack
+from vakforge.locales.base import LocalePack
 from vakforge.schema import Conversation
 
 
@@ -137,6 +138,87 @@ def _check_tools(conv: Conversation, line: int) -> list[Issue]:
     return issues
 
 
+def _redactable_text(conv: Conversation) -> list[tuple[str, str]]:
+    """Every (field path, text) a `pii_redacted` claim covers.
+
+    Tool arguments and results are included: a customer's number is just as exposed sitting
+    in `arguments` as it is in a spoken turn, and the row is trained on either way.
+    """
+    out: list[tuple[str, str]] = []
+    if conv.system_prompt:
+        out.append(("system_prompt", conv.system_prompt))
+    for i, t in enumerate(conv.turns):
+        if t.text:
+            out.append((f"turns[{i}].text", t.text))
+        if t.tool_call:
+            args = json.dumps(t.tool_call.arguments, ensure_ascii=False)
+            out.append((f"turns[{i}].tool_call.arguments", args))
+        if t.tool_result:
+            content = json.dumps(t.tool_result.content, ensure_ascii=False)
+            out.append((f"turns[{i}].tool_result.content", content))
+    return out
+
+
+def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int) -> list[Issue]:
+    """`pii_redacted: true` is a claim about the data, so prove it instead of trusting it.
+
+    The schema can only check that the flag and the log reference are present. Here we
+    re-run the locale pack over the text that is actually in the record: if anything the
+    pack recognises survives, the claim is false and the row must not be trained on.
+
+    Matched text is never repeated in the issue — reporting a leak should not copy the
+    personal data into a terminal, a CI log or a bug report.
+    """
+    if not conv.meta.pii_redacted:
+        return []
+    issues: list[Issue] = []
+
+    if conv.meta.redaction_log:
+        path = root / conv.meta.redaction_log
+        if not path.exists():
+            issues.append(
+                Issue(
+                    conv.id,
+                    "meta.redaction_log",
+                    f"{conv.meta.redaction_log} does not exist",
+                    "point at the log the redaction step wrote, or drop the claim",
+                    line,
+                )
+            )
+        else:
+            try:
+                log = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                issues.append(
+                    Issue(conv.id, "meta.redaction_log", f"unreadable: {exc}", "fix the log", line)
+                )
+            else:
+                if not isinstance(log, dict) or not isinstance(log.get("spans"), list):
+                    issues.append(
+                        Issue(
+                            conv.id,
+                            "meta.redaction_log",
+                            "must be a JSON object with a 'spans' list",
+                            "see docs/DATA_FORMAT.md",
+                            line,
+                        )
+                    )
+
+    for field, text in _redactable_text(conv):
+        for span in pack.find_pii(text):
+            issues.append(
+                Issue(
+                    conv.id,
+                    field,
+                    f"pii_redacted is true, but {span.type} is still present "
+                    f"at characters {span.start}-{span.end}",
+                    "redact it before writing the row, or set pii_redacted=false",
+                    line,
+                )
+            )
+    return issues
+
+
 def _check_consent(conv: Conversation, line: int, allow_unconsented: bool) -> list[Issue]:
     if conv.meta.consent == "none" and not allow_unconsented:
         return [
@@ -221,6 +303,12 @@ def validate_manifest(
             issues += _check_locale(conv, line_no)
             issues += _check_tools(conv, line_no)
             issues += _check_consent(conv, line_no, allow_unconsented)
+            try:  # an unknown pack is already reported by _check_locale
+                pack = get_pack(conv.locale)
+            except KeyError:
+                pass
+            else:
+                issues += _check_redaction(conv, pack, root, line_no)
 
     issues += _check_splits(convs, root)
     return convs, issues
