@@ -168,12 +168,25 @@
 <p>These fields are the only record of whether a row may lawfully be trained on, so the schema
 fails a record that claims something it cannot show:</p>
 <ul>
-<li><code>consent: recorded_verbal</code> or <code>written</code> requires <code>consent_ref</code>.</li>
-<li><code>consent: public_license</code> requires <code>license</code>.</li>
-<li><code>consent: synthetic</code> is only valid with <code>source: synthetic</code>.</li>
-<li><code>source: real</code> requires <code>pii_redacted: true</code> <strong>and</strong> a <code>redaction_log</code> naming what was removed. Redaction is not optional for real data; <code>prepare</code> only skips it under <code>--skip-redaction</code>, which logs a loud warning and marks the rows.</li>
-<li><code>pii_redacted: true</code> is <strong>re-checked, not trusted.</strong> <code>vakforge validate</code> runs the locale pack over <code>system_prompt</code>, every <code>turns[].text</code>, and the JSON of every <code>tool_call.arguments</code> and <code>tool_result.content</code>. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.</li>
-<li><code>redaction_log</code>, when named, must exist relative to the manifest and be a JSON object with a <code>spans</code> list:</li>
+<li>
+<p><code>consent: recorded_verbal</code> or <code>written</code> requires <code>consent_ref</code>.</p>
+</li>
+<li>
+<p><code>consent: public_license</code> requires <code>license</code>.</p>
+</li>
+<li>
+<p><code>consent: synthetic</code> is only valid with <code>source: synthetic</code>.</p>
+</li>
+<li>
+<p><code>source: real</code> requires <code>pii_redacted: true</code> <strong>and</strong> a <code>redaction_log</code> naming what was removed. Redaction is not optional for real data; <code>prepare</code> only skips it under <code>--skip-redaction</code>, which logs a loud warning and marks the rows.</p>
+</li>
+<li>
+<p><code>pii_redacted: true</code> is <strong>re-checked, not trusted.</strong> <code>vakforge validate</code> runs the locale pack over <code>system_prompt</code>, every <code>turns[].text</code>, and the JSON of every <code>tool_call.arguments</code> and <code>tool_result.content</code>. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.</p>
+<p><strong>This is a best-effort check, not proof.</strong> It finds what the locale pack's patterns and checksums describe: national IDs, cards, IBANs, phones, emails. It does not find names, addresses, unusual identifier formats, or anything spoken in the audio. A clean <code>validate</code> means nothing known was left behind, not that the row is safe to publish.</p>
+</li>
+<li>
+<p><code>redaction_log</code>, when named, must be <strong>inside the dataset</strong> — relative to the manifest, no <code>..</code>, and a symlink that resolves out is rejected too. A manifest is data, often generated or handed over, and a path that leaves the dataset is not evidence about it. The log must be a JSON object with a <code>spans</code> list, and it must describe <em>this</em> record: a <code>conversation_id</code> that names another conversation, a span pointing at a turn that does not exist, or a span claiming a placeholder that is not in that turn all fail the row. An empty <code>spans</code> list is accepted — a conversation may genuinely contain no personal data, and the rescan above is what actually proves it.</p>
+</li>
 </ul>
 <div class="code-block"><span class="code-lang">json</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"conversation_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"conv_000123"</span><span class="p">,</span>
