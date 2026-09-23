@@ -164,6 +164,11 @@ class Turn(_Strict):
 
         Redaction and entity-level evaluation both slice `text` by these offsets, so an
         offset that is stale or off by a character silently corrupts the record.
+
+        No message here repeats the text it is complaining about. The declared entity types
+        are `phone`, `person_name`, `address`, `customer_id` — personal data by definition —
+        and these errors are printed to a terminal and copied into CI logs and bug reports.
+        `vakforge.validate` holds the same line when it reports a redaction leak.
         """
         for i, e in enumerate(self.entities):
             where = f"entities[{i}]"
@@ -178,8 +183,9 @@ class Turn(_Strict):
                 raise ValueError(f"{where}: end_char {e.end_char} is past the end of text")
             if text[e.start_char : e.end_char] != e.text:
                 raise ValueError(
-                    f"{where}: text[{e.start_char}:{e.end_char}] is "
-                    f"{text[e.start_char : e.end_char]!r}, not {e.text!r}"
+                    f"{where}: the {e.end_char - e.start_char} characters at "
+                    f"[{e.start_char}:{e.end_char}] are not the {len(e.text)} in "
+                    f"{where}.text; fix the offsets or the text, they disagree"
                 )
 
 
