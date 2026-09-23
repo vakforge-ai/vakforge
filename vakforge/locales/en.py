@@ -23,7 +23,18 @@ CARD = PIIPattern(
 )
 IBAN = PIIPattern(
     "iban",
-    re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]){11,30}\b"),
+    # Case-insensitive, because transcripts arrive lowercased and `iban_valid` upper-cases
+    # before checking; a case-sensitive pattern rejected text the validator would accept.
+    #
+    # The groups are spelled out rather than using a loose `(?: ?[A-Z0-9]){11,30}`: once the
+    # pattern ignores case, a loose run happily eats the space and the next word ("… 7654 32
+    # please"), and the over-long match then fails the checksum, so the IBAN is missed
+    # entirely. An IBAN is written either contiguously or in groups of four.
+    re.compile(
+        r"\b[A-Za-z]{2}\d{2}"
+        r"(?:[A-Za-z0-9]{11,30}|(?:[ -][A-Za-z0-9]{4})*[ -][A-Za-z0-9]{1,4})"
+        r"\b"
+    ),
     validate=iban_valid,
 )
 
