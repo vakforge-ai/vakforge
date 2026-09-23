@@ -107,7 +107,7 @@ my-agent/
 
 **turns[].overlap** — `true` when this turn starts before the previous one ends. Duplex eval uses it; turn-based adapters drop or merge such turns and log how many.
 
-**turns[].tool_call / tool_result** — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result.
+**turns[].tool_call / tool_result** — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result. A call is issued once and answered at most once, and a call left hanging while the conversation carries on is rejected — that pattern cannot happen at serving time, so training on it teaches a turn shape the model will never need. A call in the *final* turn may go unanswered: real transcripts get cut off mid-exchange, and the alternative is inviting people to invent a result. `tool_result.content` is any JSON value, because a real tool returns a list, a string or a number as readily as an object.
 
 **turns[].entities** — optional but strongly recommended for business data: `customer_id`, `phone`, `amount_inr`, `date`, `person_name`, `address`, `order_id`. Entity accuracy is one of the headline eval metrics. `start_char` and `end_char` are optional, but when present they are both required and `text[start_char:end_char]` must equal the entity's own `text`: redaction and entity scoring both slice by these offsets, so a stale offset corrupts the record silently.
 
