@@ -184,7 +184,8 @@ fails a record that claims something it cannot show:</p>
 <span class="p">}</span>
 </code></pre></div>
 <ul>
-<li><code>source: real</code> with audio requires <code>voice_consent_ref</code>. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.</li>
+<li><code>allowed_uses</code> says what the row may be trained for: <code>asr</code>, <code>workflow</code>, <code>evaluation</code>, <code>voice_clone</code>. It defaults to the three ordinary uses, because that is what a recording is normally collected for. An empty list is rejected — a row allowed for nothing does not belong in a dataset.</li>
+<li><code>allowed_uses</code> containing <code>voice_clone</code> on <code>source: real</code> requires <code>voice_consent_ref</code>. Consent to record a call is not consent to reproduce the caller's voice. This is scoped to cloning deliberately: requiring voice consent for audio only ever used to train recognition is a rule broad enough that the easy way past it is a dummy value, which is worse than no rule.</li>
 </ul>
 <p>Synthetic rows are exempt from the redaction rules because they contain no real person's data.</p>
 <h2 id="splits">Splits</h2>
