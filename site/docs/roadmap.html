@@ -104,6 +104,8 @@
 <li class="task"><input type="checkbox" disabled> <code>inspect</code>: PDF / DOCX / XLSX text (listed as unreadable with a hint today)</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: rules from <code>DECISION_GUIDE.md</code> as code; reads <code>inspect.json</code> or a folder; routes per source, fine-tune verdict, recipe filtered by locale <code>recipe_support</code> and GPU, data gap, consent checklist; writes <code>recommend.json</code></li>
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: per-goal bars with their own unit, floor, target, confidence label and citation (<code>BARS</code>); three-state verdict (<code>blocked</code> / <code>baseline_first</code> / <code>candidate</code>) instead of a boolean, per <code>docs/RESEARCH.md</code></li>
+<li class="task done"><input type="checkbox" checked disabled> <code>recommend</code> counts usable evidence only: raw audio is never converted into conversation turns, goals are inferred from profiled files rather than discovered ones, and evidence whose fitness is unproven cannot reach <code>candidate</code></li>
+<li class="task"><input type="checkbox" disabled> <code>recommend</code>: a decision per goal (<code>goal_decisions[]</code>) instead of one verdict for the whole project</li>
 <li class="task"><input type="checkbox" disabled> <code>recommend</code>: interactive questionnaire (flags <code>--goal</code>, <code>--gpu</code>, <code>--duplex</code> cover it non-interactively today)</li>
 </ul>
 <h2 id="phase-2-agent-skill">Phase 2 — Agent skill</h2>

@@ -8,6 +8,7 @@ US = get_pack("en-US")
 def summary(**over):
     base = {
         "counts": {"document": 0, "table": 0, "chat": 0, "audio": 0, "other": 0},
+        "profiled": None,  # defaults to counts below, as a real report has both
         "document_words": 0,
         "chat_messages": 0,
         "audio_hours": 0.0,
@@ -17,6 +18,8 @@ def summary(**over):
         "tool_candidates": [],
     }
     base.update(over)
+    if base["profiled"] is None:
+        base["profiled"] = base["counts"]
     return base
 
 
@@ -140,16 +143,65 @@ def test_duplex_recipe_still_needs_two_channel_recordings():
     assert mono.recipe is None and "stereo" in mono.recipe_reason
 
 
+def test_raw_audio_hours_are_never_counted_as_conversation_turns():
+    # The reproduced failure: two hours of untouched recordings became exactly 600
+    # workflow turns and a `candidate`, with no transcript, diarization or labels.
+    r = recommend(
+        summary(counts={"audio": 8}, audio_hours=2.0),
+        US,
+        Constraints(goals=("workflow",), gpu="24"),
+    )
+    assert r.have == 0
+    assert r.fine_tune == "blocked"
+    assert any("transcribed and diarized" in u for u in r.uncounted)
+    assert any("not counted yet" in s for s in r.next_steps)
+
+
+def test_audio_evidence_cannot_reach_candidate_while_unverified():
+    # 40 h clears the 20 h recognition target, but duration alone proves nothing about
+    # transcripts, speaker labels or consent, so the verdict stops short of candidate.
+    r = recommend(
+        summary(counts={"audio": 200}, audio_hours=40.0),
+        US,
+        Constraints(goals=("recognition",), gpu="24"),
+    )
+    assert r.have == 40.0
+    assert r.fine_tune == "baseline_first"
+    assert "nothing has verified it is usable" in r.fine_tune_reason
+
+
+def test_chat_messages_are_real_turns_and_do_reach_candidate():
+    # Parsed chat messages are genuine conversation turns, so they are counted in full.
+    r = recommend(
+        summary(counts={"chat": 4}, chat_messages=2000),
+        US,
+        Constraints(goals=("workflow",), gpu="24"),
+    )
+    assert r.have == 2000
+    assert r.have_from == "2000 parsed chat messages"
+    assert r.uncounted == []
+    assert r.fine_tune == "candidate"
+
+
+def test_unprofiled_files_do_not_infer_goals():
+    # Audio that was discovered but never read proves nothing about the user's intent.
+    found_only = summary(counts={"audio": 10}, profiled={"audio": 0})
+    assert "recognition" not in recommend(found_only, US).goals
+
+
 def test_voice_cloning_is_measured_in_seconds_not_hours():
-    # VALL-E clones from a 3-second prompt, so half an hour of audio is ample; the real
-    # gate on voice is consent, which the consent checklist carries.
+    # VALL-E clones from a 3-second prompt, so half an hour of audio is far past the bar.
+    # It still does not reach `candidate`: total duration says nothing about whether the
+    # audio is one speaker, recorded consistently, who consented to their voice being used.
     r = recommend(
         summary(counts={"audio": 3}, audio_hours=0.5),
         US,
         Constraints(goals=("voice",), gpu="48"),
     )
     assert r.need_unit == "seconds"
-    assert r.fine_tune == "candidate"
+    assert r.have == 1800
+    assert r.fine_tune == "baseline_first"
+    assert any("one consented speaker" in u for u in r.uncounted)
     assert "consent for that speaker's voice" in r.evidence
 
 
