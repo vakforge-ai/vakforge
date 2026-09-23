@@ -74,10 +74,35 @@ def test_no_false_positives(text):
 # Indian reference numbers are ten digits too, so the preceding word decides.
 @pytest.mark.parametrize(
     "text",
-    ["order 9876543210", "invoice 9876543210", "AWB 9876543210", "txn 9876543210"],
+    [
+        "order 9876543210",
+        "invoice 9876543210",
+        "AWB 9876543210",
+        "txn 9876543210",
+        # The cue is often several filler words away from the digits.
+        "order number is 9876543210",
+        "order no. 9876543210",
+        "my order id is 9876543210",
+        "tracking number 9876543210",
+        "booking ref: 9876543210",
+    ],
 )
 def test_reference_numbers_are_not_phones(text):
     assert found(text) == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "call me on 9876543210",
+        "mera number 9876543210 hai",
+        # A cue word earlier in the sentence must not suppress a genuine number later.
+        "order cancel karke mera 9876543210 pe call karo",
+        "the order was late, call 9876543210",
+    ],
+)
+def test_a_cue_word_earlier_in_the_sentence_still_leaves_real_phones(text):
+    assert [t for t, _ in found(text)] == ["phone"]
 
 
 def test_a_phone_after_an_unrelated_reference_still_matches():

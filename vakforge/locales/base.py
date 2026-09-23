@@ -53,6 +53,52 @@ class PIIPattern:
             yield m
 
 
+def reference_cue(*words: str) -> re.Pattern[str]:
+    """A `context_deny` pattern for numbers introduced as a reference, not a phone.
+
+    Matches the cue word followed only by filler: "order 9876543210",
+    "order number is 9876543210", "my order id is 9876543210", "invoice no. 9876543210".
+
+    It deliberately does not match "order cancel karke mera 9876543210", where unrelated
+    words sit between the cue and the digits and the number really is a phone. That is why
+    the filler is an explicit word list rather than a character budget: a plain "any N
+    characters" window silently suppresses real phone numbers a couple of words later.
+    """
+    cues = "|".join(words)
+    filler = r"(?:\s+(?:number|no|num|nbr|id|ref|code|is|was|the|my|your|our))*"
+    return re.compile(rf"(?i)\b(?:{cues})\b{filler}\s*[:#=.\-]?\s*$")
+
+
+# Words that introduce a reference number in English-speaking markets. Packs extend this.
+REFERENCE_WORDS = (
+    "order",
+    "invoice",
+    "ref",
+    "reference",
+    "ticket",
+    "txn",
+    "transaction",
+    "receipt",
+    "policy",
+    "account",
+    "acc",
+    "a/c",
+    "card",
+    "imei",
+    "sku",
+    "awb",
+    "pnr",
+    "gst",
+    "tracking",
+    "case",
+    "claim",
+    "booking",
+    "confirmation",
+    "member",
+    "membership",
+)
+
+
 @dataclass(frozen=True)
 class PIISpan:
     """One detected piece of personal data in a text."""

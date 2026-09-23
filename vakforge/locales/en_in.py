@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import re
 
-from vakforge.locales.base import LocaleFormats, PIIPattern, PrivacyNotes, register
+from vakforge.locales.base import (
+    REFERENCE_WORDS,
+    LocaleFormats,
+    PIIPattern,
+    PrivacyNotes,
+    reference_cue,
+    register,
+)
 from vakforge.locales.checksums import verhoeff_valid
 from vakforge.locales.en import EnglishPack
 
@@ -16,15 +23,12 @@ AADHAAR = PIIPattern(
 )
 # AAAPA9999A; the 4th letter encodes the holder type (P person, C company, ...).
 PAN = PIIPattern("pan", re.compile(r"\b[A-Z]{3}[ABCFGHJLPT][A-Z]\d{4}[A-Z]\b", re.I))
-# Mobile numbers start 6-9; optional +91 or leading 0. Ten digits after "order" or "invoice"
-# are a reference, not a phone number.
+# Mobile numbers start 6-9; optional +91 or leading 0. Ten digits introduced as an order,
+# invoice or AWB number are a reference, not a phone number.
 PHONE_IN = PIIPattern(
     "phone",
     re.compile(r"(?<![\d+])(?:\+91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)"),
-    context_deny=re.compile(
-        r"(?i)\b(order|invoice|ref|reference|ticket|txn|transaction|awb|pnr|gst|receipt|"
-        r"policy|account|acc|a/c|card|imei|sku)\b\W{0,4}$"
-    ),
+    context_deny=reference_cue(*REFERENCE_WORDS),
 )
 
 _SYMBOLS = r"(?:₹|rs\.?|inr)"
