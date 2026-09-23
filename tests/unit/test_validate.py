@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from tests.conftest import conversation, write_wav
 from vakforge.validate import validate_manifest
 
@@ -81,7 +83,82 @@ def test_redaction_log_must_be_a_real_log(tmp_path):
     row["meta"] = dict(row["meta"], redaction_log="log.json")
     _, issues = validate_manifest(_write(tmp_path, row))
     assert [i.field for i in issues] == ["meta.redaction_log"]
-    assert "'spans' list" in issues[0].message
+    assert "unreadable or malformed" in issues[0].message
+
+
+@pytest.mark.parametrize(
+    "escape",
+    ["../outside.json", "a/../../outside.json", "/etc/passwd", "C:\\Windows\\win.ini"],
+)
+def test_the_redaction_log_cannot_point_outside_the_dataset(tmp_path, escape):
+    # A manifest is data — generated, downloaded, handed over with a dataset. Every path it
+    # carries is resolved against its own directory, so one that climbs out turns validate
+    # into a file-existence oracle for the machine running it.
+    row = _redacted_row()
+    row["meta"] = dict(row["meta"], redaction_log=escape)
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert issues, f"{escape} was accepted"
+    assert any("redaction_log" in i.message or "redaction_log" in i.field for i in issues)
+
+
+def test_a_symlinked_redaction_log_that_leaves_the_dataset_is_rejected(tmp_path):
+    # The string check cannot see this one: the path is relative and has no '..'.
+    outside = tmp_path.parent / "outside-log.json"
+    outside.write_text('{"spans": []}', encoding="utf-8")
+    ds = tmp_path / "ds"
+    ds.mkdir()
+    try:
+        (ds / "log.json").symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks need privileges on this platform")
+    row = _redacted_row()
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(ds, row))
+    assert [i.field for i in issues] == ["meta.redaction_log"]
+    assert "outside the dataset" in issues[0].message
+
+
+def test_a_log_from_another_conversation_is_not_evidence(tmp_path):
+    (tmp_path / "log.json").write_text(
+        json.dumps({"conversation_id": "someone_else", "spans": []}), encoding="utf-8"
+    )
+    row = _redacted_row()
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert [i.field for i in issues] == ["meta.redaction_log"]
+    assert "not this one" in issues[0].message
+
+
+def test_a_span_must_describe_a_redaction_that_happened(tmp_path):
+    (tmp_path / "log.json").write_text(
+        json.dumps({"spans": [{"type": "ssn", "turn": 0, "placeholder": "<SSN_1>"}]}),
+        encoding="utf-8",
+    )
+    row = _redacted_row(text="nothing was removed here")  # no placeholder in the text
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert [i.field for i in issues] == ["meta.redaction_log"]
+    assert "does not contain it" in issues[0].message
+
+
+def test_a_span_pointing_at_a_turn_that_does_not_exist_is_rejected(tmp_path):
+    (tmp_path / "log.json").write_text(
+        json.dumps({"spans": [{"type": "ssn", "turn": 9}]}), encoding="utf-8"
+    )
+    row = _redacted_row()
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert "does not exist" in issues[0].message
+
+
+def test_an_empty_span_list_is_accepted(tmp_path):
+    # A conversation may genuinely contain no personal data. The substantive proof is the
+    # rescan of the text, not the length of the log.
+    (tmp_path / "log.json").write_text('{"spans": []}', encoding="utf-8")
+    row = _redacted_row(text="nothing sensitive here at all")
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    _, issues = validate_manifest(_write(tmp_path, row))
+    assert issues == []
 
 
 def test_a_properly_redacted_row_passes(tmp_path):

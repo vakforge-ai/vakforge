@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 import jsonschema
@@ -15,7 +16,7 @@ from pydantic import ValidationError
 
 from vakforge.locales import get_pack
 from vakforge.locales.base import LocalePack
-from vakforge.schema import Conversation
+from vakforge.schema import Conversation, RedactionLog
 
 
 @dataclass(frozen=True)
@@ -182,35 +183,7 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
     issues: list[Issue] = []
 
     if conv.meta.redaction_log:
-        path = root / conv.meta.redaction_log
-        if not path.exists():
-            issues.append(
-                Issue(
-                    conv.id,
-                    "meta.redaction_log",
-                    f"{conv.meta.redaction_log} does not exist",
-                    "point at the log the redaction step wrote, or drop the claim",
-                    line,
-                )
-            )
-        else:
-            try:
-                log = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as exc:
-                issues.append(
-                    Issue(conv.id, "meta.redaction_log", f"unreadable: {exc}", "fix the log", line)
-                )
-            else:
-                if not isinstance(log, dict) or not isinstance(log.get("spans"), list):
-                    issues.append(
-                        Issue(
-                            conv.id,
-                            "meta.redaction_log",
-                            "must be a JSON object with a 'spans' list",
-                            "see docs/DATA_FORMAT.md",
-                            line,
-                        )
-                    )
+        issues += _check_redaction_log(conv, root, line)
 
     for field, text in _redactable_text(conv):
         for span in pack.find_pii(text):
@@ -222,6 +195,73 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
                     f"at characters {span.start}-{span.end}",
                     "redact it before writing the row, or set pii_redacted=false",
                     line,
+                )
+            )
+    return issues
+
+
+def _inside(root: Path, target: Path) -> bool:
+    """Is `target` really under `root` once both are fully resolved?
+
+    The schema already rejects an absolute path or a `..` segment in the declared string.
+    This is the second layer, and it catches what a string check cannot: a symlink inside
+    the dataset pointing anywhere on the machine.
+    """
+    try:
+        return target.resolve().is_relative_to(root.resolve())
+    except OSError:  # a broken link or a path we cannot stat is not inside
+        return False
+
+
+def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issue]:
+    """The log has to exist inside the dataset, parse, and describe *this* record.
+
+    An empty `spans` list is accepted: a conversation may genuinely contain no personal
+    data. The substantive proof is the rescan in `_check_redaction`, which reads the text
+    itself — this only establishes that the log is coherent and belongs to this row, so a
+    log copied from another conversation cannot stand in as evidence.
+    """
+    issue = partial(Issue, conv.id, "meta.redaction_log", line=line)
+    path = root / conv.meta.redaction_log
+    if not _inside(root, path):
+        return [
+            issue(
+                "resolves outside the dataset directory",
+                "keep the log beside the manifest; a path that leaves the dataset is not "
+                "evidence about it",
+            )
+        ]
+    if not path.exists():
+        return [issue(f"{conv.meta.redaction_log} does not exist", "point at the real log")]
+    try:
+        log = RedactionLog.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        first = str(exc).splitlines()[0]
+        return [issue(f"unreadable or malformed: {first}", "see docs/DATA_FORMAT.md")]
+
+    issues = []
+    if log.conversation_id and log.conversation_id != conv.id:
+        issues.append(
+            issue(
+                f"names conversation {log.conversation_id!r}, not this one",
+                "a log from another conversation is not evidence about this one",
+            )
+        )
+    for n, span in enumerate(log.spans):
+        if span.turn is None:
+            continue
+        if not 0 <= span.turn < len(conv.turns):
+            issues.append(issue(f"spans[{n}] points at turn {span.turn}, which does not exist"))
+            continue
+        # The placeholder is what should be left behind where the data was removed. If it
+        # is not there, the log is describing a redaction that did not happen.
+        text = conv.turns[span.turn].text or ""
+        if span.placeholder and span.placeholder not in text:
+            issues.append(
+                issue(
+                    f"spans[{n}] claims placeholder {span.placeholder!r} in turn "
+                    f"{span.turn}, which does not contain it",
+                    "write the log from the redaction that actually ran",
                 )
             )
     return issues

@@ -127,7 +127,10 @@ fails a record that claims something it cannot show:
 - `consent: synthetic` is only valid with `source: synthetic`.
 - `source: real` requires `pii_redacted: true` **and** a `redaction_log` naming what was removed. Redaction is not optional for real data; `prepare` only skips it under `--skip-redaction`, which logs a loud warning and marks the rows.
 - `pii_redacted: true` is **re-checked, not trusted.** `vakforge validate` runs the locale pack over `system_prompt`, every `turns[].text`, and the JSON of every `tool_call.arguments` and `tool_result.content`. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.
-- `redaction_log`, when named, must exist relative to the manifest and be a JSON object with a `spans` list:
+
+  **This is a best-effort check, not proof.** It finds what the locale pack's patterns and checksums describe: national IDs, cards, IBANs, phones, emails. It does not find names, addresses, unusual identifier formats, or anything spoken in the audio. A clean `validate` means nothing known was left behind, not that the row is safe to publish.
+
+- `redaction_log`, when named, must be **inside the dataset** — relative to the manifest, no `..`, and a symlink that resolves out is rejected too. A manifest is data, often generated or handed over, and a path that leaves the dataset is not evidence about it. The log must be a JSON object with a `spans` list, and it must describe *this* record: a `conversation_id` that names another conversation, a span pointing at a turn that does not exist, or a span claiming a placeholder that is not in that turn all fail the row. An empty `spans` list is accepted — a conversation may genuinely contain no personal data, and the rescan above is what actually proves it.
 
 ```json
 {
