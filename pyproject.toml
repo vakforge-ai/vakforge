@@ -42,8 +42,13 @@ dev = [
 vakforge = "vakforge.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/vakforge-ai/vakforge"
+# These become the sidebar links on the PyPI page, which is the only navigation
+# someone who found the package through pip ever gets.
+Homepage = "https://vakforge.pages.dev"
+Documentation = "https://vakforge.pages.dev/docs/"
 Repository = "https://github.com/vakforge-ai/vakforge"
+Issues = "https://github.com/vakforge-ai/vakforge/issues"
+Changelog = "https://github.com/vakforge-ai/vakforge/releases"
 
 [build-system]
 requires = ["hatchling"]
