@@ -150,6 +150,38 @@ def test_one_bad_jsonl_line_does_not_lose_the_file(tmp_path):
     assert facts["parse_errors"][0].startswith("line 2:")
 
 
+def test_a_bad_line_in_a_chat_export_is_reported_too(tmp_path):
+    # profile_table reported these and profile_chat silently dropped them, because it
+    # iterated the (rows, errors) tuple instead of unpacking it. Every chat fixture was
+    # well-formed, so nothing failed.
+    p = tmp_path / "chat.jsonl"
+    p.write_text(
+        json.dumps({"role": "user", "content": "Order kab aayega?"}) + "\n"
+        "{BROKEN\n" + json.dumps({"role": "assistant", "content": "Kal tak."}) + "\n",
+        encoding="utf-8",
+    )
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 2
+    assert facts["parse_errors"][0].startswith("line 2:")
+
+
+def test_audio_statistics_say_how_much_they_cover(tmp_path):
+    # Head-only statistics printed beside a whole-file duration read as whole-file numbers.
+    p = write_wav(tmp_path / "short.wav", seconds=2.0)
+    facts = profile_audio(classify(p), HI)
+    assert facts["stats_sampled_s"] == facts["duration_s"]
+    assert facts["stats_partial"] is False
+
+
+def test_a_long_recording_is_flagged_as_only_partly_measured(tmp_path, monkeypatch):
+    monkeypatch.setattr(profile, "STATS_SECONDS", 1)
+    p = write_wav(tmp_path / "long.wav", seconds=3.0)
+    facts = profile_audio(classify(p), HI)
+    assert facts["duration_s"] == 3.0
+    assert facts["stats_sampled_s"] == 1.0
+    assert facts["stats_partial"] is True
+
+
 def test_a_clean_jsonl_file_reports_no_parse_errors(tmp_path):
     p = tmp_path / "rows.jsonl"
     p.write_text('{"sku": "A"}\n{"sku": "B"}\n', encoding="utf-8")
