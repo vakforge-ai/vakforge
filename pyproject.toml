@@ -1,6 +1,6 @@
 [project]
 name = "vakforge"
-version = "0.1.0"
+version = "0.2.0"
 description = "Turn the data your company already has into a self-hosted, real-time voice assistant."
 readme = "README.md"
 license = "Apache-2.0"
