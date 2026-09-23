@@ -58,6 +58,21 @@ def test_no_false_positives(text):
     assert found(text) == []
 
 
+# A ten-digit account or order number has the same shape as a NANP number.
+@pytest.mark.parametrize(
+    "text", ["order number is 4155550134", "account no. 4155550134", "case #4155550134"]
+)
+def test_reference_numbers_are_not_phones(text):
+    assert found(text) == []
+
+
+@pytest.mark.parametrize(
+    "text", ["call me at (415) 555-0134", "the order shipped, call 415 555 0134"]
+)
+def test_real_phones_survive_a_nearby_cue_word(text):
+    assert [t for t, _ in found(text)] == ["phone"]
+
+
 def test_pack_metadata():
     assert US.resolved("call_recording_consent") == "varies_by_state"
     assert US.formats.date_order == "MDY"

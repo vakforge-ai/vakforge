@@ -51,6 +51,20 @@ def test_valid_cards_detected(card):
     assert types(f"card {card} thanks") == [("card_number", card)]
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "pay into gb82 west 1234 5698 7654 32 please",  # ASR output is lowercase
+        "iban de89370400440532013000 ok",  # lowercase and contiguous
+        "IBAN GB82 WEST 1234 5698 7654 32 thanks",
+    ],
+)
+def test_iban_detected_whatever_the_case(text):
+    # A case-sensitive pattern leaked every spoken IBAN, and a naively case-insensitive one
+    # swallowed the following word and then failed its own checksum.
+    assert "iban" in [t for t, _ in types(text)]
+
+
 def test_iban_detected():
     assert types("pay into GB82 WEST 1234 5698 7654 32 please") == [
         ("iban", "GB82 WEST 1234 5698 7654 32")

@@ -62,7 +62,10 @@ def test_the_target_is_labelled_with_how_well_supported_it_is():
     workflow = recommend(
         summary(counts={"chat": 1}, chat_messages=300), US, Constraints(goals=("workflow",))
     )
-    assert tools.evidence_confidence == "measured"  # published corpus sizes
+    # 8k is the scale of the published corpora, not a measured minimum for one company's
+    # tools, so it is "reported" rather than "measured".
+    assert tools.evidence_confidence == "reported"
+    assert "not a measured minimum" in tools.evidence
     assert workflow.evidence_confidence == "heuristic"  # 600 is ours, and says so
     assert "neither validates 600" in workflow.evidence
 

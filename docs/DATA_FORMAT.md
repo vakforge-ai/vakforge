@@ -124,6 +124,18 @@ fails a record that claims something it cannot show:
 - `consent: public_license` requires `license`.
 - `consent: synthetic` is only valid with `source: synthetic`.
 - `source: real` requires `pii_redacted: true` **and** a `redaction_log` naming what was removed. Redaction is not optional for real data; `prepare` only skips it under `--skip-redaction`, which logs a loud warning and marks the rows.
+- `pii_redacted: true` is **re-checked, not trusted.** `vakforge validate` runs the locale pack over `system_prompt`, every `turns[].text`, and the JSON of every `tool_call.arguments` and `tool_result.content`. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.
+- `redaction_log`, when named, must exist relative to the manifest and be a JSON object with a `spans` list:
+
+```json
+{
+  "conversation_id": "conv_000123",
+  "spans": [
+    {"turn": 1, "field": "text", "type": "phone", "start": 44, "end": 56,
+     "placeholder": "<PHONE_1>", "audio": {"start_s": 12.8, "end_s": 14.1, "method": "tone"}}
+  ]
+}
+```
 - `source: real` with audio requires `voice_consent_ref`. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.
 
 Synthetic rows are exempt from the redaction rules because they contain no real person's data.

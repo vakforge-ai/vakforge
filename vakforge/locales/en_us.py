@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import re
 
-from vakforge.locales.base import LocaleFormats, PIIPattern, PrivacyNotes, register
+from vakforge.locales.base import (
+    REFERENCE_WORDS,
+    LocaleFormats,
+    PIIPattern,
+    PrivacyNotes,
+    reference_cue,
+    register,
+)
 from vakforge.locales.en import EnglishPack
 
 # SSA never issues area 000, 666 or 900-999, group 00, or serial 0000.
@@ -23,10 +30,12 @@ SSN_COMPACT = PIIPattern(
         r"(?i)\b(ssn|social(?:\s+security)?(?:\s+number)?|tin)\b[^0-9]{0,12}$"
     ),
 )
-# NANP: area and exchange codes start 2-9; optional +1 and common separators.
+# NANP: area and exchange codes start 2-9; optional +1 and common separators. A ten-digit
+# order or account number matches this shape too, so the introducing word decides.
 PHONE_US = PIIPattern(
     "phone",
     re.compile(r"(?<![\d+])(?:\+?1[\s.-]?)?\(?[2-9]\d{2}\)?[\s.-]?[2-9]\d{2}[\s.-]?\d{4}\b"),
+    context_deny=reference_cue(*REFERENCE_WORDS),
 )
 
 
