@@ -20,10 +20,13 @@ JSON_EXT = {".json", ".jsonl", ".ndjson"}
 
 SKIP_DIRS = {".git", ".venv", "node_modules", "__pycache__", ".ipynb_checkpoints"}
 
-# WhatsApp export line: "12/03/24, 10:15 - Name: text" (with or without am/pm, brackets).
+# WhatsApp export line: "12/03/24, 10:15 - Name: text", or the bracketed variant
+# "[12/03/24, 10:15] Name: text" that iOS exports use. The name is captured here rather
+# than recovered by splitting the match afterwards: the bracketed form has no " - " to
+# split on, so that approach produced speakers called "[12/03/24, 10:15] Priya".
 _WHATSAPP_LINE = re.compile(
     r"^\[?\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4},? \d{1,2}:\d{2}(?::\d{2})?(?:\s?[ap]\.?m\.?)?\]?"
-    r"\s?[-–]?\s?[^:]{1,60}: ",
+    r"\s?[-–]?\s?(?P<speaker>[^:]{1,60}): ",
     re.I,
 )
 

@@ -25,7 +25,16 @@ from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
 _WORD = re.compile(r"\w+", re.UNICODE)
-_CREATE_TABLE = re.compile(r"create\s+table\s+(?:if\s+not\s+exists\s+)?[`\"\[]?(\w+)", re.I)
+# A schema or database prefix ("public.orders", "`shop`.`orders`") is matched and thrown
+# away so the table keeps its own name. This stays a regex rather than a SQL parser: core
+# has no parsing dependency, and the cost is that unusual quoting, computed defaults and
+# constraint bodies are read approximately.
+_CREATE_TABLE = re.compile(
+    r"create\s+table\s+(?:if\s+not\s+exists\s+)?"
+    r"(?:[`\"\[]?\w+[`\"\]]?\s*\.\s*)?"
+    r"[`\"\[]?(\w+)",
+    re.I,
+)
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
 MAX_CHARS = 2_000_000  # read at most this much text per file
 
@@ -86,22 +95,42 @@ def _columns_from_rows(rows: list[dict[str, Any]]) -> list[str]:
     return list(cols)
 
 
-def _jsonl_rows(text: str, truncated: bool) -> list[Any]:
-    """One record per line. A truncated read cuts the last line mid-way, so drop it."""
+def _jsonl_rows(text: str, truncated: bool) -> tuple[list[Any], list[str]]:
+    """One record per line, plus a message for each line that would not parse.
+
+    A single malformed line used to fail the whole file, which contradicts the rule the
+    rest of `inspect` follows: one bad part never aborts the run. Exports are routinely
+    half-good, and the good half is still worth counting.
+
+    A truncated read cuts the last line mid-way, so that one is dropped rather than
+    reported as a fault in the data.
+    """
     lines = text.splitlines()
     if truncated and lines:
         lines.pop()
-    return [json.loads(line) for line in lines if line.strip()]
+    rows: list[Any] = []
+    errors: list[str] = []
+    for n, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            errors.append(f"line {n}: {exc.msg}")
+    return rows, errors
 
 
 def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     tables: dict[str, dict[str, Any]] = {}
     truncated = False
+    parse_errors: list[str] = []
     if src.format in {"csv", "tsv"}:
         with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
             reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
-            rows = list(reader)
-        tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": len(rows)}
+            # Counted, not collected: only the number was ever used, and a large CRM
+            # export should not have to fit in memory to be counted.
+            n_rows = sum(1 for _ in reader)
+        tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": n_rows}
     elif src.format == "sql":
         sql, truncated = _read_text(src.path)
         for match in _CREATE_TABLE.finditer(sql):
@@ -119,7 +148,8 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
     else:  # jsonl / ndjson records
         text, truncated = _read_text(src.path)
-        rows = [r for r in _jsonl_rows(text, truncated) if isinstance(r, dict)]
+        records, parse_errors = _jsonl_rows(text, truncated)
+        rows = [r for r in records if isinstance(r, dict)]
         tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
     for name, t in tables.items():
         t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(c)]
@@ -127,6 +157,8 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     facts: dict[str, Any] = {"tables": tables}
     if truncated:
         facts["truncated"] = True  # row counts cover the part we read, not the whole file
+    if parse_errors:
+        facts["parse_errors"] = parse_errors  # counted rows exclude these
     return facts
 
 
@@ -138,7 +170,7 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
         text, truncated = _read_text(src.path)
         for line in text.splitlines():
             if m := _WHATSAPP_LINE.match(line):
-                speaker = re.split(r"\s[-–]\s", m.group(0))[-1].rstrip(": ").strip()
+                speaker = m.group("speaker").strip()
                 speakers[speaker] += 1
                 messages.append(line[m.end() :])
             elif messages:
