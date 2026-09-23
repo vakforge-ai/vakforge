@@ -66,7 +66,13 @@ def test_recommend_from_folder_and_from_report(tmp_path, monkeypatch):
     assert rec["locale"] == "hi-Latn-IN"
     assert rec["primary_problem"] == "tools"
     assert rec["fine_tune"] == "blocked"
-    assert rec["evidence_confidence"] in {"measured", "reported", "heuristic"}
+    # Every goal is answered separately, each with its own bar and its own evidence.
+    assert [g["goal"] for g in rec["goal_decisions"]] == rec["goals"]
+    for decision in rec["goal_decisions"]:
+        assert decision["eligibility"] in {"blocked", "baseline_first", "candidate"}
+        assert decision["confidence"] in {"measured", "reported", "heuristic"}
+        assert decision["evidence"]
+    assert "goal · tools" in r.output
 
     assert runner.invoke(app, ["inspect", str(raw), "-o", "inspect.json"]).exit_code == 0
     r = runner.invoke(app, ["recommend", "inspect.json", "-g", "workflow", "--gpu", "24"])

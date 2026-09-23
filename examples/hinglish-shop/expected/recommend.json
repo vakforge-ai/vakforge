@@ -29,18 +29,74 @@
       "why": "non-English turns found; the pack decides which recipe can speak the language"
     }
   ],
+  "goal_decisions": [
+    {
+      "goal": "tools",
+      "eligibility": "blocked",
+      "reason": "16 conversation turns is below the 200 conversation turns floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
+      "have": 16.0,
+      "have_from": "16 parsed chat messages",
+      "uncounted": [],
+      "need": 8000,
+      "unit": "turns",
+      "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of broad general-purpose corpora, not a measured minimum for adapting one company's fixed set of tools, so treat 8k as the scale of the published work rather than a requirement: your tool count, argument branches and negative cases matter more. The schema and the prompt come first either way",
+      "confidence": "reported",
+      "recipe": null,
+      "recipe_support": null,
+      "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "blockers": []
+    },
+    {
+      "goal": "workflow",
+      "eligibility": "blocked",
+      "reason": "16 conversation turns is below the 200 conversation turns floor for workflow; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
+      "have": 16.0,
+      "have_from": "16 parsed chat messages",
+      "uncounted": [],
+      "need": 600,
+      "unit": "turns",
+      "evidence": "LIMA (arXiv 2305.11206) got style and format from 1,000 curated examples and Spec-TOD (arXiv 2507.04841) was competitive on ~840 dialogues, but neither validates 600 or 200. Branch coverage and quality matter more than the count",
+      "confidence": "heuristic",
+      "recipe": null,
+      "recipe_support": null,
+      "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "blockers": []
+    },
+    {
+      "goal": "knowledge",
+      "eligibility": "blocked",
+      "reason": "facts belong in retrieval, not in weights: fine-tuning on them goes stale and measurably raises hallucination, while retrieval answers the same questions today",
+      "have": 16.0,
+      "have_from": "16 parsed chat messages",
+      "uncounted": [],
+      "need": null,
+      "unit": "turns",
+      "evidence": "Ovadia et al. 2024 (arXiv 2312.05934): retrieval beat unsupervised fine-tuning for both existing and new facts. Gekhman et al. 2024 (arXiv 2405.05904): training on new-knowledge examples raises hallucination roughly linearly",
+      "confidence": "measured",
+      "recipe": null,
+      "recipe_support": null,
+      "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "blockers": []
+    },
+    {
+      "goal": "language",
+      "eligibility": "blocked",
+      "reason": "16 conversation turns is below the 200 conversation turns floor for language; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
+      "have": 16.0,
+      "have_from": "16 parsed chat messages",
+      "uncounted": [],
+      "need": null,
+      "unit": "turns",
+      "evidence": "CS-YODAS moved Hindi-English accuracy from 0% to 19.9% with natural code-switched training where synthetic alone failed. Synthetic data buys coverage; natural code-switching and the evaluation set have to be real",
+      "confidence": "measured",
+      "recipe": null,
+      "recipe_support": null,
+      "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "blockers": []
+    }
+  ],
   "fine_tune": "blocked",
-  "fine_tune_reason": "16 conversation turns is below the 200 conversation turns floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
-  "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of broad general-purpose corpora, not a measured minimum for adapting one company's fixed set of tools, so treat 8k as the scale of the published work rather than a requirement: your tool count, argument branches and negative cases matter more. The schema and the prompt come first either way",
-  "evidence_confidence": "reported",
-  "recipe": null,
-  "recipe_support": null,
-  "recipe_reason": "no recipe needed: retrieval and tools carry this one",
-  "have": 16.0,
-  "have_from": "16 parsed chat messages",
-  "uncounted": [],
-  "need": 8000,
-  "need_unit": "turns",
+  "fine_tune_reason": "no goal here is one that fine-tuning answers, or has enough usable data to try. Ship on retrieval and tools, and collect real conversations",
   "audio_hours": 0.0,
   "consent": [
     "personal data found (phone, email): prepare must redact text and audio before any training row is written",
@@ -49,7 +105,8 @@
   "next_steps": [
     "measure the base model with prompt + retrieval on a held-out set of real conversations before training anything; that baseline is the only proof training was needed",
     "define the suggested tools and test the base model's tool calls",
-    "data gap: 16 of ~8000 conversation turns (reported); run synth over your documents and tools for coverage, and keep the evaluation set real",
+    "tools: 16 of ~8000 conversation turns (reported); run synth over your documents and tools for coverage, and keep the evaluation set real",
+    "workflow: 16 of ~600 conversation turns (heuristic); run synth over your documents and tools for coverage, and keep the evaluation set real",
     "ship the retrieval + tools version and collect real conversations"
   ]
 }

@@ -148,34 +148,55 @@ class Route:
 
 
 @dataclass
-class Recommendation:
-    """What to change, and how confident we are that fine-tuning is part of it.
+class GoalDecision:
+    """The answer for one goal, decided on that goal's own evidence.
 
-    `fine_tune` is deliberately not a boolean: the useful answer is which of the three
-    states the project is in, and `evidence` is what that state rests on.
+    Every goal has its own unit, bar, verdict and recipe. Collapsing a project into one
+    verdict hid the fact that "tools" and "recognition" are different questions with
+    different data behind them and different answers.
+    """
+
+    goal: Goal
+    eligibility: Eligibility
+    reason: str
+    have: float
+    have_from: str  # what was counted to get `have`, in words
+    uncounted: list[str]  # material that exists but cannot count yet, and what it needs
+    need: float | None
+    unit: str
+    evidence: str
+    confidence: Confidence
+    recipe: str | None
+    recipe_support: str | None
+    recipe_reason: str
+    blockers: list[str]  # what stands between this goal and training, beyond data volume
+
+
+@dataclass
+class Recommendation:
+    """What to change across the whole project, and the per-goal matrix it rests on.
+
+    `fine_tune` is the project-level roll-up — the best state any goal reached — and is
+    deliberately not a boolean. Read `goal_decisions` for the answer that applies to the
+    thing you actually care about.
     """
 
     primary_problem: Goal
     goals: list[Goal]
     routes: list[Route]
+    goal_decisions: list[GoalDecision]
     fine_tune: Eligibility
     fine_tune_reason: str
-    evidence: str
-    evidence_confidence: Confidence
-    recipe: str | None
-    recipe_support: str | None
-    recipe_reason: str
-    have: float
-    have_from: str  # what was counted to get `have`, in words
-    uncounted: list[str]  # material that exists but cannot count yet, and what it needs
-    need: float | None
-    need_unit: str
     audio_hours: float
     consent: list[str]
     next_steps: list[str]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    def decision(self, goal: Goal) -> GoalDecision | None:
+        """The decision for one goal, or None if it was not among the goals."""
+        return next((d for d in self.goal_decisions if d.goal == goal), None)
 
 
 def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
@@ -262,7 +283,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
 
 def _pick_recipe(
     primary: Goal, c: Constraints, pack: LocalePack, stereo: bool
-) -> tuple[str | None, str | None, str]:
+) -> tuple[str | None, str | None, str, list[str]]:
     support = pack.resolved("recipe_support") or {}
     gpu = GPU_GB[c.gpu]
     wants_duplex = c.duplex or primary == "duplex"
@@ -286,26 +307,33 @@ def _pick_recipe(
         if wants_duplex and not spec["duplex"]:
             reasons.append(f"{name}: not full-duplex")
             continue
-        if name == "moshi-lora" and not stereo:
-            reasons.append(f"{name}: needs stereo (user/agent) recordings")
-            continue
         if primary not in spec["goals"] and not wants_duplex:
             reasons.append(f"{name}: does not target {primary}")
             continue
+        # Missing dual-stream data blocks *adapting* this model. It does not stop us
+        # naming it: choosing a base that can already hold a duplex conversation is a
+        # separate decision from whether your recordings can adapt it.
+        blockers = []
+        if name == "moshi-lora" and not stereo:
+            blockers.append(
+                "adapting it needs recordings with the user and the agent on separate "
+                "channels; inspect can see two channels but cannot verify who is on each"
+            )
         if gpu < spec["gpu"]:
             return (
                 name,
                 level,
                 f"{name} fits, but training needs a {spec['gpu']} GB GPU "
                 f"(you have {c.gpu}); use Colab or rent one",
+                blockers,
             )
         note = (
             ""
             if level == "native"
             else f" ({level}: input understood, speech output stays English)"
         )
-        return name, level, f"{name}: {primary} on a {spec['gpu']} GB GPU{note}"
-    return None, None, "no recipe fits: " + "; ".join(reasons)
+        return name, level, f"{name}: {primary} on a {spec['gpu']} GB GPU{note}", blockers
+    return None, None, "no recipe fits: " + "; ".join(reasons), []
 
 
 _UNIT_NAME = {
@@ -401,6 +429,80 @@ def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
     )
 
 
+def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraints) -> GoalDecision:
+    """Answer one goal on its own evidence, bar and recipe."""
+    bar = BARS[goal]
+    have, have_from, uncounted, verified = _evidence(bar, summary)
+    eligibility, reason = _verdict(goal, bar, have)
+
+    two_channel = bool(summary.get("two_channel_audio_files", 0))
+    if eligibility == "blocked" and goal != "duplex":
+        # Nothing to train on, so no recipe to name. Duplex is the exception: the verdict
+        # is about training, but the user still has to pick a base model that can do it.
+        recipe, level, recipe_reason, blockers = (
+            None,
+            None,
+            "no recipe needed: retrieval and tools carry this one",
+            [],
+        )
+    else:
+        recipe, level, recipe_reason, blockers = _pick_recipe(goal, c, pack, two_channel)
+
+    if eligibility == "candidate" and not verified:
+        eligibility = "baseline_first"
+        reason = (
+            f"{_amount(have, bar.unit)} clears the bar for {goal}, but nothing has "
+            f"verified it is usable — {uncounted[0]}. Measure the baseline while you "
+            "establish that, and revisit"
+        )
+    elif eligibility == "candidate" and blockers:
+        eligibility = "baseline_first"
+        reason = f"the data clears the bar, but {blockers[0]}"
+
+    return GoalDecision(
+        goal=goal,
+        eligibility=eligibility,
+        reason=reason,
+        have=round(have, 2),
+        have_from=have_from,
+        uncounted=uncounted,
+        need=bar.target,
+        unit=bar.unit,
+        evidence=bar.evidence,
+        confidence=bar.confidence,
+        recipe=recipe,
+        recipe_support=level,
+        recipe_reason=recipe_reason,
+        blockers=blockers,
+    )
+
+
+_RANK: dict[Eligibility, int] = {"blocked": 0, "baseline_first": 1, "candidate": 2}
+
+
+def _project_verdict(decisions: list[GoalDecision]) -> tuple[Eligibility, str]:
+    """Roll the matrix up: is any training worth attempting on this project at all?"""
+    best = max(_RANK[d.eligibility] for d in decisions)
+    named = {
+        state: [d.goal for d in decisions if d.eligibility == state]
+        for state in ("candidate", "baseline_first", "blocked")
+    }
+    if best == 2:
+        return "candidate", (
+            f"worth trying for {', '.join(named['candidate'])}, once the baseline is "
+            "measured. Every other goal below has its own answer"
+        )
+    if best == 1:
+        return "baseline_first", (
+            f"nothing is ready to train yet. {', '.join(named['baseline_first'])} could be, "
+            "once the baseline is measured and the gaps below are closed"
+        )
+    return "blocked", (
+        "no goal here is one that fine-tuning answers, or has enough usable data to try. "
+        "Ship on retrieval and tools, and collect real conversations"
+    )
+
+
 DEFAULT_CONSTRAINTS = Constraints()
 
 
@@ -409,29 +511,15 @@ def recommend(
 ) -> Recommendation:
     """Apply the decision guide to an inspect summary."""
     goals = list(c.goals) or infer_goals(summary, pack)
+    if c.duplex and "duplex" not in goals:
+        goals.insert(0, "duplex")
     primary: Goal = "duplex" if c.duplex else goals[0]
     routes = _routes(summary, goals)
-
     audio_hours = float(summary.get("audio_hours", 0.0))
-    bar = BARS[primary]
-    have, have_from, uncounted, verified = _evidence(bar, summary)
-    verdict, reason = _verdict(primary, bar, have)
-    if verdict == "candidate" and not verified:
-        # The amount clears the bar, but nothing has shown the material is fit to train on.
-        verdict = "baseline_first"
-        reason = (
-            f"{_amount(have, bar.unit)} clears the bar for {primary}, but nothing has "
-            f"verified it is usable — {uncounted[0]}. Measure the baseline while you "
-            "establish that, and revisit"
-        )
 
-    needs_recipe = verdict != "blocked" or primary == "duplex"
-    two_channel = bool(summary.get("two_channel_audio_files", 0))
-    recipe, level, recipe_reason = (
-        _pick_recipe(primary, c, pack, two_channel)
-        if needs_recipe
-        else (None, None, "no recipe needed: retrieval and tools carry this one")
-    )
+    # Every goal is answered on its own evidence; the project verdict is the roll-up.
+    decisions = [_decide(goal, summary, pack, c) for goal in goals]
+    verdict, reason = _project_verdict(decisions)
 
     consent: list[str] = []
     if summary.get("counts", {}).get("audio", 0):
@@ -457,21 +545,28 @@ def recommend(
     ]
     if summary.get("tool_candidates"):
         steps.append("define the suggested tools and test the base model's tool calls")
-    if primary == "recognition":
+    if any(d.goal == "recognition" for d in decisions):
         steps.append(
             "bias the recogniser towards your product, place and customer names; published "
             "results cut entity errors 18-50% with no training"
         )
-    if bar.target is not None and have < bar.target:
-        steps.append(
-            f"data gap: {have:g} of ~{_amount(bar.target, bar.unit)} ({bar.confidence}); "
-            "run synth over your documents and tools for coverage, and keep the "
-            "evaluation set real"
-        )
-    for note in uncounted:
-        steps.append(f"not counted yet: {note}")
-    if verdict == "candidate" and recipe:
-        steps.append(f"then fine-tune with {recipe} and compare base vs tuned with eval")
+    # One line per goal that still needs something, so a multi-goal project gets a
+    # multi-goal plan instead of one instruction aimed at whichever goal sorted first.
+    for d in decisions:
+        if d.need is not None and d.have < d.need:
+            steps.append(
+                f"{d.goal}: {d.have:g} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
+                "run synth over your documents and tools for coverage, and keep the "
+                "evaluation set real"
+            )
+        for note in d.uncounted:
+            steps.append(f"{d.goal}, not counted yet: {note}")
+        for blocker in d.blockers:
+            steps.append(f"{d.goal}, blocked on: {blocker}")
+    trainable = [d for d in decisions if d.eligibility == "candidate" and d.recipe]
+    if trainable:
+        for d in trainable:
+            steps.append(f"{d.goal}: fine-tune with {d.recipe} and compare base vs tuned")
     else:
         steps.append("ship the retrieval + tools version and collect real conversations")
 
@@ -479,18 +574,9 @@ def recommend(
         primary_problem=primary,
         goals=goals,
         routes=routes,
+        goal_decisions=decisions,
         fine_tune=verdict,
         fine_tune_reason=reason,
-        evidence=bar.evidence,
-        evidence_confidence=bar.confidence,
-        recipe=recipe,
-        recipe_support=level,
-        recipe_reason=recipe_reason,
-        have=round(have, 2),
-        have_from=have_from,
-        uncounted=uncounted,
-        need=bar.target,
-        need_unit=bar.unit,
         audio_hours=audio_hours,
         consent=consent,
         next_steps=steps,

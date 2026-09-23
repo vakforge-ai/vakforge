@@ -77,7 +77,14 @@ approved a plan that states: the routes per source, whether a fine-tune is on th
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.
 
-`fine_tune` is one of three values, and each means a different plan:
+`recommend.json` answers **every goal separately** in `goal_decisions[]`. Each entry carries
+its own `eligibility`, `have`/`need`/`unit`, `evidence`, `confidence`, `recipe` and
+`blockers`, because "tools" and "recognition" are different questions with different data
+behind them. Walk the list and give the user a line per goal. The top-level `fine_tune` is
+only the roll-up — the best state any goal reached — and is not the answer for any
+particular goal.
+
+Each `eligibility` means a different plan:
 
 - `blocked` — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
   why, quoting the `evidence` field.
@@ -94,6 +101,11 @@ Read `have_from` and `uncounted` before you repeat any number. `have` counts onl
 data can prove today: raw audio is never counted as conversation turns, because `inspect`
 cannot transcribe or diarize it. Anything in `uncounted` is real material that needs work
 before it counts, and it belongs in the plan as a task, not as data the user already has.
+
+`blockers` is separate from data volume: it is what stands between a goal and training
+whatever the counts say. A named `recipe` alongside a blocker means the base model is the
+right choice and the adaptation is not yet possible — recommend the model, and put the
+blocker in the plan.
 
 ### 4. Prepare
 

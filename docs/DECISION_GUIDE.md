@@ -65,7 +65,8 @@ The command prints, and writes to `recommend.json`:
 
 - **primary problem** and the full list of goals (inferred from the data, or set with `--goal`)
 - **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack
-- **fine-tune?** one of three answers, never a bare yes:
+- **a decision per goal.** Most real requests are two or three goals at once, and they do not share an answer: `--goal tools --goal recognition` returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up — the best state any goal reached.
+- **fine-tune?** per goal, one of three answers, never a bare yes:
   - `no` — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from
   - `baseline first` — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all
   - `worth trying` — the data clears the bar, so try it after measuring the baseline, and compare the two
