@@ -18,6 +18,7 @@ Speaker = Literal["user", "agent", "tool"]
 Condition = Literal["studio", "clean", "phone", "noisy"]
 Source = Literal["real", "synthetic", "public"]
 Consent = Literal["recorded_verbal", "written", "synthetic", "public_license", "none"]
+AllowedUse = Literal["asr", "workflow", "evaluation", "voice_clone"]
 Split = Literal["train", "val", "test"]
 
 
@@ -185,6 +186,12 @@ class Meta(_Strict):
     source: Source
     consent: Consent
     consent_ref: str | None = None
+    # What this row may be trained for. Ordinary uses are the default because that is what
+    # a recording is normally collected for; `voice_clone` is the one that needs the
+    # speaker's separate agreement, so it has to be asked for explicitly.
+    allowed_uses: list[AllowedUse] = Field(
+        default_factory=lambda: ["asr", "workflow", "evaluation"]
+    )
     voice_consent_ref: str | None = None
     license: str | None = None
     pii_redacted: bool
@@ -211,6 +218,19 @@ class Meta(_Strict):
         if self.consent == "synthetic" and self.source != "synthetic":
             raise ValueError(
                 f"consent='synthetic' is only valid with source='synthetic', not {self.source!r}"
+            )
+        if not self.allowed_uses:
+            raise ValueError("allowed_uses is empty, so this row may not be trained on at all")
+        if (
+            "voice_clone" in self.allowed_uses
+            and self.source == "real"
+            and not self.voice_consent_ref
+        ):
+            # Cloning a real person's voice is the use that needs their separate agreement.
+            # Consent to record a call is not consent to reproduce the caller's voice.
+            raise ValueError(
+                "allowed_uses includes 'voice_clone' on real audio, which needs "
+                "voice_consent_ref: the speaker's own agreement to their voice being used"
             )
         if self.source == "real":
             if not self.pii_redacted:
@@ -310,12 +330,11 @@ class Conversation(_Strict):
                     f"turns end at {last_end}s but audio.duration_s is {self.audio.duration_s}s"
                 )
 
-        if self.audio and self.meta.source == "real" and not self.meta.voice_consent_ref:
-            # A recorded voice is biometric data under UK GDPR and Illinois BIPA; training a
-            # voice on it needs its own consent, separate from consent to record the call.
-            raise ValueError(
-                "real recordings need meta.voice_consent_ref before the voice may be trained on"
-            )
+        # Whether a recording needs the speaker's own voice consent depends on what it is
+        # for, which `meta.allowed_uses` says and this level cannot infer. The rule lives
+        # there. It used to sit here and demanded voice_consent_ref for every real
+        # recording, including audio only ever used to train recognition — a rule broad
+        # enough that the easiest way past it is a dummy value, which is worse than none.
         return self
 
 

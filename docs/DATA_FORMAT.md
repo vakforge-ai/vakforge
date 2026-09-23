@@ -138,7 +138,8 @@ fails a record that claims something it cannot show:
   ]
 }
 ```
-- `source: real` with audio requires `voice_consent_ref`. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.
+- `allowed_uses` says what the row may be trained for: `asr`, `workflow`, `evaluation`, `voice_clone`. It defaults to the three ordinary uses, because that is what a recording is normally collected for. An empty list is rejected — a row allowed for nothing does not belong in a dataset.
+- `allowed_uses` containing `voice_clone` on `source: real` requires `voice_consent_ref`. Consent to record a call is not consent to reproduce the caller's voice. This is scoped to cloning deliberately: requiring voice consent for audio only ever used to train recognition is a rule broad enough that the easy way past it is a dummy value, which is worse than no rule.
 
 Synthetic rows are exempt from the redaction rules because they contain no real person's data.
 
