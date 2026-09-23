@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from vakforge import __version__
@@ -93,6 +94,31 @@ def test_out_paths_create_their_parent_directory(tmp_path, monkeypatch):
         assert r.exit_code == 0, r.output
     for made in ("a/schema.json", "b/inspect.json", "c/rec.json"):
         assert (tmp_path / made).exists(), made
+
+
+def test_recommend_reports_a_bad_locale_the_same_way_from_either_source(tmp_path):
+    # Directory mode used to let the KeyError escape as a traceback, so the same bad
+    # --locale printed a clean message from a report and a stack trace from a folder.
+    (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "a.md").write_text("hello", encoding="utf-8")
+
+    for source in ("r.json", "data"):
+        r = runner.invoke(app, ["recommend", str(tmp_path / source), "-l", "xx-YY"])
+        assert r.exit_code == 2, f"{source}: {r.output}"
+        assert "unknown locale 'xx-YY'" in r.output
+        assert "Traceback" not in r.output
+
+
+@pytest.mark.parametrize(
+    ("body", "needle"),
+    [("{not json", "cannot read"), ('{"locale": "en-US"}', "no 'summary'")],
+)
+def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body, needle):
+    (tmp_path / "r.json").write_text(body, encoding="utf-8")
+    r = runner.invoke(app, ["recommend", str(tmp_path / "r.json")])
+    assert r.exit_code == 2, r.output
+    assert needle in r.output
 
 
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):

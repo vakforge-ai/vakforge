@@ -256,28 +256,39 @@ def recommend(
         err_console.print(f"[red]--gpu must be one of {', '.join(GPU_GB)}[/]")
         raise typer.Exit(2)
 
-    if source.is_dir():
-        from vakforge.inspect.report import inspect_dir
+    def resolve_pack(pack_id: str | None, missing: str):
+        """The same locale error whichever way the summary was obtained.
 
-        pack_id = locale or _project_locale(source.resolve())
+        Directory mode used to skip this and let the KeyError become a traceback, so the
+        same bad `--locale` printed a clean message one way and a stack trace the other.
+        """
         if pack_id is None:
-            err_console.print(
-                "[red]no locale[/]: pass --locale or run inside a `vakforge init` project"
-            )
-            raise typer.Exit(2)
-        pack = get_pack(pack_id)
-        summary = inspect_dir(source, pack)["summary"]
-    else:
-        report = json.loads(source.read_text(encoding="utf-8"))
-        pack_id = locale or report.get("locale")
-        if pack_id is None:
-            err_console.print("[red]no locale[/] in the report; pass --locale")
+            err_console.print(f"[red]no locale[/]: {missing}")
             raise typer.Exit(2)
         try:
-            pack = get_pack(pack_id)
+            return get_pack(pack_id)
         except KeyError:
             err_console.print(f"[red]unknown locale {pack_id!r}[/]; known: {list_packs()}")
             raise typer.Exit(2) from None
+
+    if source.is_dir():
+        from vakforge.inspect.report import inspect_dir
+
+        pack = resolve_pack(
+            locale or _project_locale(source.resolve()),
+            "pass --locale or run inside a `vakforge init` project",
+        )
+        summary = inspect_dir(source, pack)["summary"]
+    else:
+        try:
+            report = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            err_console.print(f"[red]cannot read {source}[/]: {exc}")
+            raise typer.Exit(2) from None
+        pack = resolve_pack(locale or report.get("locale"), "none in the report; pass --locale")
+        if "summary" not in report:
+            err_console.print(f"[red]{source} has no 'summary'[/]; is it an inspect.json?")
+            raise typer.Exit(2)
         summary = report["summary"]
 
     rec = decide(summary, pack, Constraints(goals=tuple(goal or ()), gpu=gpu, duplex=duplex))
