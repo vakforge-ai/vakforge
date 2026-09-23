@@ -64,7 +64,7 @@ my-agent/
 
   "turns": [
     {"speaker": "agent", "start": 0.0, "end": 2.8, "text": "Namaste, SunCare Solar se Priya bol rahi hoon. Kaise madad kar sakti hoon?", "lang": "hi-Latn"},
-    {"speaker": "user", "start": 2.9, "end": 7.4, "text": "Haan, mera inverter kal se off hai, customer ID SC-4471.", "lang": "hi-Latn", "entities": [{"type": "customer_id", "text": "SC-4471", "start_char": 48, "end_char": 55}]},
+    {"speaker": "user", "start": 2.9, "end": 7.4, "text": "Haan, mera inverter kal se off hai, customer ID SC-4471.", "lang": "hi-Latn", "lang_mix": ["hi-Latn", "en-IN"], "entities": [{"type": "customer_id", "text": "SC-4471", "start_char": 48, "end_char": 55}]},
     {"speaker": "agent", "start": 7.2, "end": 8.1, "text": "Ek minute, check karti hoon.", "lang": "hi-Latn", "overlap": true},
     {"speaker": "agent", "start": 8.1, "end": 8.1, "tool_call": {"id": "call_1", "name": "check_status", "arguments": {"customer_id": "SC-4471"}}},
     {"speaker": "tool", "start": 8.1, "end": 8.1, "tool_result": {"id": "call_1", "content": {"status": "fault_reported", "last_service": "2026-06-02"}}},
@@ -105,7 +105,9 @@ my-agent/
 
 **turns[].lang** — required on every spoken turn. `prepare` sets it via the locale pack's `detect_lang` after transcription, because ASR language IDs are unreliable on code-switched speech (Hinglish, Spanglish, Chinese–English).
 
-**turns[].overlap** — `true` when this turn starts before the previous one ends. Duplex eval uses it; turn-based adapters drop or merge such turns and log how many.
+**turns[].lang_mix** — optional; every language in this one turn, primary first, so `lang_mix[0]` equals `lang`. A Hinglish turn is genuinely two languages, and the code-switch WER in `EVALUATION.md` can only be scored on turns that say so. Tags are held to the locale pack's list, exactly like `lang`. `language.mix` is the same idea for the whole conversation.
+
+**turns[].overlap** — `true` when this turn starts before the previous one ends. That is the whole definition, so it is **checked against the timestamps** rather than believed: a flag that disagrees with the clock fails the record, because duplex eval counts these turns and a hand-set value would quietly skew the interruption metrics. Turn-based adapters drop or merge overlapping turns and log how many.
 
 **turns[].tool_call / tool_result** — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result. A call is issued once and answered at most once, and a call left hanging while the conversation carries on is rejected — that pattern cannot happen at serving time, so training on it teaches a turn shape the model will never need. A call in the *final* turn may go unanswered: real transcripts get cut off mid-exchange, and the alternative is inviting people to invent a result. `tool_result.content` is any JSON value, because a real tool returns a list, a string or a number as readily as an object.
 

@@ -130,6 +130,23 @@ def test_unknown_locale_and_undeclared_lang(project):
     assert ("conv_0002", "turns[0].lang") in fields
 
 
+def test_lang_mix_tags_are_held_to_the_pack_too(project):
+    row = conversation(audio=None, locale="hi-Latn-IN")
+    row["turns"] = [
+        {
+            "speaker": "user",
+            "start": 0.0,
+            "end": 1.0,
+            "text": "haan",
+            "lang": "hi-Latn",
+            "lang_mix": ["hi-Latn", "fr-FR"],
+        }
+    ]
+    _, issues = validate_manifest(_write(project, row))
+    assert [i.field for i in issues] == ["turns[0].lang_mix"]
+    assert "'fr-FR' is not declared" in issues[0].message
+
+
 def test_tool_arguments_checked_against_json_schema(project):
     row = conversation()
     row["audio"] = None

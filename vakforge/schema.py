@@ -106,6 +106,10 @@ class Turn(_Strict):
     end: float = Field(ge=0)
     text: str | None = None
     lang: str | None = None
+    # Every language in this turn, primary first. A Hinglish turn is genuinely two
+    # languages, and code-switch WER — which docs/EVALUATION.md reports — can only be
+    # scored on turns that say so. `lang` alone cannot express it.
+    lang_mix: list[str] = Field(default_factory=list)
     entities: list[Entity] = Field(default_factory=list)
     overlap: bool = False
     tool_call: ToolCall | None = None
@@ -132,6 +136,14 @@ class Turn(_Strict):
                 raise ValueError("spoken turns need non-empty text")
             if not self.lang:
                 raise ValueError("spoken turns need lang (BCP-47, e.g. 'en-US', 'hi-Latn')")
+        if self.lang_mix:
+            if len(set(self.lang_mix)) != len(self.lang_mix):
+                raise ValueError(f"lang_mix has repeats: {self.lang_mix}")
+            if self.lang_mix[0] != self.lang:
+                raise ValueError(
+                    f"lang_mix[0] is {self.lang_mix[0]!r} but lang is {self.lang!r}; "
+                    "the primary language comes first"
+                )
         self._check_entities()
         return self
 
@@ -237,6 +249,17 @@ class Conversation(_Strict):
             if t.start < prev_start:
                 raise ValueError(f"turns[{i}]: turns must be sorted by start")
             prev_start = t.start
+            # `overlap` has one definition — this turn starts before the previous one ends
+            # — so it is checked against the timestamps rather than believed. Duplex eval
+            # counts these turns, and a hand-set flag that disagrees with the clock would
+            # quietly skew the interruption metrics.
+            if i:
+                starts_early = t.start < self.turns[i - 1].end
+                if t.overlap != starts_early:
+                    raise ValueError(
+                        f"turns[{i}]: overlap={t.overlap} but this turn starts at "
+                        f"{t.start}s and the previous ends at {self.turns[i - 1].end}s"
+                    )
 
         tool_names: set[str] = set()
         for i, tool in enumerate(self.tools):
