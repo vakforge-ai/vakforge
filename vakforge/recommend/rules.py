@@ -92,12 +92,17 @@ BARS: dict[Goal, Bar] = {
     ),
     "voice": Bar(
         "seconds",
-        3,
+        30,
         60,
-        "measured",
-        "VALL-E (arXiv 2301.02111) clones a voice from a 3-second prompt and YourTTS "
-        "fine-tunes a speaker in under a minute; hours of audio are not the constraint here, "
-        "consent for that speaker's voice is",
+        "heuristic",
+        "Two different things get quoted together here, so this bar covers only one of "
+        "them. VALL-E's 3 seconds (arXiv 2301.02111) is an inference-time prompt to a model "
+        "already pretrained on 60k hours — it needs no training data from you at all, and if "
+        "a zero-shot prompt is enough, the answer is not to fine-tune. YourTTS fine-tunes a "
+        "speaker in under a minute, which is real adaptation evidence but for one model. "
+        "The floor here is ours: no published work establishes a minimum for adapting an "
+        "arbitrary voice model. What actually decides it is clean audio from one consented "
+        "speaker under consistent conditions, not the total length",
     ),
     "duplex": Bar(
         "hours",

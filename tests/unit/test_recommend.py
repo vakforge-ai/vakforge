@@ -239,10 +239,10 @@ def test_unprofiled_files_do_not_infer_goals():
     assert "recognition" not in recommend(found_only, US).goals
 
 
-def test_voice_cloning_is_measured_in_seconds_not_hours():
-    # VALL-E clones from a 3-second prompt, so half an hour of audio is far past the bar.
-    # It still does not reach `candidate`: total duration says nothing about whether the
-    # audio is one speaker, recorded consistently, who consented to their voice being used.
+def test_voice_is_measured_in_seconds_not_hours():
+    # Seconds, not hours — but the bar still does not reach `candidate` on half an hour of
+    # audio, because total duration says nothing about whether it is one speaker, recorded
+    # consistently, who agreed to their voice being used.
     r = recommend(
         summary(counts={"audio": 3}, audio_hours=0.5),
         US,
@@ -252,7 +252,18 @@ def test_voice_cloning_is_measured_in_seconds_not_hours():
     assert d(r).have == 1800
     assert d(r).eligibility == "baseline_first"
     assert any("one consented speaker" in u for u in d(r).uncounted)
-    assert "consent for that speaker's voice" in d(r).evidence
+
+
+def test_the_voice_bar_does_not_pass_off_a_zero_shot_prompt_as_training_data():
+    # VALL-E's 3 seconds is an inference prompt to a model pretrained on 60k hours. It is
+    # not a measured minimum for adapting a voice model, and labelling it `measured`
+    # claimed evidence the citation does not carry.
+    voice = recommend(
+        summary(counts={"audio": 3}, audio_hours=0.5), US, Constraints(goals=("voice",))
+    ).decision("voice")
+    assert voice.confidence == "heuristic"
+    assert "inference-time prompt" in voice.evidence
+    assert "no published work establishes a minimum" in voice.evidence
 
 
 def test_recognition_recommends_biasing_before_collecting_hours():
