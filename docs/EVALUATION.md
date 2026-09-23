@@ -70,7 +70,7 @@ Every metric above re-run on augmented copies of the test split: phone band-pass
 5. **Samples** — 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.
 6. **Provenance** — manifest hash, config, versions, judge model/prompt hashes, seed.
 
-`report.json` schema is in `eval/report_schema.json` so benchmarks across recipes are comparable.
+`report.json` should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet — it gets written with the first recipe that produces a report.
 
 ## Public benchmarks — `vakforge-bench-<locale>-v0`
 

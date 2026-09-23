@@ -93,7 +93,7 @@ Each `eligibility` means a different plan:
 - `candidate` — the data clears the bar. Still measure the baseline first; step 6 exists to
   beat it, and a fine-tune that does not beat it gets thrown away.
 
-Quote `evidence` and `evidence_confidence` to the user. A target marked `heuristic` is ours
+Quote `evidence` and `confidence` to the user. A target marked `heuristic` is ours
 and the user is entitled to argue with it; one marked `measured` comes from a cited paper,
 and `reported` means someone stated it without independent replication.
 
