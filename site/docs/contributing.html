@@ -92,6 +92,14 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <p>Docs site (<code>site/docs/</code> is generated and committed, so rebuild before you push):</p>
 <div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>python<span class="w"> </span>scripts/build_docs.py
 </code></pre></div>
+<h2 id="what-ci-checks">What CI checks</h2>
+<p><code>lint</code>, <code>test-linux</code> (3.11/3.12/3.13), <code>test-windows</code>, <code>docs</code> (the generated site must match
+<code>docs/</code>), <code>package</code> (build, <code>twine check</code>, install the wheel into a clean environment, run the
+CLI from it), <code>coverage</code> (branch coverage, 90% floor) and <code>dependency-audit</code> (<code>pip-audit</code> over
+the locked runtime set).</p>
+<p>Every action is pinned to a commit SHA — a moving tag like <code>v7</code> can be repointed at any commit
+by whoever owns the action. Dependabot updates the SHAs; keep the trailing <code># v7</code> comment so the
+release is still readable.</p>
 <h2 id="branches-and-commits">Branches and commits</h2>
 <ul>
 <li><strong>Features and anything substantial</strong> go on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>ci/…</code>, <code>docs/…</code>) and land through a pull request. Merge only when CI is green.</li>
@@ -135,7 +143,7 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#ground-rules">Ground rules</a></li><li class="lvl2"><a href="#setup">Setup</a></li><li class="lvl2"><a href="#branches-and-commits">Branches and commits</a></li><li class="lvl2"><a href="#releases">Releases</a></li><li class="lvl2"><a href="#security">Security</a></li><li class="lvl2"><a href="#pull-request-checklist">Pull request checklist</a></li><li class="lvl2"><a href="#reporting-model-or-data-issues">Reporting model or data issues</a></li><li class="lvl2"><a href="#code-style">Code style</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#ground-rules">Ground rules</a></li><li class="lvl2"><a href="#setup">Setup</a></li><li class="lvl2"><a href="#what-ci-checks">What CI checks</a></li><li class="lvl2"><a href="#branches-and-commits">Branches and commits</a></li><li class="lvl2"><a href="#releases">Releases</a></li><li class="lvl2"><a href="#security">Security</a></li><li class="lvl2"><a href="#pull-request-checklist">Pull request checklist</a></li><li class="lvl2"><a href="#reporting-model-or-data-issues">Reporting model or data issues</a></li><li class="lvl2"><a href="#code-style">Code style</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>
