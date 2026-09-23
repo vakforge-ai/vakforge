@@ -2,41 +2,41 @@
 
 The pipeline is language-agnostic. A **locale pack** is the one place where everything language- or market-specific lives, so adding a market never touches core, recipes, eval, or serve.
 
+> **Status:** packs are built and tested — `en`, `en-US`, `en-GB`, `en-IN` and `hi-Latn-IN` ship today, with golden tests for every normalizer, language detector and PII pattern. Run `vakforge locales` to list them and `vakforge locales <id>` to see one pack's resolved settings. The sections on `synth` and benchmark composition are specification.
+
 ## What a pack contains
 
+This is the whole of `LocalePack` as it exists today (`vakforge/locales/base.py`):
+
 ```python
-class LocalePack(Protocol):
-    id: str                          # BCP-47 with region: "en-US", "en-GB", "en-IN", "hi-Latn-IN", "zh-CN"
-    languages: list[str]             # tags this pack handles, e.g. ["en"], ["hi-Latn", "hi", "en-IN"]
-    parent: str | None               # "en" for en-US/en-GB/en-IN; shared rules inherit
+class LocalePack:
+    id: ClassVar[str]                    # BCP-47 with region: "en-US", "en-GB", "en-IN", "hi-Latn-IN"
+    name: ClassVar[str]                  # human-readable, e.g. "Hinglish"
+    languages: ClassVar[list[str]]       # tags this pack handles, e.g. ["hi-Latn", "hi"]
+    parent: ClassVar[str | None]         # "en" for en-US/en-GB/en-IN; shared rules inherit
 
-    # --- text ---
-    def detect_lang(self, text: str) -> str: ...            # per-turn tag incl. script (hi vs hi-Latn)
-    def normalize_text(self, text: str) -> str: ...         # for WER: numbers, currency, dates, case, punctuation
-    def transliterate(self, text: str, to_script: str) -> str: ...   # optional, e.g. Devanagari <-> Roman
+    formats: ClassVar[LocaleFormats | None]          # currency symbols and words, date order, examples
+    pii_patterns: ClassVar[list[PIIPattern]]         # regex + optional checksum + context rules
+    call_recording_consent: ClassVar[Consent | None] # one_party | all_party | varies_by_state | notice_required
+    privacy_notes: ClassVar[PrivacyNotes | None]     # short sourced region text (not legal advice) + links
+    recipe_support: ClassVar[dict[str, Support]]     # native | understand_only | cascade | unsupported
 
-    # --- entities & formats ---
-    entity_types: list[EntityType]   # currency, date, phone, postal_code, national_id, address, person_name …
-    formats: LocaleFormats           # currency symbols/words ("$", "£", "₹", "lakh", "crore", "万"),
-                                     # date order (MDY/DMY/YMD), phone regexes, postal-code regex, address grammar
+    # inheritance
+    def parent_pack(self) -> LocalePack | None: ...
+    def all_languages(self) -> set[str]: ...                 # own tags plus the parent chain's
+    def all_pii_patterns(self) -> list[PIIPattern]: ...       # own first, parent's unless overridden by name
+    def resolved(self, attr: str): ...                        # nearest pack up the chain that sets it
 
-    # --- privacy ---
-    pii_patterns: list[PIIPattern]   # SSN, NI number, Aadhaar, PAN, resident ID, IBAN, card, phone, email …
-    privacy_notes: PrivacyNotes      # short region text shown by `prepare` (not legal advice) + links
-    call_recording_consent: str      # "one_party" | "all_party" | "varies_by_state" | "notice_required"
-
-    # --- synth ---
-    name_generator: NameGenerator    # culturally plausible fake names, addresses, IDs
-    scenario_templates: Path         # locale-flavoured versions of the base scenarios
-    tts_defaults: list[str]          # preferred open TTS engines/voices for this locale
-    stt_defaults: list[str]          # preferred STT for transcription in `prepare`
-
-    # --- models ---
-    recipe_support: dict[str, RecipeSupport]   # per recipe: "native" | "understand_only" | "cascade" | "unsupported"
-
-    # --- eval ---
-    benchmark: BenchmarkSpec         # vakforge-bench-<id>-v0 composition
+    # text hooks packs override
+    def detect_lang(self, text: str) -> str: ...              # per-turn tag incl. script (hi vs hi-Latn)
+    def lang_mix(self, text: str) -> list[str]: ...           # every language in the turn, primary first
+    def normalize_text(self, text: str) -> str: ...           # for WER: numbers, currency, case, punctuation
+    def find_pii(self, text: str) -> list[PIISpan]: ...       # non-overlapping spans, longest kept
 ```
+
+Planned, once the stages that need them exist: `transliterate` (Devanagari ↔ Roman), an entity-type list,
+a name and address generator for `synth`, TTS and STT defaults, and a benchmark spec. None of these are
+in the class yet; `docs/ROADMAP.md` tracks them.
 
 `vakforge init --locale <id>` writes the pack id into the project config; every stage reads it. A project can list several locales (e.g. `["en-IN", "hi-Latn-IN"]`) for mixed data; turns still carry their own `lang`.
 
@@ -81,7 +81,7 @@ Added in the order native speech-output support appears in open models; until th
 - A pack is a `LocalePack` subclass with class attributes (`formats`, `pii_patterns`, `call_recording_consent`, `privacy_notes`, `recipe_support`) plus optional overrides of `detect_lang` and `normalize_text`.
 - Inheritance: `parent` names another pack. Language tags and PII patterns are merged up the chain (a child pattern with the same `name` replaces the parent's). Scalar settings resolve to the nearest pack that sets them: `pack.resolved("call_recording_consent")`.
 - PII patterns are a regex plus an optional checksum validator (`vakforge/locales/checksums.py`: Luhn, Verhoeff, IBAN mod-97) so look-alike digit strings are not flagged. `pack.find_pii(text)` returns non-overlapping spans.
-- Postal codes are not PII patterns on their own; `prepare` redacts them only next to a street address.
+- Postal codes are not PII patterns on their own. A redaction step should only treat one as personal data next to a street address.
 - Inspect any pack's resolved settings with `vakforge locales <id>`.
 
 ## Adding a locale pack (checklist)

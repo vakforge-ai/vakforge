@@ -1,6 +1,8 @@
 # Evaluation
 
-The point of vakforge is not "we fine-tuned it" but "we can show it got better on *your* held-out data." `vakforge eval` always runs the **base model and the tuned model on the same test split** and emits one report. No metric is reported without its baseline.
+The point of vakforge is not "we fine-tuned it" but "we can show it got better on *your* held-out data." Evaluation always runs the **base model and the tuned model on the same test split** and emits one report. No metric is reported without its baseline.
+
+> **Status:** a specification. There is no `vakforge eval` command; the agent skill writes an `eval/` stage into your project, and this file is the contract it follows. Nothing here has been run yet, so no number in this repository is a benchmark result.
 
 ## Test split rules
 

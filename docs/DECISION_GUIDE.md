@@ -7,7 +7,7 @@
 | You want the agent to… | The real problem is… | Do this | Not this |
 |---|---|---|---|
 | Know your products, prices, policies, FAQs | Knowledge | RAG / context injection at inference; keep facts out of weights | Fine-tuning (facts go stale, hallucinate) |
-| Follow your call flow (greet → verify → act → confirm) | Behaviour / workflow | Fine-tune the language component (`lfm25-audio` or LLM LoRA) | Prompt-only if it fails >20% of scripted flows |
+| Follow your call flow (greet → verify → act → confirm) | Behaviour / workflow | Measure the prompt first; fine-tune the language component (`lfm25-audio` or LLM LoRA) for what it still fails | Assuming a prompt cannot hold, without measuring |
 | Call your tools reliably (book, check status, ticket) | Tool-use behaviour | Fine-tune with tool-call examples + result-narration examples | Hoping prompt engineering holds under noisy audio |
 | Understand local names, addresses, amounts, accents, code-switching | Recognition / audio encoder | Fine-tune STT (`cascade`) or the audio encoder in an end-to-end model | Fine-tuning only the text side |
 | Speak in a specific voice | Voice identity | Voice cloning / TTS speaker fine-tune | Retraining a conversation model |
@@ -28,7 +28,12 @@ Most real requests are two or three rows at once. That is fine — but each row 
 | Clean studio recordings of one voice | Voice cloning; TTS fine-tune |
 | Chat logs / transcripts | Behaviour fine-tuning of the language component; render to audio via `synth` |
 
-Rule of thumb for minimum quantity (behaviour/workflow fine-tuning): a few hundred to a few thousand *turns* covering every branch of your flow, not hours. Quality and coverage beat volume. For voice/style/duplex: tens of hours of real conversation.
+How much data each goal needs is not one number, so `recommend` carries a separate bar per goal with the evidence behind it and a label saying how well supported it is. Two of these are counter-intuitive and worth stating here:
+
+- **Voice cloning is measured in seconds, not hours.** VALL-E clones from a three-second prompt. The gate on voice is consent for that speaker, not volume.
+- **No amount of your calls buys full duplex.** It is a property of the base model: PersonaPlex used ~1,217 hours of real telephone audio plus 2,250+ synthetic on top of an already-duplex base. Pick a duplex model, then adapt lightly.
+
+For behaviour and workflow, a few hundred to a few thousand *turns* covering every branch of your flow is the working assumption — ours, and nothing in the literature validates it. Quality and branch coverage beat volume. See [`RESEARCH.md`](RESEARCH.md) for every bar and its source.
 
 ## Step 3 — Constraints
 
@@ -43,7 +48,7 @@ Rule of thumb for minimum quantity (behaviour/workflow fine-tuning): a few hundr
 
 Do **not** fine-tune if:
 - The failure is factual (wrong price, wrong policy) → RAG.
-- You have not measured the base model on your held-out set yet → run `vakforge eval --baseline-only` first. It is common for a good prompt plus RAG to close most of the gap.
+- You have not measured the base model on your held-out set yet → measure it first. The evaluation stage is written into your project by the agent skill ([`EVALUATION.md`](EVALUATION.md) is its contract); there is no `vakforge eval` command. It is common for a good prompt plus retrieval to close much of the gap, and that baseline is the only thing that proves training was needed.
 - Your data has no consent trail → fix that first (`docs/DATA_ETHICS.md`).
 
 Fine-tune if, after prompt + RAG, the base model still fails a scripted-flow or tool-call test set at a rate you can't ship, or the accent/entity recognition errors are dominated by things a prompt cannot fix.

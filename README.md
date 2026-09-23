@@ -75,7 +75,7 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 
 1. **A small library and command-line tool** (`pip install vakforge`). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.
 2. **An agent skill** (`skill/vakforge/`). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.
-3. **Recipes** ([`docs/RECIPES.md`](docs/RECIPES.md)). Written-down, tested paths from an open base model to a running assistant. Only recipes someone has run end to end get listed.
+3. **Recipes** ([`docs/RECIPES.md`](docs/RECIPES.md)). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.
 
 | Command | What it does | Status |
 |---|---|---|

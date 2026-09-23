@@ -18,12 +18,19 @@ uv run pytest            # must pass on CPU with no downloads
 uv run ruff check . && uv run ruff format --check .
 ```
 
-Recipe work:
+Recipe work. The extras are declared but still empty — each one gets its pins when that recipe is
+actually built, so these commands work today and install nothing extra:
 
 ```bash
 uv sync --group dev --extra lfm25      # or --extra moshi / --extra qwen / --extra cascade
 uv run pytest -m model                 # opt-in, downloads models
 uv run pytest -m gpu                   # opt-in, needs CUDA
+```
+
+Docs site (`site/docs/` is generated and committed, so rebuild before you push):
+
+```bash
+uv run --group docs python scripts/build_docs.py
 ```
 
 ## Branches and commits

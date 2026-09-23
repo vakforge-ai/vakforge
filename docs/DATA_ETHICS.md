@@ -1,6 +1,10 @@
 # Data ethics — consent, PII, licences
 
-Real customer calls are the most valuable training data for this project and the easiest way to get someone hurt or sued. These rules are enforced in code (`prepare`), not just written here.
+Real customer calls are the most valuable training data for this project and the easiest way to get someone hurt or sued.
+
+> **What is enforced today:** the canonical schema (`vakforge validate`) rejects a record whose consent or redaction claim has nothing behind it — see [the provenance rules](DATA_FORMAT.md). The locale packs carry the PII patterns and each region's consent rule, and `vakforge locales <id>` prints them.
+>
+> Everything below describing `prepare` is a **specification**, not shipped code. `prepare` is generated per project by the agent skill, and this file is the contract it has to meet. Present tense means "must", not "does".
 
 ## Consent
 
