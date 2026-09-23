@@ -6,7 +6,7 @@ The point of vakforge is not "we fine-tuned it" but "we can show it got better o
 
 ## Test split rules
 
-- Held out by conversation **and** speaker; never seen by `train` or `synth` prompt examples.
+- Held out by conversation **and** speaker; never seen by `train` or `synth` prompt examples. The canonical format carries no speaker identity, so `vakforge validate` checks the conversation half of that and cannot check the speaker half — keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean `validate` as proof there is no speaker leak.
 - Stratified by `locale`, `audio.condition` (clean / phone / noisy), `language.primary`, and `meta.source` (real / synthetic). Report breaks down by each, so a multi-locale dataset cannot hide a weak language behind a strong one.
 - Minimum 100 turns for any headline number; fewer → report shows the number with a "low-n" badge and a bootstrap CI.
 
