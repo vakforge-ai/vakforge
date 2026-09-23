@@ -10,6 +10,16 @@ from vakforge.config import ProjectConfig
 runner = CliRunner()
 
 
+def flat(result) -> str:
+    """CLI output with newlines and runs of spaces collapsed.
+
+    Rich wraps to the console width, so a phrase can be split across lines when a long
+    path pushes it past the margin — which happens on CI's `/tmp/pytest-of-runner/...`
+    paths and not on a short Windows temp dir. Assert against this, not `result.output`.
+    """
+    return " ".join(result.output.split())
+
+
 def test_version():
     r = runner.invoke(app, ["--version"])
     assert r.exit_code == 0
@@ -28,7 +38,7 @@ def test_init_creates_project(tmp_path):
 def test_init_rejects_unknown_locale(tmp_path):
     r = runner.invoke(app, ["init", str(tmp_path / "x"), "--locale", "xx-YY"])
     assert r.exit_code == 2
-    assert "unknown locale" in r.output
+    assert "unknown locale" in flat(r)
 
 
 def test_validate_exit_codes(project):
@@ -37,7 +47,7 @@ def test_validate_exit_codes(project):
     (project / "audio" / "conv_0001.wav").unlink()
     r = runner.invoke(app, ["validate", str(project / "vakforge.jsonl")])
     assert r.exit_code == 1
-    assert "audio.path" in r.output
+    assert "audio.path" in flat(r)
 
 
 def test_cp1252_console_does_not_crash_on_rupee_or_cross():
@@ -73,12 +83,12 @@ def test_recommend_from_folder_and_from_report(tmp_path, monkeypatch):
         assert decision["eligibility"] in {"blocked", "baseline_first", "candidate"}
         assert decision["confidence"] in {"measured", "reported", "heuristic"}
         assert decision["evidence"]
-    assert "goal · tools" in r.output
+    assert "goal · tools" in flat(r)
 
     assert runner.invoke(app, ["inspect", str(raw), "-o", "inspect.json"]).exit_code == 0
     r = runner.invoke(app, ["recommend", "inspect.json", "-g", "workflow", "--gpu", "24"])
     assert r.exit_code == 0, r.output
-    assert "primary problem" in r.output and "workflow" in r.output
+    assert "primary problem" in flat(r) and "workflow" in flat(r)
 
 
 def test_out_paths_create_their_parent_directory(tmp_path, monkeypatch):
@@ -106,7 +116,7 @@ def test_recommend_reports_a_bad_locale_the_same_way_from_either_source(tmp_path
     for source in ("r.json", "data"):
         r = runner.invoke(app, ["recommend", str(tmp_path / source), "-l", "xx-YY"])
         assert r.exit_code == 2, f"{source}: {r.output}"
-        assert "unknown locale 'xx-YY'" in r.output
+        assert "unknown locale 'xx-YY'" in flat(r)
         assert "Traceback" not in r.output
 
 
@@ -118,7 +128,7 @@ def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body
     (tmp_path / "r.json").write_text(body, encoding="utf-8")
     r = runner.invoke(app, ["recommend", str(tmp_path / "r.json")])
     assert r.exit_code == 2, r.output
-    assert needle in r.output
+    assert needle in flat(r)
 
 
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
@@ -131,21 +141,21 @@ def test_locales_lists_launch_packs():
     r = runner.invoke(app, ["locales"])
     assert r.exit_code == 0, r.output
     for pack_id in ("en-US", "en-GB", "en-IN", "hi-Latn-IN"):
-        assert pack_id in r.output
+        assert pack_id in flat(r)
 
 
 def test_locales_show_resolves_inherited_settings():
     r = runner.invoke(app, ["locales", "hi-Latn-IN"])
     assert r.exit_code == 0, r.output
-    assert "aadhaar" in r.output
-    assert "notice_required" in r.output
-    assert "lfm25-audio=understand_only" in r.output
+    assert "aadhaar" in flat(r)
+    assert "notice_required" in flat(r)
+    assert "lfm25-audio=understand_only" in flat(r)
 
 
 def test_locales_unknown_pack():
     r = runner.invoke(app, ["locales", "xx-YY"])
     assert r.exit_code == 2
-    assert "unknown locale pack" in r.output
+    assert "unknown locale pack" in flat(r)
 
 
 def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
@@ -156,9 +166,9 @@ def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
     (raw / "deck.pptx").write_bytes(b"PK")
     r = runner.invoke(app, ["inspect", str(raw), "-o", "report.json"])
     assert r.exit_code == 0, r.output
-    assert "email 1" in r.output
-    assert "skipped deck.pptx" in r.output
-    assert "0.0 min" in r.output  # no audio: minutes, not "0.0 h"
+    assert "email 1" in flat(r)
+    assert "skipped deck.pptx" in flat(r)
+    assert "0.0 min" in flat(r)  # no audio: minutes, not "0.0 h"
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     assert report["locale"] == "hi-Latn-IN"
 
@@ -166,7 +176,7 @@ def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
 def test_inspect_without_locale_explains(tmp_path):
     r = runner.invoke(app, ["inspect", str(tmp_path)])
     assert r.exit_code == 2
-    assert "pass --locale" in r.output
+    assert "pass --locale" in flat(r)
 
 
 def test_schema_export(tmp_path):
