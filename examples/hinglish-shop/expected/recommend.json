@@ -31,8 +31,8 @@
   ],
   "fine_tune": "blocked",
   "fine_tune_reason": "16 conversation turns is below the 200 conversation turns floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
-  "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k, ToolACE 26,507 APIs). Hundreds of examples suit one fixed tool, not general multi-turn tool use; the schema and prompt come first either way",
-  "evidence_confidence": "measured",
+  "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of broad general-purpose corpora, not a measured minimum for adapting one company's fixed set of tools, so treat 8k as the scale of the published work rather than a requirement: your tool count, argument branches and negative cases matter more. The schema and the prompt come first either way",
+  "evidence_confidence": "reported",
   "recipe": null,
   "recipe_support": null,
   "recipe_reason": "no recipe needed: retrieval and tools carry this one",
@@ -47,7 +47,7 @@
   "next_steps": [
     "measure the base model with prompt + retrieval on a held-out set of real conversations before training anything; that baseline is the only proof training was needed",
     "define the suggested tools and test the base model's tool calls",
-    "data gap: 16 of ~8000 conversation turns (measured); run synth over your documents and tools for coverage, and keep the evaluation set real",
+    "data gap: 16 of ~8000 conversation turns (reported); run synth over your documents and tools for coverage, and keep the evaluation set real",
     "ship the retrieval + tools version and collect real conversations"
   ]
 }

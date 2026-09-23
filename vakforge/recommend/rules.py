@@ -75,10 +75,13 @@ BARS: dict[Goal, Bar] = {
         "turns",
         200,
         8000,
-        "measured",
+        "reported",
         "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, "
-        "APIGen 60k, ToolACE 26,507 APIs). Hundreds of examples suit one fixed tool, not "
-        "general multi-turn tool use; the schema and prompt come first either way",
+        "APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of "
+        "broad general-purpose corpora, not a measured minimum for adapting one company's "
+        "fixed set of tools, so treat 8k as the scale of the published work rather than a "
+        "requirement: your tool count, argument branches and negative cases matter more. "
+        "The schema and the prompt come first either way",
     ),
     "recognition": Bar(
         "hours",
