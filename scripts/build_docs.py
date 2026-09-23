@@ -28,7 +28,6 @@ OUT = ROOT / "site" / "docs"
 DIAGRAMS = Path(__file__).resolve().parent / "diagrams"
 MISSING: list[str] = []  # mermaid blocks with no drawn counterpart, reported at the end
 REPO = "https://github.com/vakforge-ai/vakforge"
-SITE = "https://vakforge.pages.dev"
 
 
 @dataclass
@@ -164,7 +163,12 @@ def rewrite_href(href: str, page: Page) -> str:
 
 
 def make_renderer(page: Page) -> MarkdownIt:
-    md = MarkdownIt("gfm-like").disable("linkify")  # bare URLs stay text; links are explicit
+    # html=False: raw HTML in a markdown file would otherwise render straight into the
+    # published page, so a docs-only pull request — the kind least likely to get a security
+    # read — could put a script tag on the site. Our markdown uses none, and the diagrams go
+    # through the fence handler below rather than as raw HTML.
+    # linkify off: bare URLs stay text, links are written explicitly.
+    md = MarkdownIt("gfm-like", {"html": False}).disable("linkify")
     formatter = HtmlFormatter(nowrap=True)
 
     def fence(renderer, tokens, idx, options, env):
