@@ -93,17 +93,25 @@ def _check_locale(conv: Conversation, line: int) -> list[Issue]:
     except KeyError as exc:
         return [Issue(conv.id, "locale", str(exc), "use a registered pack id", line)]
     allowed = pack.all_languages()
-    return [
-        Issue(
-            conv.id,
-            f"turns[{i}].lang",
-            f"{t.lang!r} is not declared by pack {conv.locale!r} (allowed: {sorted(allowed)})",
-            "tag the turn with a language the pack declares, or pick another locale",
-            line,
-        )
-        for i, t in enumerate(conv.turns)
-        if t.lang and t.lang not in allowed
-    ]
+    fix = "tag the turn with a language the pack declares, or pick another locale"
+    issues = []
+    for i, t in enumerate(conv.turns):
+        # Both fields name languages, so both are held to the pack's list.
+        tags = [("lang", t.lang)] if t.lang else []
+        tags += [("lang_mix", tag) for tag in t.lang_mix]
+        for field, tag in tags:
+            if tag not in allowed:
+                issues.append(
+                    Issue(
+                        conv.id,
+                        f"turns[{i}].{field}",
+                        f"{tag!r} is not declared by pack {conv.locale!r} "
+                        f"(allowed: {sorted(allowed)})",
+                        fix,
+                        line,
+                    )
+                )
+    return issues
 
 
 def _check_tools(conv: Conversation, line: int) -> list[Issue]:

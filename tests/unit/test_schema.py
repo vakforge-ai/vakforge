@@ -204,6 +204,65 @@ def test_tool_results_may_be_any_json_value(content):
     Conversation.model_validate(data)
 
 
+def test_a_code_switched_turn_can_name_every_language_in_it():
+    data = conversation(audio=None, locale="hi-Latn-IN")
+    data["language"] = {"primary": "hi-Latn", "mix": ["hi-Latn", "en-IN"]}
+    data["turns"] = [
+        {
+            "speaker": "user",
+            "start": 0.0,
+            "end": 1.0,
+            "text": "Order cancel kar do please",
+            "lang": "hi-Latn",
+            "lang_mix": ["hi-Latn", "en-IN"],
+        }
+    ]
+    assert Conversation.model_validate(data).turns[0].lang_mix == ["hi-Latn", "en-IN"]
+
+
+@pytest.mark.parametrize(
+    ("mix", "needle"),
+    [
+        (["en-IN", "hi-Latn"], "primary language comes first"),  # disagrees with lang
+        (["hi-Latn", "hi-Latn"], "repeats"),
+    ],
+)
+def test_lang_mix_must_agree_with_lang(mix, needle):
+    data = conversation(audio=None, locale="hi-Latn-IN")
+    data["turns"] = [
+        {
+            "speaker": "user",
+            "start": 0.0,
+            "end": 1.0,
+            "text": "haan",
+            "lang": "hi-Latn",
+            "lang_mix": mix,
+        }
+    ]
+    with pytest.raises(ValidationError, match=needle):
+        Conversation.model_validate(data)
+
+
+def test_overlap_is_checked_against_the_clock():
+    # Duplex eval counts overlapping turns, so a hand-set flag that disagrees with the
+    # timestamps would quietly skew the interruption metrics.
+    data = conversation(audio=None)
+    data["turns"] = [
+        {"speaker": "agent", "start": 0.0, "end": 2.0, "text": "Hello there", "lang": "en-US"},
+        {"speaker": "user", "start": 1.5, "end": 3.0, "text": "Sorry, wait", "lang": "en-US"},
+    ]
+    with pytest.raises(ValidationError, match="overlap=False"):
+        Conversation.model_validate(data)
+
+    data["turns"][1]["overlap"] = True
+    Conversation.model_validate(data)
+
+    # ... and the same rule the other way: claiming an overlap that did not happen.
+    data["turns"][1]["start"] = 2.5
+    with pytest.raises(ValidationError, match="overlap=True"):
+        Conversation.model_validate(data)
+
+
 def test_json_schema_export_is_draft_2020():
     s = json_schema()
     assert s["$schema"].endswith("2020-12/schema")

@@ -12,6 +12,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `schema.py` (pydantic v2, incl. `locale`; audio optional for text-sourced records) + `vakforge schema` JSON Schema export
 - [x] `vakforge validate`: schema, audio file vs declaration, locale/lang registry, tool args vs JSON Schema, consent, `splits.json`
 - [x] Schema fails closed on provenance: consent needs its reference or licence, real data needs redaction plus a log, real recordings need `voice_consent_ref`, entity offsets must match the text they point at, `audio.path` cannot escape the dataset, duplicate tool names and same-speaker stereo maps rejected
+- [x] `turns[].lang_mix` so a code-switched turn names every language in it (what code-switch WER is scored on), and `overlap` validated against the timestamps rather than believed
 - [x] `validate` proves the redaction claim instead of trusting it: rescans text, tool arguments and tool results with the locale pack, requires the named `redaction_log` to exist and parse, and reports a leak by type and offset without repeating the value
 - [x] Generated test fixtures (WAVs synthesized in `tests/conftest.py`)
 - [x] GitHub Actions: ruff + pytest, Python 3.11/3.12
