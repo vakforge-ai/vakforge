@@ -21,3 +21,21 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest
+
+  docs:
+    # site/docs/ is generated from docs/*.md and committed, because Cloudflare Pages
+    # serves site/ as-is with no build step. Editing a doc without rebuilding would
+    # silently publish the old page, so the build has to be reproducible in CI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - run: uv run --group docs python scripts/build_docs.py
+      - name: site/docs is up to date with docs/
+        run: |
+          git diff --exit-code -- site/docs || {
+            echo "::error::site/docs/ is stale. Run: uv run --group docs python scripts/build_docs.py"
+            exit 1
+          }
