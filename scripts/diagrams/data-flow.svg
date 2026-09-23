@@ -1,0 +1,96 @@
+<svg class="diagram" viewBox="0 0 830 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flowT flowD">
+  <title id="flowT">Data flow, from raw files to a served endpoint</title>
+  <desc id="flowD">A vertical pipeline. Documents, tables, chats and audio go into inspect, which writes inspect.json. recommend reads it and returns a recipe and the data gaps. prepare takes any source, and synth fills the gaps; both write the one canonical manifest, data/vakforge.jsonl. From there an adapter builds the recipe's dataset, the recipe trains and writes a checkpoint, the eval runner compares base against tuned and writes a report, and serve exposes a realtime WebSocket endpoint. inspect and recommend ship in the CLI today; the rest is generated per project.</desc>
+  <defs>
+    <marker id="flowHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- inputs -->
+  <rect class="d-box d-ghost" x="20" y="45" width="200" height="44" rx="9"/>
+  <text class="d-s" x="120" y="64">documents · tables</text>
+  <text class="d-s" x="120" y="79">chats · audio</text>
+  <path class="d-line" d="M220 67 L244 67" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="20" y="208" width="200" height="38" rx="9"/>
+  <text class="d-s" x="120" y="232">any source</text>
+  <path class="d-line" d="M220 227 L244 227" marker-end="url(#flowHead)"/>
+
+  <!-- stages -->
+  <rect class="d-box d-accent" x="250" y="40" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="64">inspect</text>
+  <text class="d-s" x="410" y="81">classify and profile every file</text>
+
+  <rect class="d-box d-accent" x="250" y="120" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="144">recommend</text>
+  <text class="d-s" x="410" y="161">what to change, and the evidence</text>
+
+  <rect class="d-box d-dashed" x="250" y="200" width="150" height="54" rx="10"/>
+  <text class="d-code" x="325" y="232">prepare</text>
+  <rect class="d-box d-dashed" x="420" y="200" width="150" height="54" rx="10"/>
+  <text class="d-code" x="495" y="232">synth</text>
+
+  <rect class="d-box d-coral" x="250" y="280" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="304">data/vakforge.jsonl</text>
+  <text class="d-s" x="410" y="321">one canonical format in the middle</text>
+
+  <rect class="d-box d-dashed" x="250" y="360" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="392">adapters/&lt;recipe&gt;.build()</text>
+
+  <rect class="d-box d-dashed" x="250" y="440" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="472">recipes/&lt;recipe&gt;.train()</text>
+
+  <rect class="d-box d-dashed" x="250" y="520" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="544">eval.runner</text>
+  <text class="d-s" x="410" y="561">base vs tuned, same held-out split</text>
+
+  <rect class="d-box d-dashed" x="250" y="600" width="320" height="54" rx="10"/>
+  <text class="d-code" x="410" y="632">serve.realtime_ws</text>
+
+  <!-- artifacts -->
+  <rect class="d-box d-ghost" x="630" y="45" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="71">inspect.json</text>
+  <path class="d-line d-soft" d="M570 67 L624 67" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="125" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="151">recipe + data gaps</text>
+  <path class="d-line d-soft" d="M570 147 L624 147" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="445" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="464">runs/&lt;ts&gt;/checkpoint</text>
+  <text class="d-chip" x="720" y="479">+ train.json</text>
+  <path class="d-line d-soft" d="M570 467 L624 467" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="525" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="544">runs/&lt;ts&gt;/</text>
+  <text class="d-chip" x="720" y="559">report.{md,json}</text>
+  <path class="d-line d-soft" d="M570 547 L624 547" marker-end="url(#flowHead)"/>
+
+  <rect class="d-box d-ghost" x="630" y="605" width="180" height="44" rx="9"/>
+  <text class="d-chip" x="720" y="631">ws://…/v1/realtime</text>
+  <path class="d-line d-soft" d="M570 627 L624 627" marker-end="url(#flowHead)"/>
+
+  <!-- spine -->
+  <path class="d-line" d="M410 94 L410 116" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 174 L410 187"/>
+  <path class="d-line" d="M325 187 L495 187"/>
+  <path class="d-line" d="M325 187 L325 196" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M495 187 L495 196" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M325 254 L325 268"/>
+  <path class="d-line" d="M495 254 L495 268"/>
+  <path class="d-line" d="M325 268 L495 268"/>
+  <path class="d-line" d="M410 268 L410 276" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 334 L410 356" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 414 L410 436" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 494 L410 516" marker-end="url(#flowHead)"/>
+  <path class="d-line" d="M410 574 L410 596" marker-end="url(#flowHead)"/>
+
+  <!-- legend -->
+  <rect class="d-box d-accent" x="250" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="270" y="679">in the CLI today</text>
+  <rect class="d-box d-dashed" x="380" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="400" y="679">generated per project</text>
+  <rect class="d-box d-coral" x="570" y="668" width="13" height="13" rx="3"/>
+  <text class="d-note d-left" x="590" y="679">canonical format</text>
+</svg>

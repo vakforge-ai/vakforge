@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data format · vakforge docs</title>
+<meta name="description" content="The canonical vakforge.jsonl record and its rules">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="data-format.html" aria-current="page">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <div class="sb-foot">v0.1.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DATA_FORMAT.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="canonical-data-format-vakforgejsonl">Canonical data format — <code>vakforge.jsonl</code></h1>
+<p>One JSON object per line, one <strong>conversation</strong> per object. Every recipe reads this format through an adapter (<code>vakforge/adapters/&lt;recipe&gt;.py</code>); no recipe reads raw user data directly. The pydantic models in <code>vakforge/schema.py</code> are the source of truth; this document explains intent.</p>
+<h2 id="design-goals">Design goals</h2>
+<ul>
+<li>Model-agnostic: works for turn-based S2S, full-duplex S2S, and cascaded STT→LLM→TTS.</li>
+<li>Time-aligned: every turn has start/end so we can cut audio, build stereo streams, and score interruptions.</li>
+<li>Code-switch aware: language per turn, not per file.</li>
+<li>Tool-aware: tool calls and results are first-class, in the same shape the serving layer will emit.</li>
+<li>Provenance-aware: consent, licence, source (real/synthetic), and redaction status travel with every row.</li>
+</ul>
+<h2 id="layout-on-disk">Layout on disk</h2>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>my-agent/
+  data/
+    raw/                    # untouched user uploads (never modified, git-ignored)
+    audio/                  # normalized 24 kHz WAVs produced by `prepare`
+    vakforge.jsonl          # canonical manifest
+    vakforge.schema.json    # exported JSON Schema (for external validators)
+    splits.json             # conversation ids per split
+</code></pre></div>
+<h2 id="record">Record</h2>
+<div class="code-block"><span class="code-lang">json</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"conv_000123"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"schema_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1"</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">"audio"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"audio/conv_000123.wav"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"sample_rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">24000</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"channels"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"channel_map"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"0"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="nt">"1"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"duration_s"</span><span class="p">:</span><span class="w"> </span><span class="mf">47.3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"condition"</span><span class="p">:</span><span class="w"> </span><span class="s2">"phone"</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">"locale"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn-IN"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"language"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"primary"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"mix"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"hi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"en"</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">"domain"</span><span class="p">:</span><span class="w"> </span><span class="s2">"field_service_support"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"scenario"</span><span class="p">:</span><span class="w"> </span><span class="s2">"book_site_visit"</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">"system_prompt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"You are Priya from SunCare Solar support. Verify the customer, check the ticket, book a visit if needed. Speak Hinglish if the customer does."</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">"tools"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"check_status"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Look up the current status of a customer's installation"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"parameters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span><span class="p">,</span><span class="w"> </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"customer_id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">}},</span><span class="w"> </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">]}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"book_appointment"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Book a technician visit"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"parameters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span><span class="p">,</span><span class="w"> </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"customer_id"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">},</span><span class="w"> </span><span class="nt">"date"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w"> </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"date"</span><span class="p">},</span><span class="w"> </span><span class="nt">"slot"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w"> </span><span class="nt">"enum"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"morning"</span><span class="p">,</span><span class="w"> </span><span class="s2">"afternoon"</span><span class="p">]}},</span><span class="w"> </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"date"</span><span class="p">,</span><span class="w"> </span><span class="s2">"slot"</span><span class="p">]}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">"turns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.8</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Namaste, SunCare Solar se Priya bol rahi hoon. Kaise madad kar sakti hoon?"</span><span class="p">,</span><span class="w"> </span><span class="nt">"lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">2.9</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">7.4</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Haan, mera inverter kal se off hai, customer ID SC-4471."</span><span class="p">,</span><span class="w"> </span><span class="nt">"lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">,</span><span class="w"> </span><span class="nt">"entities"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"customer_id"</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SC-4471"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start_char"</span><span class="p">:</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span><span class="w"> </span><span class="nt">"end_char"</span><span class="p">:</span><span class="w"> </span><span class="mi">55</span><span class="p">}]},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">7.2</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Ek minute, check karti hoon."</span><span class="p">,</span><span class="w"> </span><span class="nt">"lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">,</span><span class="w"> </span><span class="nt">"overlap"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool_call"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"call_1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"check_status"</span><span class="p">,</span><span class="w"> </span><span class="nt">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"customer_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SC-4471"</span><span class="p">}}},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tool"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.1</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool_result"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"call_1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fault_reported"</span><span class="p">,</span><span class="w"> </span><span class="nt">"last_service"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-06-02"</span><span class="p">}}},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.4</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">13.9</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Ji, fault already logged hai. Kal subah ka slot book kar doon? Charge ₹500 hoga."</span><span class="p">,</span><span class="w"> </span><span class="nt">"lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">,</span><span class="w"> </span><span class="nt">"entities"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"amount_inr"</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"₹500"</span><span class="p">,</span><span class="w"> </span><span class="nt">"normalized"</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}]},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">14.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">15.2</span><span class="p">,</span><span class="w"> </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Haan theek hai."</span><span class="p">,</span><span class="w"> </span><span class="nt">"lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi-Latn"</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"speaker"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agent"</span><span class="p">,</span><span class="w"> </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">15.3</span><span class="p">,</span><span class="w"> </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="mf">15.3</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool_call"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"call_2"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"book_appointment"</span><span class="p">,</span><span class="w"> </span><span class="nt">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"customer_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SC-4471"</span><span class="p">,</span><span class="w"> </span><span class="nt">"date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-09-17"</span><span class="p">,</span><span class="w"> </span><span class="nt">"slot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"morning"</span><span class="p">}}}</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">"meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"real"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"consent"</span><span class="p">:</span><span class="w"> </span><span class="s2">"recorded_verbal"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"consent_ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"policy-v3-2026"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"voice_consent_ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"voice-consent-v1-2026"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"license"</span><span class="p">:</span><span class="w"> </span><span class="s2">"proprietary-internal"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"pii_redacted"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"redaction_log"</span><span class="p">:</span><span class="w"> </span><span class="s2">"redactions/conv_000123.json"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"transcription"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="s2">"faster-whisper-large-v3"</span><span class="p">,</span><span class="w"> </span><span class="nt">"verified_by_human"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"diarization"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="s2">"channels"</span><span class="p">,</span><span class="w"> </span><span class="nt">"confidence"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"split"</span><span class="p">:</span><span class="w"> </span><span class="s2">"train"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"created"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-09-16T10:12:00Z"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="field-notes">Field notes</h2>
+<p><strong>audio</strong> — optional. Records built from documents, tables or chat logs have no recording until <code>synth</code> renders one; audio-requiring adapters skip or reject such rows and say so.</p>
+<p><strong>audio.path</strong> — always relative to the manifest's directory. Absolute paths and any <code>..</code> segment are rejected: a manifest is data, often generated or handed over, and must not be able to name a file outside the dataset.</p>
+<p><strong>audio.channels / channel_map</strong> — <code>2</code> with a channel map means true dual-stream audio (required by <code>moshi-lora</code>), and the map must assign one channel to <code>user</code> and the other to <code>agent</code>; two channels of the same speaker cannot be split into a conversation. <code>1</code> means mixed mono; turns then come from diarization and <code>adapters/moshi.py</code> will refuse it unless <code>--allow-synthetic-stereo</code> reconstructs streams from cut segments (lower quality; flagged in the report).</p>
+<p><strong>audio.condition</strong> — <code>studio | clean | phone | noisy</code>. Set by whoever prepares the data. <code>inspect</code> does not guess it: it reports sample rate, silence and clipping, because unbroken energy is what dense speech looks like as much as noise.</p>
+<p><strong>locale</strong> — id of the locale pack that governs normalization, entity types, PII rules, and benchmark assignment for this conversation (<code>en-US</code>, <code>en-GB</code>, <code>en-IN</code>, <code>hi-Latn-IN</code>, <code>zh-CN</code> …). A project may mix locales; eval always breaks down by it.</p>
+<p><strong>language.primary</strong> — BCP-47. Examples: <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code>, <code>hi-Latn</code> (Roman Hindi), <code>hi</code> (Devanagari), <code>zh-CN</code>. <code>mix</code> lists every language present in the conversation.</p>
+<p><strong>turns[].lang</strong> — required on every spoken turn. <code>prepare</code> sets it via the locale pack's <code>detect_lang</code> after transcription, because ASR language IDs are unreliable on code-switched speech (Hinglish, Spanglish, Chinese–English).</p>
+<p><strong>turns[].overlap</strong> — <code>true</code> when this turn starts before the previous one ends. Duplex eval uses it; turn-based adapters drop or merge such turns and log how many.</p>
+<p><strong>turns[].tool_call / tool_result</strong> — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a <code>speaker: &quot;tool&quot;</code> turn carries the result.</p>
+<p><strong>turns[].entities</strong> — optional but strongly recommended for business data: <code>customer_id</code>, <code>phone</code>, <code>amount_inr</code>, <code>date</code>, <code>person_name</code>, <code>address</code>, <code>order_id</code>. Entity accuracy is one of the headline eval metrics. <code>start_char</code> and <code>end_char</code> are optional, but when present they are both required and <code>text[start_char:end_char]</code> must equal the entity's own <code>text</code>: redaction and entity scoring both slice by these offsets, so a stale offset corrupts the record silently.</p>
+<p><strong>meta.source</strong> — <code>real | synthetic | public</code>. Never mix without this tag; eval reports break results down by source.</p>
+<p><strong>meta.consent</strong> — <code>recorded_verbal | written | synthetic | public_license | none</code>. <code>none</code> is allowed only with <code>--allow-unconsented</code> and is excluded from any published artifact. See <code>DATA_ETHICS.md</code>.</p>
+<h3 id="provenance-claims-must-carry-their-evidence">Provenance claims must carry their evidence</h3>
+<p>These fields are the only record of whether a row may lawfully be trained on, so the schema
+fails a record that claims something it cannot show:</p>
+<ul>
+<li><code>consent: recorded_verbal</code> or <code>written</code> requires <code>consent_ref</code>.</li>
+<li><code>consent: public_license</code> requires <code>license</code>.</li>
+<li><code>consent: synthetic</code> is only valid with <code>source: synthetic</code>.</li>
+<li><code>source: real</code> requires <code>pii_redacted: true</code> <strong>and</strong> a <code>redaction_log</code> naming what was removed. Redaction is not optional for real data; <code>prepare</code> only skips it under <code>--skip-redaction</code>, which logs a loud warning and marks the rows.</li>
+<li><code>source: real</code> with audio requires <code>voice_consent_ref</code>. A voiceprint is biometric data under UK GDPR and Illinois BIPA; consent to record a call is not consent to train a voice on it.</li>
+</ul>
+<p>Synthetic rows are exempt from the redaction rules because they contain no real person's data.</p>
+<h2 id="splits">Splits</h2>
+<p>Split by conversation id <strong>and</strong> ensure no speaker (agent voice or, where known, customer) appears in more than one split. <code>splits.json</code> records the assignment and the seed so evaluation is reproducible.</p>
+<h2 id="adapters">Adapters</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Recipe</th>
+<th>Adapter output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lfm25-audio</code></td>
+<td>List of chat sessions: system text (prompt + tools), user audio clip per user turn (cut from <code>audio.path</code> using start/end), assistant target = interleaved text + audio tokens, tool-call turns rendered as the text convention the recipe defines.</td>
+</tr>
+<tr>
+<td><code>moshi-lora</code></td>
+<td>Directory of stereo WAVs + per-file JSON transcripts with word/turn timestamps in the layout <code>moshi-finetune</code> expects (verified against the pinned commit).</td>
+</tr>
+<tr>
+<td><code>qwen-omni</code></td>
+<td>ms-swift multimodal chat JSONL: system, user audio, assistant text and tool calls (Thinker targets only; Talker frozen).</td>
+</tr>
+<tr>
+<td><code>cascade</code></td>
+<td>STT pairs <code>(user_clip.wav, text)</code>; LLM chat records <code>(system, history, assistant_text_or_tool_call)</code>; TTS pairs <code>(agent_clip.wav, text)</code>. Engines chosen by the locale pack.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Adapters must be pure functions of the manifest plus config, and must write a <code>manifest_hash</code> into their output so training runs are traceable to exact data.</p>
+<h2 id="validation-rules-implemented-in-vakforge-validate">Validation rules (implemented in <code>vakforge validate</code>)</h2>
+<ul>
+<li><code>locale</code> names a registered pack; every <code>turns[].lang</code> is one the pack (or a sibling pack in the project) declares.</li>
+<li>Every <code>audio.path</code> exists, decodes, matches declared sample rate/channels/duration ±0.5 s.</li>
+<li>Turns are sorted by <code>start</code>; <code>end &gt;= start</code>; spoken turns have non-empty <code>text</code> and <code>lang</code>.</li>
+<li>Tool call ids are unique within a conversation and every <code>tool_result</code> references an existing call.</li>
+<li><code>tools[].parameters</code> is valid JSON Schema; tool call arguments validate against it.</li>
+<li>Split assignments are complete and leak-free.</li>
+<li><code>meta.consent != &quot;none&quot;</code> or explicit override.</li>
+</ul>
+<p>Errors point at <code>id</code>, turn index, and field, and suggest the fix.</p>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="agent-skill.html"><small>Previous</small><b>Agent skill</b></a><a class="pn next" href="locale-packs.html"><small>Next</small><b>Locale packs</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge</span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DATA_FORMAT.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#design-goals">Design goals</a></li><li class="lvl2"><a href="#layout-on-disk">Layout on disk</a></li><li class="lvl2"><a href="#record">Record</a></li><li class="lvl2"><a href="#field-notes">Field notes</a></li><li class="lvl3"><a href="#provenance-claims-must-carry-their-evidence">Provenance claims must carry their evidence</a></li><li class="lvl2"><a href="#splits">Splits</a></li><li class="lvl2"><a href="#adapters">Adapters</a></li><li class="lvl2"><a href="#validation-rules-implemented-in-vakforge-validate">Validation rules (implemented in vakforge validate)</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -1,6 +1,10 @@
 # Recipes
 
-A recipe is a *tested* path: base model → adapter → training → eval → serve. Facts below were checked in September 2026; **re-verify upstream versions, APIs, and licences at implementation time** and update this file. Anything marked *(reported)* comes from third-party write-ups and must be measured by us before we publish it.
+A recipe is a path from base model → adapter → training → eval → serve.
+
+> **Status: none of these are built.** This file is research, not documentation of working code. Facts were checked in September 2026 against model cards and upstream repositories; **re-verify versions, APIs and licences at implementation time** and update this file. Anything marked *(reported)* comes from third-party write-ups and has not been measured by us.
+>
+> A recipe only stops being research when it has run end to end on a demo dataset with its `report.json` committed — see the checklist at the bottom.
 
 Locale packs declare per-recipe support (`native | understand_only | cascade | unsupported`); `recommend` reads that, not this file.
 

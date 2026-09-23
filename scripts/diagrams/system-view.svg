@@ -1,0 +1,80 @@
+<svg class="diagram" viewBox="0 0 780 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sysT sysD">
+  <title id="sysT">vakforge system view</title>
+  <desc id="sysD">Three layers. Your project holds a coding agent that runs the vakforge CLI and writes the per-project glue for prepare, synth, train, eval and serve. The vakforge core is a CLI over schema and validate, inspect and recommend, each of which asks the locale packs. The generated glue reads the core's output and calls the open-source models, trainers and serving stacks, which are pinned per recipe.</desc>
+  <defs>
+    <marker id="sysHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- layer: your project -->
+  <rect class="d-band" x="48" y="34" width="672" height="126" rx="14"/>
+  <text class="d-rail" x="34" y="97" transform="rotate(-90 34 97)">YOUR PROJECT</text>
+
+  <rect class="d-box d-accent" x="68" y="76" width="280" height="68" rx="10"/>
+  <text class="d-t" x="208" y="105">Coding agent + vakforge skill</text>
+  <text class="d-s" x="208" y="125">follows SKILL.md, step by step</text>
+
+  <rect class="d-box d-dashed" x="420" y="76" width="280" height="68" rx="10"/>
+  <text class="d-t" x="560" y="105">Generated per project</text>
+  <text class="d-s" x="560" y="125">prepare · synth · train · eval · serve</text>
+
+  <path class="d-line" d="M348 110 L412 110" marker-end="url(#sysHead)"/>
+  <text class="d-lbl" x="380" y="101">writes</text>
+
+  <!-- layer: vakforge core -->
+  <rect class="d-band" x="48" y="196" width="672" height="190" rx="14"/>
+  <text class="d-rail" x="34" y="291" transform="rotate(-90 34 291)">VAKFORGE CORE</text>
+  <text class="d-note" x="68" y="216">pip install vakforge · no ML dependencies</text>
+
+  <rect class="d-box d-accent" x="68" y="263" width="104" height="58" rx="10"/>
+  <text class="d-t" x="120" y="288">CLI</text>
+  <text class="d-s" x="120" y="306">typer</text>
+
+  <rect class="d-box" x="228" y="222" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="249">schema + validate</text>
+  <rect class="d-box" x="228" y="270" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="297">inspect</text>
+  <rect class="d-box" x="228" y="318" width="180" height="44" rx="9"/>
+  <text class="d-t" x="318" y="345">recommend</text>
+
+  <rect class="d-box d-accent" x="496" y="263" width="180" height="58" rx="10"/>
+  <text class="d-t" x="586" y="288">locale packs</text>
+  <text class="d-s" x="586" y="306">everything local lives here</text>
+
+  <path class="d-line" d="M172 292 C200 292 200 244 222 244" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M172 292 L222 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M172 292 C200 292 200 340 222 340" marker-end="url(#sysHead)"/>
+
+  <path class="d-line" d="M408 244 C452 244 452 292 490 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M408 292 L490 292" marker-end="url(#sysHead)"/>
+  <path class="d-line" d="M408 340 C452 340 452 292 490 292" marker-end="url(#sysHead)"/>
+
+  <!-- layer: upstream -->
+  <rect class="d-band" x="48" y="422" width="672" height="104" rx="14"/>
+  <text class="d-rail" x="34" y="474" transform="rotate(-90 34 474)">OPEN SOURCE</text>
+  <text class="d-note" x="68" y="442">pinned per recipe, wrapped never forked</text>
+
+  <rect class="d-box" x="68" y="452" width="196" height="58" rx="10"/>
+  <text class="d-t" x="166" y="477">Voice models</text>
+  <text class="d-s" x="166" y="495">LFM2.5 · Moshi · Qwen-Omni</text>
+
+  <rect class="d-box" x="284" y="452" width="196" height="58" rx="10"/>
+  <text class="d-t" x="382" y="477">Trainers</text>
+  <text class="d-s" x="382" y="495">liquid-audio · ms-swift</text>
+
+  <rect class="d-box" x="500" y="452" width="200" height="58" rx="10"/>
+  <text class="d-t" x="600" y="477">Serving</text>
+  <text class="d-s" x="600" y="495">Pipecat · LiveKit · vLLM</text>
+
+  <!-- cross-layer -->
+  <path class="d-line" d="M120 144 L120 259" marker-end="url(#sysHead)"/>
+  <text class="d-lbl d-left" x="130" y="206">runs</text>
+
+  <path class="d-line d-soft" d="M560 144 L560 192" marker-end="url(#sysHead)"/>
+  <text class="d-lbl d-left" x="572" y="164">reads inspect.json</text>
+  <text class="d-lbl d-left" x="572" y="178">and vakforge.jsonl</text>
+
+  <path class="d-line d-soft" d="M700 110 L744 110 L744 474 L726 474" marker-end="url(#sysHead)"/>
+  <text class="d-lbl" x="756" y="300" transform="rotate(-90 756 300)">calls</text>
+</svg>

@@ -1,0 +1,90 @@
+<svg class="diagram" viewBox="0 0 850 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="seqT seqD">
+  <title id="seqT">An agent run, step by step</title>
+  <desc id="seqD">A sequence between four participants: the developer, the coding agent running the vakforge skill, the vakforge CLI, and the open models and trainers. In the decide phase the developer asks for a Hinglish assistant and the agent runs init, inspect and recommend, with the CLI returning the data report and the decision. In the agree phase the agent brings a plan, cost, consent basis and hardware question back to the developer, who approves. In the build phase the agent verifies every upstream API against installed source, writes the glue, and validates the dataset. In the prove phase it trains only what recommend asked for, evaluates base against tuned, and reports back with an endpoint only if the tuned model wins.</desc>
+  <defs>
+    <marker id="seqHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1 1.5 L8.5 5 L1 8.5" class="d-head"/>
+    </marker>
+  </defs>
+
+  <!-- phases -->
+  <path class="d-phase-bar" d="M60 96 L60 308"/>
+  <text class="d-phase" x="38" y="202" transform="rotate(-90 38 202)">DECIDE</text>
+  <path class="d-phase-bar" d="M60 332 L60 392"/>
+  <text class="d-phase" x="38" y="362" transform="rotate(-90 38 362)">AGREE</text>
+  <path class="d-phase-bar" d="M60 422 L60 482"/>
+  <text class="d-phase" x="38" y="452" transform="rotate(-90 38 452)">BUILD</text>
+  <path class="d-phase-bar" d="M60 508 L60 568"/>
+  <text class="d-phase" x="38" y="538" transform="rotate(-90 38 538)">PROVE</text>
+
+  <!-- lifelines -->
+  <path class="d-life" d="M150 66 L150 576"/>
+  <path class="d-life" d="M355 66 L355 576"/>
+  <path class="d-life" d="M575 66 L575 576"/>
+  <path class="d-life" d="M760 66 L760 576"/>
+  <path class="d-end" d="M141 576 L159 576"/>
+  <path class="d-end" d="M346 576 L364 576"/>
+  <path class="d-end" d="M566 576 L584 576"/>
+  <path class="d-end" d="M751 576 L769 576"/>
+
+  <!-- participants -->
+  <rect class="d-box" x="85" y="20" width="130" height="46" rx="10"/>
+  <text class="d-t" x="150" y="48">Developer</text>
+  <rect class="d-box d-accent" x="245" y="20" width="220" height="46" rx="10"/>
+  <text class="d-t" x="355" y="48">Coding agent + skill</text>
+  <rect class="d-box d-accent" x="498" y="20" width="154" height="46" rx="10"/>
+  <text class="d-t" x="575" y="48">vakforge CLI</text>
+  <rect class="d-box" x="680" y="20" width="160" height="46" rx="10"/>
+  <text class="d-t" x="760" y="48">Models + trainers</text>
+
+  <!-- activations: who is doing work, and for how long -->
+  <rect class="d-act d-accent" x="350.5" y="112" width="9" height="446" rx="2"/>
+  <rect class="d-act" x="145.5" y="104" width="9" height="16" rx="2"/>
+  <rect class="d-act" x="145.5" y="348" width="9" height="36" rx="2"/>
+  <rect class="d-act" x="145.5" y="558" width="9" height="14" rx="2"/>
+  <rect class="d-act" x="570.5" y="152" width="9" height="76" rx="2"/>
+  <rect class="d-act" x="570.5" y="268" width="9" height="36" rx="2"/>
+  <rect class="d-act" x="570.5" y="474" width="9" height="22" rx="2"/>
+  <rect class="d-act" x="755.5" y="438" width="9" height="16" rx="2"/>
+  <rect class="d-act" x="755.5" y="524" width="9" height="16" rx="2"/>
+
+  <!-- decide -->
+  <path class="d-line" d="M155 112 L350 112" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="103">Build a Hinglish assistant from data/raw</text>
+
+  <path class="d-line" d="M360 152 L570 152" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="143">vakforge init -l hi-Latn-IN</text>
+
+  <path class="d-line" d="M360 192 L570 192" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="183">vakforge inspect data/raw</text>
+
+  <path class="d-line d-return" d="M570 228 L360 228" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="465" y="219">sources, languages, PII, tool candidates</text>
+
+  <path class="d-line" d="M360 268 L570 268" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="259">vakforge recommend</text>
+
+  <path class="d-line d-return" d="M570 304 L360 304" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="465" y="295">retrieval and tools first; fine-tune only if it misses</text>
+
+  <!-- agree -->
+  <path class="d-line" d="M350 348 L155 348" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="339">Plan, cost, consent basis, hardware</text>
+
+  <path class="d-line d-return" d="M155 384 L350 384" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="375">Approve</text>
+
+  <!-- build -->
+  <path class="d-line" d="M360 438 L755 438" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="557" y="429">Verify every API against installed source, then write the glue</text>
+
+  <path class="d-line" d="M360 474 L570 474" marker-end="url(#seqHead)"/>
+  <text class="d-msg d-mono" x="465" y="465">vakforge validate vakforge.jsonl</text>
+
+  <!-- prove -->
+  <path class="d-line" d="M360 524 L755 524" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="557" y="515">Train only what recommend asked for, then eval base vs tuned</text>
+
+  <path class="d-line d-return" d="M350 558 L155 558" marker-end="url(#seqHead)"/>
+  <text class="d-msg" x="252" y="549">Report, and an endpoint only if it beats the base</text>
+</svg>

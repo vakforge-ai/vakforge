@@ -15,6 +15,7 @@ What vakforge owns, what the coding agent generates per project, and what comes 
 
 ```mermaid
 flowchart TB
+  %% diagram: system-view
   subgraph project["Your project"]
     agent["Coding agent + vakforge skill"]
     glue["Generated per project<br/>prepare · synth · train · eval · serve"]
@@ -45,6 +46,7 @@ Children merge language tags and PII patterns from their parent and override sca
 
 ```mermaid
 flowchart TD
+  %% diagram: locale-inheritance
   base["LocalePack<br/>formats · PII patterns · consent · privacy notes · recipe support"]
   en["en<br/>email · card (Luhn) · IBAN · English WER normalizer"]
   us["en-US<br/>SSN · US phones · dollars"]
@@ -60,6 +62,7 @@ flowchart TD
 
 ```mermaid
 sequenceDiagram
+  %% diagram: agent-run
   actor Dev as Developer
   participant Agent as Coding agent + skill
   participant CLI as vakforge CLI
@@ -80,92 +83,24 @@ sequenceDiagram
 
 ## Package layout
 
-```
-vakforge/
-  __init__.py
-  cli.py                    # typer app; one subcommand per stage; thin, delegates
-  config.py                 # pydantic settings; YAML load; CLI override merge
-  schema.py                 # canonical models (Conversation, Turn, ToolCall, Meta …)
-  validate.py               # rules from DATA_FORMAT.md; returns structured errors
+Everything below exists today, runs on CPU and imports no ML dependencies.
 
-  locales/
-    base.py                 # LocalePack protocol + registry (see LOCALE_PACKS.md)
-    checksums.py            # Luhn, Verhoeff, IBAN validators used by PII patterns
-    en.py                   # `en` parent: shared English PII + WER normalizer
-    en_us.py  en_gb.py  en_in.py   # market packs: formats, national IDs, consent notes
-    hi_latn_in.py           # Hinglish: Roman-Hindi detection, lang_mix, Devanagari-safe normalizer
+| Module | What it holds |
+|---|---|
+| `cli.py` | typer app, one subcommand per stage; thin, delegates everything |
+| `config.py` | `vakforge.yaml` loading, pydantic settings, CLI override merge |
+| `schema.py` | the canonical models: `Conversation`, `Turn`, `ToolCall`, `Meta`, and the JSON Schema export |
+| `validate.py` | the file-level rules from `DATA_FORMAT.md`, returned as structured errors |
+| `locales/` | `base.py` pack protocol and registry, `checksums.py`, then one module per pack |
+| `inspect/` | `sources.py` classifies, `profile.py` gets per-kind facts, `report.py` summarises the folder |
+| `recommend/` | `rules.py`: the decision guide as data, plus the bars and their evidence |
 
-  inspect/
-    sources.py              # walk a data dir; classify documents, tables, chats (JSONL, WhatsApp), audio
-    profile.py              # shallow facts per kind: words/languages/PII, columns/id columns, messages, audio stats
-    report.py               # folder summary + inspect.json; one bad file never aborts the run
+Outside the package: `skill/vakforge/` (the agent skill), `site/` (landing page and these docs),
+`examples/` (a synthetic project with its reports), `tests/unit/` (CPU, no downloads).
 
-  recommend/
-    questionnaire.py        # interactive prompts (typer)
-    rules.py                # DECISION_GUIDE.md as data + a small rules engine
-
-  prepare/
-    normalize.py            # resample to 24 kHz, channel handling, loudness
-    transcribe/             # engine interface + faster_whisper.py, indic_conformer.py, paraformer.py
-    diarize/                # engine interface + channels.py, pyannote.py
-    langtag.py              # calls locale.detect_lang per turn
-    normalize_text.py       # calls locale.normalize_text; shared punctuation/case rules
-    redact/                 # shared patterns + locale.pii_patterns + NER; writes redaction logs
-    split.py                # leak-free splits
-    build_manifest.py       # assemble canonical rows
-
-  synth/
-    scenarios/              # base YAML scenario templates; locale variants live in the pack
-    dialogue_llm.py         # provider-agnostic LLM client (OpenAI-compatible or local)
-    tts/                    # engine interface + generic_en.py, indic_parler.py, indicf5.py, cosyvoice.py
-    mix.py                  # stereo assembly, overlaps, backchannels
-    augment.py              # phone band-pass, noise, reverb, codec artefacts
-    build.py                # produce canonical manifest with meta.source="synthetic"
-
-  adapters/
-    base.py                 # Adapter protocol: manifest → recipe dataset dir + manifest_hash
-    lfm25_audio.py
-    moshi.py
-    qwen_omni.py
-    cascade.py
-
-  recipes/
-    base.py                 # Recipe protocol: prepare(), train(), load_for_eval(), serve()
-    lfm25_audio/            # extra: lfm25
-    moshi_lora/             # extra: moshi
-    qwen_omni/              # extra: qwen
-    cascade/                # extra: cascade
-
-  eval/
-    metrics/                # wer.py, entities.py, tool_calls.py, latency.py, duplex.py, voice.py, judge.py
-    runner.py               # runs base + tuned on held-out split via recipe.load_for_eval()
-    report.py               # report.md + report.json
-
-  serve/
-    protocols/              # wire-format front ends over one StreamingBackend
-      realtime_ws.py        # OpenAI Realtime WebSocket format (documented subset), first
-      webrtc.py             # LiveKit / Pipecat transports, next
-      sip.py                # telephony, next
-      http.py               # one turn per request, planned
-    session.py              # per-connection state, audio buffers, tool dispatch
-    adapters/               # recipe → streaming inference interface
-    examples/               # python_client.py, pipecat_pipeline.py, livekit_agent.py
-
-  utils/
-    audio.py, hashing.py, logging.py, hf.py (gated-model helpers)
-
-skill/vakforge/             # agent skill: SKILL.md + references/ distilled from docs/
-site/                       # static landing page (GitHub Pages)
-site/assets/                # brand and site images (served by Cloudflare Pages)
-configs/                    # default YAML per recipe
-notebooks/                  # Colab notebooks, one per recipe
-tests/
-  unit/                     # CPU, no downloads, always run
-  integration/              # @pytest.mark.model / @pytest.mark.gpu, opt-in
-  fixtures/                 # generated in conftest.py, not committed binaries
-docs/
-benchmarks/vakforge-bench-<locale>-v0/
-```
+The stages the skill generates — `prepare`, `synth`, `train`, `eval`, `serve` — are written into
+*your* project, not shipped here. `docs/ROADMAP.md` tracks which of them vakforge may ship itself
+later; the sections below are the design they would follow.
 
 ## Key interfaces
 
@@ -201,30 +136,29 @@ class StreamingBackend(Protocol):
     async def tool_result(self, call_id: str, content: dict) -> None: ...
 ```
 
-`eval` and `serve` depend only on these protocols, so a new recipe that implements them gets the full report and every protocol front end for free.
+None of this is built yet. The point of writing it down now is the constraint it puts on the rest: `eval` and `serve` are to depend on these protocols and nothing else, so that a recipe implementing them gets the full report and every protocol front end without touching either.
 
 ## Data flow
 
-```
-docs / tables / chats / audio ─► inspect ─► inspect.json
-                │
-                ▼
-          recommend ─► recipe + data gaps
-                │
-                ▼
-any source ─► prepare ─► data/vakforge.jsonl ◄─ synth
-                                │
-                                ▼
-                    adapters/<recipe>.build()
-                                │
-                                ▼
-                    recipes/<recipe>.train() ─► runs/<ts>/checkpoint + train.json
-                                │
-                                ▼
-                    eval.runner (base vs tuned) ─► runs/<ts>/report.{md,json}
-                                │
-                                ▼
-                    serve.realtime_ws ─► ws://…/v1/realtime
+```mermaid
+flowchart TD
+  %% diagram: data-flow
+  src["documents · tables · chats · audio"] --> insp["inspect"]
+  insp --> ij["inspect.json"]
+  insp --> rec["recommend"]
+  rec --> gaps["recipe + data gaps"]
+  rec --> prep["prepare"]
+  rec --> syn["synth"]
+  any["any source"] --> prep
+  prep --> mf["data/vakforge.jsonl"]
+  syn --> mf
+  mf --> ad["adapters/&lt;recipe&gt;.build()"]
+  ad --> tr["recipes/&lt;recipe&gt;.train()"]
+  tr --> ck["runs/&lt;ts&gt;/checkpoint + train.json"]
+  tr --> ev["eval.runner, base vs tuned"]
+  ev --> rp["runs/&lt;ts&gt;/report.{md,json}"]
+  ev --> sv["serve.realtime_ws"]
+  sv --> ws["ws://…/v1/realtime"]
 ```
 
 ## Serving: protocol front ends

@@ -74,6 +74,21 @@ def test_recommend_from_folder_and_from_report(tmp_path, monkeypatch):
     assert "primary problem" in r.output and "workflow" in r.output
 
 
+def test_out_paths_create_their_parent_directory(tmp_path, monkeypatch):
+    # `-o reports/x.json` used to raise FileNotFoundError with a traceback.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "faq.md").write_text("Refund in 5 days.", encoding="utf-8")
+    for args in (
+        ["schema", "-o", "a/schema.json"],
+        ["inspect", str(tmp_path), "-l", "en-US", "-o", "b/inspect.json"],
+        ["recommend", "b/inspect.json", "-o", "c/rec.json"],
+    ):
+        r = runner.invoke(app, args)
+        assert r.exit_code == 0, r.output
+    for made in ("a/schema.json", "b/inspect.json", "c/rec.json"):
+        assert (tmp_path / made).exists(), made
+
+
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2

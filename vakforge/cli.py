@@ -131,6 +131,7 @@ def schema(
 
     text = json.dumps(json_schema(), indent=2)
     if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
         console.print(f"[green]wrote[/] {out}")
     else:
