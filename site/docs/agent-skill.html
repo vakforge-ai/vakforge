@@ -121,7 +121,13 @@ whether callers must be able to interrupt. Read <code>recommend.json</code>. Don
 approved a plan that states: the routes per source, whether a fine-tune is on the table at
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.</p>
-<p><code>fine_tune</code> is one of three values, and each means a different plan:</p>
+<p><code>recommend.json</code> answers <strong>every goal separately</strong> in <code>goal_decisions[]</code>. Each entry carries
+its own <code>eligibility</code>, <code>have</code>/<code>need</code>/<code>unit</code>, <code>evidence</code>, <code>confidence</code>, <code>recipe</code> and
+<code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions with different data
+behind them. Walk the list and give the user a line per goal. The top-level <code>fine_tune</code> is
+only the roll-up — the best state any goal reached — and is not the answer for any
+particular goal.</p>
+<p>Each <code>eligibility</code> means a different plan:</p>
 <ul>
 <li><code>blocked</code> — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
 why, quoting the <code>evidence</code> field.</li>
@@ -137,6 +143,10 @@ and <code>reported</code> means someone stated it without independent replicatio
 data can prove today: raw audio is never counted as conversation turns, because <code>inspect</code>
 cannot transcribe or diarize it. Anything in <code>uncounted</code> is real material that needs work
 before it counts, and it belongs in the plan as a task, not as data the user already has.</p>
+<p><code>blockers</code> is separate from data volume: it is what stands between a goal and training
+whatever the counts say. A named <code>recipe</code> alongside a blocker means the base model is the
+right choice and the adaptation is not yet possible — recommend the model, and put the
+blocker in the plan.</p>
 <h3 id="4-prepare">4. Prepare</h3>
 <p>Write <code>&lt;project&gt;/prepare/</code> so that it turns the raw sources into <code>data/vakforge.jsonl</code> in
 the canonical format (<code>references/data-format.md</code>), following <code>references/data-safety.md</code>:

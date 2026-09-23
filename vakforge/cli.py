@@ -291,23 +291,32 @@ def recommend(
     table.add_row("goals", ", ".join(rec.goals))
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
-    verdict = {
+    verdicts = {
         "blocked": "[bold red]no[/]",
         "baseline_first": "[bold yellow]baseline first[/]",
         "candidate": "[bold green]worth trying[/]",
-    }[rec.fine_tune]
-    table.add_row("fine-tune?", f"{verdict}  {rec.fine_tune_reason}")
-    # The confidence label matters as much as the verdict: a threshold we invented and one
-    # a paper measured should not read the same way.
-    table.add_row(f"evidence ({rec.evidence_confidence})", rec.evidence)
-    table.add_row("recipe", f"{rec.recipe or 'none'}  {rec.recipe_reason}")
-    if rec.need is not None:
-        table.add_row(
-            f"data ({rec.need_unit})", f"{rec.have:g} of ~{rec.need:g}  from {rec.have_from}"
-        )
-    for note in rec.uncounted:
-        table.add_row("[yellow]not counted[/]", note)
+    }
+    table.add_row("fine-tune?", f"{verdicts[rec.fine_tune]}  {rec.fine_tune_reason}")
     console.print(table)
+
+    # One block per goal. A project with two goals is two questions with two answers, and
+    # printing only the first one is how "recognition" used to disappear from the report.
+    for d in rec.goal_decisions:
+        goal = Table(title=f"goal · {d.goal}", title_justify="left", show_header=False)
+        goal.add_column(style="dim")
+        goal.add_column()
+        goal.add_row("fine-tune?", f"{verdicts[d.eligibility]}  {d.reason}")
+        if d.need is not None:
+            goal.add_row(f"data ({d.unit})", f"{d.have:g} of ~{d.need:g}  from {d.have_from}")
+        for note in d.uncounted:
+            goal.add_row("[yellow]not counted[/]", note)
+        for blocker in d.blockers:
+            goal.add_row("[yellow]blocked on[/]", blocker)
+        goal.add_row("recipe", f"{d.recipe or 'none'}  {d.recipe_reason}")
+        # The confidence label matters as much as the verdict: a threshold we invented and
+        # one a paper measured should not read the same way.
+        goal.add_row(f"evidence ({d.confidence})", d.evidence)
+        console.print(goal)
     if rec.consent:
         console.print("[bold]consent and privacy[/] (not legal advice)")
         for line in rec.consent:

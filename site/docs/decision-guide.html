@@ -198,7 +198,8 @@ vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<sp
 <ul>
 <li><strong>primary problem</strong> and the full list of goals (inferred from the data, or set with <code>--goal</code>)</li>
 <li><strong>routes</strong>: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack</li>
-<li><strong>fine-tune?</strong> one of three answers, never a bare yes:
+<li><strong>a decision per goal.</strong> Most real requests are two or three goals at once, and they do not share an answer: <code>--goal tools --goal recognition</code> returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up — the best state any goal reached.</li>
+<li><strong>fine-tune?</strong> per goal, one of three answers, never a bare yes:
 <ul>
 <li><code>no</code> — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from</li>
 <li><code>baseline first</code> — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all</li>
