@@ -47,7 +47,18 @@ def _check_audio(conv: Conversation, root: Path, line: int) -> list[Issue]:
         return []
     import soundfile as sf  # local import keeps `import vakforge.schema` light
 
-    path = root / conv.audio.path
+    path = in_dataset(root, conv.audio.path)
+    if path is None:
+        return [
+            Issue(
+                conv.id,
+                "audio.path",
+                "resolves outside the dataset directory",
+                "keep the audio beside the manifest; a symlink that leaves the dataset is "
+                "not part of it",
+                line,
+            )
+        ]
     if not path.exists():
         return [Issue(conv.id, "audio.path", f"{path} does not exist", "fix the path", line)]
     try:
@@ -200,17 +211,26 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
     return issues
 
 
-def _inside(root: Path, target: Path) -> bool:
-    """Is `target` really under `root` once both are fully resolved?
+def in_dataset(root: Path, relative: str) -> Path | None:
+    """The file a manifest path names, or None if it resolves outside the dataset.
 
-    The schema already rejects an absolute path or a `..` segment in the declared string.
-    This is the second layer, and it catches what a string check cannot: a symlink inside
-    the dataset pointing anywhere on the machine.
+    Every file a manifest points at is opened through this — audio and redaction logs
+    today, anything added later. The schema has already rejected absolute paths, drives
+    and `..` in the string; this is the second layer, and it sees what a string check
+    cannot: a symlink inside the dataset pointing anywhere on the machine. A symlink that
+    stays inside the dataset is fine.
+
+    It returns the path instead of answering yes or no, so that opening a file and
+    checking it are one step. The check used to be a separate predicate, and it was
+    called for redaction logs and forgotten for audio.
     """
+    path = root / relative
     try:
-        return target.resolve().is_relative_to(root.resolve())
+        if path.resolve().is_relative_to(root.resolve()):
+            return path
     except OSError:  # a broken link or a path we cannot stat is not inside
-        return False
+        pass
+    return None
 
 
 def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issue]:
@@ -222,8 +242,8 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
     log copied from another conversation cannot stand in as evidence.
     """
     issue = partial(Issue, conv.id, "meta.redaction_log", line=line)
-    path = root / conv.meta.redaction_log
-    if not _inside(root, path):
+    path = in_dataset(root, conv.meta.redaction_log)
+    if path is None:
         return [
             issue(
                 "resolves outside the dataset directory",

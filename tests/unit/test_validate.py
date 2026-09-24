@@ -88,7 +88,13 @@ def test_redaction_log_must_be_a_real_log(tmp_path):
 
 @pytest.mark.parametrize(
     "escape",
-    ["../outside.json", "a/../../outside.json", "/etc/passwd", "C:\\Windows\\win.ini"],
+    [
+        "../outside.json",
+        "a/../../outside.json",
+        "/etc/passwd",
+        "C:\\Windows\\win.ini",
+        "D:outside.json",
+    ],
 )
 def test_the_redaction_log_cannot_point_outside_the_dataset(tmp_path, escape):
     # A manifest is data — generated, downloaded, handed over with a dataset. Every path it
@@ -116,6 +122,34 @@ def test_a_symlinked_redaction_log_that_leaves_the_dataset_is_rejected(tmp_path)
     _, issues = validate_manifest(_write(ds, row))
     assert [i.field for i in issues] == ["meta.redaction_log"]
     assert "outside the dataset" in issues[0].message
+
+
+def _symlink_or_skip(link: Path, target: Path) -> None:
+    try:
+        link.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks need privileges on this platform")
+
+
+def test_an_audio_symlink_that_leaves_the_dataset_is_rejected(tmp_path):
+    # The containment check covered redaction logs and was forgotten for audio, which is
+    # the file validate actually opens and decodes.
+    outside = write_wav(tmp_path / "elsewhere" / "call.wav", channels=2)
+    ds = tmp_path / "ds"
+    (ds / "audio").mkdir(parents=True)
+    _symlink_or_skip(ds / "audio" / "conv_0001.wav", outside)
+    _, issues = validate_manifest(_write(ds, conversation()))
+    assert [i.field for i in issues] == ["audio.path"]
+    assert "outside the dataset" in issues[0].message
+
+
+def test_an_audio_symlink_that_stays_inside_the_dataset_is_fine(tmp_path):
+    ds = tmp_path / "ds"
+    real = write_wav(ds / "store" / "call.wav", channels=2)
+    (ds / "audio").mkdir()
+    _symlink_or_skip(ds / "audio" / "conv_0001.wav", real)
+    _, issues = validate_manifest(_write(ds, conversation()))
+    assert issues == []
 
 
 def test_a_log_from_another_conversation_is_not_evidence(tmp_path):

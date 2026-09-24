@@ -37,11 +37,17 @@ def dataset_relative(value: str, field: str) -> str:
     Shared by every path field rather than written per field. It was written once, inline,
     for `audio.path`, and `meta.redaction_log` was added later without it — which is exactly
     the failure this function exists to stop repeating.
+
+    Any drive is rejected, not only an absolute path: `D:recording.wav` is drive-relative,
+    so Windows does not call it absolute, yet joined onto a dataset on `C:` it names a file
+    on `D:`. This is the string half; `vakforge.validate` resolves the path and checks it
+    again, which is the only way to see a symlink.
     """
     if not value.strip():
         raise ValueError(f"{field} is empty")
     posix = PurePosixPath(value.replace("\\", "/"))
-    if posix.is_absolute() or PureWindowsPath(value).is_absolute():
+    windows = PureWindowsPath(value)
+    if posix.is_absolute() or windows.is_absolute() or windows.drive:
         raise ValueError(f"{field} must be relative to the manifest, got {value!r}")
     if ".." in posix.parts:
         raise ValueError(f"{field} must not contain '..', got {value!r}")
