@@ -107,12 +107,12 @@ version of each tool until someone changes <code>uv.lock</code>. The build backe
 <code>[build-system]</code>.</p>
 <h2 id="branches-and-commits">Branches and commits</h2>
 <ul>
-<li><strong>Features and anything substantial</strong> go on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>ci/…</code>, <code>docs/…</code>) and land through a pull request. Merge only when CI is green.</li>
-<li><strong>Small fixes</strong> (typos, one-line corrections, copy tweaks) may go straight to <code>main</code>.</li>
-<li><code>main</code> has no branch protection while the repository is private on the free plan, so these rules are enforced by review, not by GitHub. Do not force-push <code>main</code>.</li>
+<li><strong>Every change</strong> goes on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>fix/…</code>, <code>ci/…</code>, <code>docs/…</code>) and lands through a pull request, merged only when CI is green. That includes typos and one-line fixes: CI is what catches a stale <code>site/docs/</code> or a lockfile out of step, and it has to pass before a change lands, not after.</li>
+<li>Small, unrelated fixes can share one branch, one commit each, rather than a pull request apiece.</li>
+<li>Nothing is pushed to <code>main</code> directly, and <code>main</code> is never force-pushed.</li>
 <li>Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.</li>
 <li>Conventional commit messages: <code>feat(prepare): roman-hindi language tagging</code>.</li>
-<li>One logical change per PR. Large recipes land as a sequence: adapter → train wrapper → eval → serve.</li>
+<li>Large recipes land as a sequence of pull requests: adapter → train wrapper → eval → serve.</li>
 </ul>
 <h2 id="releases">Releases</h2>
 <ol>
