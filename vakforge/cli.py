@@ -286,17 +286,25 @@ def recommend(
         except (OSError, ValueError) as exc:
             err_console.print(f"[red]cannot read {source}[/]: {exc}")
             raise typer.Exit(2) from None
+        from vakforge.validate import json_kind
+
         # Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
         # `report.get(...)` and die with an AttributeError.
         if not isinstance(report, dict):
-            from vakforge.validate import json_kind
-
             err_console.print(
                 f"[red]{source} holds JSON {json_kind(report)}, not an object[/]; "
                 "is it an inspect.json?"
             )
             raise typer.Exit(2)
-        pack = resolve_pack(locale or report.get("locale"), "none in the report; pass --locale")
+        # A list or object here used to reach the pack lookup and die unhashable.
+        report_locale = report.get("locale")
+        if not isinstance(report_locale, str | None):
+            err_console.print(
+                f"[red]{source}: locale[/]: must be a string, not JSON "
+                f"{json_kind(report_locale)}; is it an inspect.json?"
+            )
+            raise typer.Exit(2)
+        pack = resolve_pack(locale or report_locale, "none in the report; pass --locale")
         if "summary" not in report:
             err_console.print(f"[red]{source} has no 'summary'[/]; is it an inspect.json?")
             raise typer.Exit(2)

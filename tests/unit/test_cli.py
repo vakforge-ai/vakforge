@@ -133,6 +133,10 @@ def test_recommend_reports_a_bad_locale_the_same_way_from_either_source(tmp_path
         ('{"locale": "en-US", "summary": []}', "summary"),
         ('{"locale": "en-US", "summary": {"counts": 5}}', "summary.counts"),
         ('{"locale": "en-US", "summary": {"tool_candidates": "x"}}', "summary.tool_candidates"),
+        # A locale that is not a string used to reach the pack lookup and die unhashable.
+        ('{"locale": ["en-US"], "summary": {}}', "locale: must be a string, not JSON array"),
+        ('{"locale": {"id": "en-US"}, "summary": {}}', "must be a string, not JSON object"),
+        ('{"locale": true, "summary": {}}', "must be a string, not JSON boolean"),
     ],
 )
 def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body, needle):
