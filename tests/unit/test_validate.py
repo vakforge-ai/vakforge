@@ -152,6 +152,35 @@ def test_an_audio_symlink_that_stays_inside_the_dataset_is_fine(tmp_path):
     assert issues == []
 
 
+@pytest.mark.parametrize(
+    ("body", "needle"),
+    [
+        ("[]", "must be an object"),
+        ("null", "must be an object"),
+        ('{"train": 42}', "'train' must be a list"),
+        # A string is iterable, so this used to be read as ids "c", "o", "n", "v", ...
+        ('{"train": "conv_0001"}', "'train' must be a list"),
+        ('{"train": [1, 2]}', "'train' must be a list"),
+        ('{"training": ["conv_0001"]}', "unknown key 'training'"),
+    ],
+)
+def test_a_malformed_splits_file_is_reported_not_crashed_on(project, body, needle):
+    (project / "splits.json").write_text(body, encoding="utf-8")
+    _, issues = validate_manifest(project / "vakforge.jsonl")
+    assert any(needle in i.message for i in issues), [i.message for i in issues]
+
+
+def test_splits_report_duplicates_and_ids_the_manifest_does_not_have(project):
+    (project / "splits.json").write_text(
+        json.dumps({"train": ["conv_0001", "conv_0001", "conv_9999"], "seed": 1}),
+        encoding="utf-8",
+    )
+    _, issues = validate_manifest(project / "vakforge.jsonl")
+    messages = {(i.conv_id, i.message) for i in issues}
+    assert ("conv_0001", "listed twice in train") in messages
+    assert ("conv_9999", "names no valid conversation in this manifest") in messages
+
+
 def test_a_log_from_another_conversation_is_not_evidence(tmp_path):
     (tmp_path / "log.json").write_text(
         json.dumps({"conversation_id": "someone_else", "spans": []}), encoding="utf-8"

@@ -301,21 +301,65 @@ def _check_consent(conv: Conversation, line: int, allow_unconsented: bool) -> li
     return []
 
 
+SPLITS = ("train", "val", "test")
+
+_JSON_KIND = {dict: "object", list: "array", str: "string", bool: "boolean", type(None): "null"}
+
+
+def json_kind(value: object) -> str:
+    """What a parsed JSON value was called in the file, for error messages."""
+    return _JSON_KIND.get(type(value), "number")
+
+
 def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
-    """`splits.json`, when present, must agree with meta.split and cover every id."""
+    """`splits.json`, when present, must agree with meta.split and cover every id.
+
+    The file is user-controlled, so its shape is checked before anything is read from it.
+    Valid JSON of the wrong shape used to crash validate — `[]` and `{"train": 42}` raised,
+    and `{"train": "conv_0001"}` was iterated character by character as a list of ids.
+    """
     path = root / "splits.json"
     if not path.exists():
         return []
+    issue = partial(Issue, "<splits.json>", "splits.json")
     try:
-        splits: dict[str, list[str]] = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return [Issue("<splits.json>", "splits.json", f"invalid JSON: {exc}", "fix the file")]
+        splits = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [issue(f"unreadable or invalid JSON: {exc}", "fix the file")]
+    if not isinstance(splits, dict):
+        return [
+            issue(
+                f"must be an object mapping split names to id lists, not {json_kind(splits)}",
+                'e.g. {"train": ["conv_0001"], "test": ["conv_0002"], "seed": 7}',
+            )
+        ]
+
+    issues = [
+        issue(f"unknown key {key!r}", f"use only {', '.join(SPLITS)} and seed")
+        for key in sorted(splits.keys() - {*SPLITS, "seed"})
+    ]
+    known = {c.id for c in convs}
     assigned: dict[str, str] = {}
-    issues = []
-    for split, ids in splits.items():
-        if split == "seed":
+    for split in SPLITS:
+        ids = splits.get(split, [])
+        if not isinstance(ids, list) or not all(isinstance(cid, str) for cid in ids):
+            issues.append(issue(f"{split!r} must be a list of conversation ids", "fix the file"))
             continue
+        listed: set[str] = set()
         for cid in ids:
+            if cid in listed:
+                issues.append(Issue(cid, "splits.json", f"listed twice in {split}", "keep one"))
+                continue
+            listed.add(cid)
+            if cid not in known:
+                issues.append(
+                    Issue(
+                        cid,
+                        "splits.json",
+                        "names no valid conversation in this manifest",
+                        "remove it, or fix the row it refers to",
+                    )
+                )
             if cid in assigned:
                 issues.append(
                     Issue(cid, "splits.json", f"in both {assigned[cid]} and {split}", "keep one")
