@@ -54,7 +54,10 @@ Issues = "https://github.com/vakforge-ai/vakforge/issues"
 Changelog = "https://github.com/vakforge-ai/vakforge/releases"
 
 [build-system]
-requires = ["hatchling"]
+# Pinned exactly: the build backend runs at release time and produces what goes to
+# PyPI, so a floating version means the same commit can build a different wheel next
+# week. Bump it deliberately.
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
