@@ -14,6 +14,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Without it setup-uv installs whatever uv is newest, so the same commit could build,
+  # lock-check and audit under a different uv next week. One place to bump.
+  UV_VERSION: "0.12.18"
+
 # Actions are pinned to a commit SHA, the only immutable reference GitHub offers.
 # A moving tag like `v7` can be repointed at any commit by whoever owns the action.
 # Dependabot updates these SHAs; the trailing comment says which release each one is.
@@ -26,6 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv sync --locked --group dev
       - run: uv run ruff check .
@@ -42,6 +48,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --group dev
       - run: uv run pytest
@@ -55,6 +62,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv sync --locked --group dev
       - run: uv run pytest
@@ -69,6 +77,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv run --group docs python scripts/build_docs.py
       - name: site/docs is up to date with docs/
@@ -86,6 +95,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv build
       - name: Metadata is valid for PyPI
@@ -115,6 +125,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv sync --locked --group dev
       - run: uv run --with pytest-cov pytest --cov=vakforge --cov-branch --cov-fail-under=90
@@ -126,6 +137,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - name: Audit the locked runtime dependencies
         run: |
