@@ -67,6 +67,11 @@ exclude = ["site", ".github", "assets-src"]
 default-groups = []
 
 [dependency-groups]
+ci = [
+    "pip-audit>=2.10.1",
+    "pytest-cov>=7.1.0",
+    "twine>=7.0.0",
+]
 dev = ["pytest>=8", "ruff>=0.5"]
 docs = ["markdown-it-py>=3", "pygments>=2.17"]  # scripts/build_docs.py -> site/docs/
 

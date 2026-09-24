@@ -50,7 +50,7 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pytest
       - run: uv build
-      - run: uvx twine check dist/*
+      - run: uv run --locked --group ci twine check dist/*
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: dist

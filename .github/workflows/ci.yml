@@ -98,12 +98,15 @@ jobs:
           version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv build
+      # Tools run from the locked `ci` group, not `uvx`, which would fetch whatever
+      # version is newest on the day.
       - name: Metadata is valid for PyPI
-        run: uvx twine check dist/*
+        run: uv run --locked --group ci twine check dist/*
       - name: Install the wheel into a clean environment
+        # The pip that ships with the interpreter, as a user would have it — upgrading it
+        # first would make the result depend on the day the job ran.
         run: |
           python -m venv /tmp/clean
-          /tmp/clean/bin/pip install --upgrade pip
           /tmp/clean/bin/pip install dist/*.whl
           /tmp/clean/bin/pip check
       - name: Smoke-test the installed CLI
@@ -127,8 +130,7 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           python-version: "3.12"
-      - run: uv sync --locked --group dev
-      - run: uv run --with pytest-cov pytest --cov=vakforge --cov-branch --cov-fail-under=90
+      - run: uv run --locked --group dev --group ci pytest --cov=vakforge --cov-branch --cov-fail-under=90
 
   dependency-audit:
     runs-on: ubuntu-latest
@@ -142,4 +144,4 @@ jobs:
       - name: Audit the locked runtime dependencies
         run: |
           uv export --frozen --no-dev --no-emit-project --format requirements-txt > locked.txt
-          uvx pip-audit --requirement locked.txt --strict
+          uv run --locked --group ci pip-audit --requirement locked.txt --strict
