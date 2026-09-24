@@ -10,12 +10,14 @@ keywords = ["voice-agent", "speech-to-speech", "fine-tuning", "realtime", "local
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
-  # Only versions CI actually runs the suite on. 3.14 is allowed by requires-python
-  # but untested, so it is not claimed here.
+  # Every version requires-python admits is one CI runs the suite on. Classifiers are
+  # labels; requires-python is what pip enforces, so an untested version it admits is
+  # installed untested regardless of what is listed here.
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 # Core must import with zero ML deps.
@@ -54,19 +56,27 @@ Issues = "https://github.com/vakforge-ai/vakforge/issues"
 Changelog = "https://github.com/vakforge-ai/vakforge/releases"
 
 [build-system]
-requires = ["hatchling"]
+# Pinned exactly: the build backend runs at release time and produces what goes to
+# PyPI, so a floating version means the same commit can build a different wheel next
+# week. Bump it deliberately.
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["vakforge"]
 
 [tool.hatch.build.targets.sdist]
-exclude = ["site", ".github", "assets-src"]
+exclude = ["site", ".github"]
 
 [tool.uv]
 default-groups = []
 
 [dependency-groups]
+ci = [
+    "pip-audit>=2.10.1",
+    "pytest-cov>=7.1.0",
+    "twine>=7.0.0",
+]
 dev = ["pytest>=8", "ruff>=0.5"]
 docs = ["markdown-it-py>=3", "pygments>=2.17"]  # scripts/build_docs.py -> site/docs/
 

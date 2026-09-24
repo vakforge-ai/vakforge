@@ -14,6 +14,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Without it setup-uv installs whatever uv is newest, so the same commit could build,
+  # lock-check and audit under a different uv next week. One place to bump.
+  UV_VERSION: "0.12.18"
+
 # Actions are pinned to a commit SHA, the only immutable reference GitHub offers.
 # A moving tag like `v7` can be repointed at any commit by whoever owns the action.
 # Dependabot updates these SHAs; the trailing comment says which release each one is.
@@ -26,6 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv sync --locked --group dev
       - run: uv run ruff check .
@@ -37,11 +43,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12", "3.13"]
+        # Every version requires-python admits. pip installs on any of them regardless
+        # of the classifiers, so an untested one is installed untested.
+        python: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --group dev
       - run: uv run pytest
@@ -55,6 +64,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv sync --locked --group dev
       - run: uv run pytest
@@ -69,6 +79,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv run --group docs python scripts/build_docs.py
       - name: site/docs is up to date with docs/
@@ -86,14 +97,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - run: uv build
+      # Tools run from the locked `ci` group, not `uvx`, which would fetch whatever
+      # version is newest on the day.
       - name: Metadata is valid for PyPI
-        run: uvx twine check dist/*
+        run: uv run --locked --group ci twine check dist/*
       - name: Install the wheel into a clean environment
+        # The pip that ships with the interpreter, as a user would have it — upgrading it
+        # first would make the result depend on the day the job ran.
         run: |
           python -m venv /tmp/clean
-          /tmp/clean/bin/pip install --upgrade pip
           /tmp/clean/bin/pip install dist/*.whl
           /tmp/clean/bin/pip check
       - name: Smoke-test the installed CLI
@@ -115,9 +130,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
-      - run: uv sync --locked --group dev
-      - run: uv run --with pytest-cov pytest --cov=vakforge --cov-branch --cov-fail-under=90
+      - run: uv run --locked --group dev --group ci pytest --cov=vakforge --cov-branch --cov-fail-under=90
 
   dependency-audit:
     runs-on: ubuntu-latest
@@ -126,8 +141,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
       - name: Audit the locked runtime dependencies
         run: |
           uv export --frozen --no-dev --no-emit-project --format requirements-txt > locked.txt
-          uvx pip-audit --requirement locked.txt --strict
+          uv run --locked --group ci pip-audit --requirement locked.txt --strict

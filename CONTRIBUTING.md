@@ -35,23 +35,29 @@ uv run --group docs python scripts/build_docs.py
 
 ## What CI checks
 
-`lint`, `test-linux` (3.11/3.12/3.13), `test-windows`, `docs` (the generated site must match
-`docs/`), `package` (build, `twine check`, install the wheel into a clean environment, run the
-CLI from it), `coverage` (branch coverage, 90% floor) and `dependency-audit` (`pip-audit` over
-the locked runtime set).
+`lint`, `test-linux` (3.11–3.14, every version `requires-python` admits), `test-windows`,
+`docs` (the generated site must match `docs/`), `package` (build, `twine check`, install the
+wheel into a clean environment, run the CLI from it), `coverage` (branch coverage, 90% floor)
+and `dependency-audit` (`pip-audit` over the locked runtime set).
 
 Every action is pinned to a commit SHA — a moving tag like `v7` can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing `# v7` comment so the
 release is still readable.
 
+The rest of the toolchain is pinned the same way. `UV_VERSION` at the top of `ci.yml` and
+`release.yml` sets the uv every job uses; keep the two in step. `twine`, `pip-audit` and
+`pytest-cov` come from the locked `ci` dependency group, never `uvx`, so a job runs the same
+version of each tool until someone changes `uv.lock`. The build backend is pinned exactly in
+`[build-system]`.
+
 ## Branches and commits
 
-- **Features and anything substantial** go on a branch from `main` (`feat/<area>-<short>`, `ci/…`, `docs/…`) and land through a pull request. Merge only when CI is green.
-- **Small fixes** (typos, one-line corrections, copy tweaks) may go straight to `main`.
-- `main` has no branch protection while the repository is private on the free plan, so these rules are enforced by review, not by GitHub. Do not force-push `main`.
+- **Every change** goes on a branch from `main` (`feat/<area>-<short>`, `fix/…`, `ci/…`, `docs/…`) and lands through a pull request, merged only when CI is green. That includes typos and one-line fixes: CI is what catches a stale `site/docs/` or a lockfile out of step, and it has to pass before a change lands, not after.
+- Small, unrelated fixes can share one branch, one commit each, rather than a pull request apiece.
+- Nothing is pushed to `main` directly, and `main` is never force-pushed.
 - Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.
 - Conventional commit messages: `feat(prepare): roman-hindi language tagging`.
-- One logical change per PR. Large recipes land as a sequence: adapter → train wrapper → eval → serve.
+- Large recipes land as a sequence of pull requests: adapter → train wrapper → eval → serve.
 
 ## Releases
 

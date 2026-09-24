@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # The uv that builds and checks what goes to PyPI is pinned like everything else in
+  # this path. Keep it in step with ci.yml.
+  UV_VERSION: "0.12.18"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +28,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
+          version: ${{ env.UV_VERSION }}
           python-version: "3.12"
 
       - name: Tag matches both declared versions
@@ -44,7 +50,7 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pytest
       - run: uv build
-      - run: uvx twine check dist/*
+      - run: uv run --locked --group ci twine check dist/*
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: dist

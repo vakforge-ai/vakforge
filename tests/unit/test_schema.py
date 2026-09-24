@@ -78,7 +78,16 @@ def test_duplicate_tool_names_rejected():
 
 @pytest.mark.parametrize(
     "path",
-    ["../../etc/passwd", "audio/../../secrets.wav", "/etc/passwd", "C:\\Windows\\win.ini"],
+    [
+        "../../etc/passwd",
+        "audio/../../secrets.wav",
+        "/etc/passwd",
+        "C:\\Windows\\win.ini",
+        # Drive-relative: not "absolute" to Windows, but joined onto a dataset on C: it
+        # names a file on D:.
+        "D:recording.wav",
+        "\\\\server\\share\\call.wav",
+    ],
 )
 def test_audio_path_cannot_escape_the_dataset(path):
     # audio.path is resolved against the manifest's directory, and a manifest is data.

@@ -241,6 +241,7 @@ def recommend(
     ),
 ) -> None:
     """Decide what needs changing (retrieval, tools, locale pack, fine-tune) and the recipe."""
+    from pydantic import ValidationError
     from rich.table import Table
 
     from vakforge.locales import get_pack, list_packs
@@ -285,13 +286,31 @@ def recommend(
         except (OSError, ValueError) as exc:
             err_console.print(f"[red]cannot read {source}[/]: {exc}")
             raise typer.Exit(2) from None
+        # Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
+        # `report.get(...)` and die with an AttributeError.
+        if not isinstance(report, dict):
+            from vakforge.validate import json_kind
+
+            err_console.print(
+                f"[red]{source} holds JSON {json_kind(report)}, not an object[/]; "
+                "is it an inspect.json?"
+            )
+            raise typer.Exit(2)
         pack = resolve_pack(locale or report.get("locale"), "none in the report; pass --locale")
         if "summary" not in report:
             err_console.print(f"[red]{source} has no 'summary'[/]; is it an inspect.json?")
             raise typer.Exit(2)
         summary = report["summary"]
 
-    rec = decide(summary, pack, Constraints(goals=tuple(goal or ()), gpu=gpu, duplex=duplex))
+    try:
+        rec = decide(summary, pack, Constraints(goals=tuple(goal or ()), gpu=gpu, duplex=duplex))
+    except ValidationError as exc:
+        # Only a hand-edited or foreign report can get here: `inspect` writes the shape
+        # this checks. Name the first bad field rather than printing pydantic's dump.
+        first = exc.errors()[0]
+        where = ".".join(str(p) for p in ("summary", *first["loc"]))
+        err_console.print(f"[red]{source}: {where}[/]: {first['msg']}; is it an inspect.json?")
+        raise typer.Exit(2) from None
 
     table = Table(
         title=f"recommendation · locale {pack.id}", title_justify="left", show_header=False

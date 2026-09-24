@@ -361,8 +361,10 @@ def main() -> None:
             prev_next=prev_next(page),
             toc=toc(page),
         )
-        (OUT / f"{page.slug}.html").write_text(html_out, encoding="utf-8")
-    (OUT / "search.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
+        (OUT / f"{page.slug}.html").write_text(html_out, encoding="utf-8", newline="\n")
+    (OUT / "search.json").write_text(
+        json.dumps(index, ensure_ascii=False), encoding="utf-8", newline="\n"
+    )
     # pygments colours, both themes, appended to the hand-written stylesheet at build time
     css_src = (ROOT / "scripts" / "docs.css").read_text(encoding="utf-8")
     dark = HtmlFormatter(style="github-dark").get_style_defs(".highlight")
@@ -382,6 +384,7 @@ def main() -> None:
     (OUT / "docs.css").write_text(
         css_src + "\n/* pygments */\n" + dark + "\n" + light_scoped + "\n" + light_media + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     shutil.copyfile(ROOT / "scripts" / "docs.js", OUT / "docs.js")
     print(f"wrote {len(PAGES)} pages, {len(index)} search entries -> {OUT.relative_to(ROOT)}")

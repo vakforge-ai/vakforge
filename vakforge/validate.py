@@ -47,7 +47,18 @@ def _check_audio(conv: Conversation, root: Path, line: int) -> list[Issue]:
         return []
     import soundfile as sf  # local import keeps `import vakforge.schema` light
 
-    path = root / conv.audio.path
+    path = in_dataset(root, conv.audio.path)
+    if path is None:
+        return [
+            Issue(
+                conv.id,
+                "audio.path",
+                "resolves outside the dataset directory",
+                "keep the audio beside the manifest; a symlink that leaves the dataset is "
+                "not part of it",
+                line,
+            )
+        ]
     if not path.exists():
         return [Issue(conv.id, "audio.path", f"{path} does not exist", "fix the path", line)]
     try:
@@ -200,17 +211,26 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
     return issues
 
 
-def _inside(root: Path, target: Path) -> bool:
-    """Is `target` really under `root` once both are fully resolved?
+def in_dataset(root: Path, relative: str) -> Path | None:
+    """The file a manifest path names, or None if it resolves outside the dataset.
 
-    The schema already rejects an absolute path or a `..` segment in the declared string.
-    This is the second layer, and it catches what a string check cannot: a symlink inside
-    the dataset pointing anywhere on the machine.
+    Every file a manifest points at is opened through this — audio and redaction logs
+    today, anything added later. The schema has already rejected absolute paths, drives
+    and `..` in the string; this is the second layer, and it sees what a string check
+    cannot: a symlink inside the dataset pointing anywhere on the machine. A symlink that
+    stays inside the dataset is fine.
+
+    It returns the path instead of answering yes or no, so that opening a file and
+    checking it are one step. The check used to be a separate predicate, and it was
+    called for redaction logs and forgotten for audio.
     """
+    path = root / relative
     try:
-        return target.resolve().is_relative_to(root.resolve())
+        if path.resolve().is_relative_to(root.resolve()):
+            return path
     except OSError:  # a broken link or a path we cannot stat is not inside
-        return False
+        pass
+    return None
 
 
 def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issue]:
@@ -222,8 +242,8 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
     log copied from another conversation cannot stand in as evidence.
     """
     issue = partial(Issue, conv.id, "meta.redaction_log", line=line)
-    path = root / conv.meta.redaction_log
-    if not _inside(root, path):
+    path = in_dataset(root, conv.meta.redaction_log)
+    if path is None:
         return [
             issue(
                 "resolves outside the dataset directory",
@@ -235,35 +255,50 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
         return [issue(f"{conv.meta.redaction_log} does not exist", "point at the real log")]
     try:
         log = RedactionLog.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValidationError as exc:
+        # Name the field. The first line of pydantic's own text is just a count.
+        first = exc.errors()[0]
+        where = ".".join(str(p) for p in first["loc"]) or "<log>"
+        return [issue(f"malformed at {where}: {first['msg']}", "see docs/DATA_FORMAT.md")]
     except (OSError, ValueError) as exc:
-        first = str(exc).splitlines()[0]
-        return [issue(f"unreadable or malformed: {first}", "see docs/DATA_FORMAT.md")]
+        return [issue(f"unreadable: {exc}", "see docs/DATA_FORMAT.md")]
 
     issues = []
-    if log.conversation_id and log.conversation_id != conv.id:
+    if log.conversation_id != conv.id:
         issues.append(
             issue(
                 f"names conversation {log.conversation_id!r}, not this one",
                 "a log from another conversation is not evidence about this one",
             )
         )
+    # Every field a span can name, as the same text the rescan reads, so a placeholder in
+    # a tool argument is checked exactly as one in a spoken turn.
+    fields = dict(_redactable_text(conv))
     for n, span in enumerate(log.spans):
-        if span.turn is None:
-            continue
-        if not 0 <= span.turn < len(conv.turns):
+        if span.turn is not None and span.turn >= len(conv.turns):
             issues.append(issue(f"spans[{n}] points at turn {span.turn}, which does not exist"))
             continue
+        where = "system_prompt" if span.turn is None else f"turns[{span.turn}].{span.field}"
         # The placeholder is what should be left behind where the data was removed. If it
         # is not there, the log is describing a redaction that did not happen.
-        text = conv.turns[span.turn].text or ""
-        if span.placeholder and span.placeholder not in text:
+        if span.placeholder not in fields.get(where, ""):
             issues.append(
                 issue(
-                    f"spans[{n}] claims placeholder {span.placeholder!r} in turn "
-                    f"{span.turn}, which does not contain it",
+                    f"spans[{n}] claims placeholder {span.placeholder!r} in {where}, "
+                    "which does not contain it",
                     "write the log from the redaction that actually ran",
                 )
             )
+        if span.audio is not None:
+            if conv.audio is None:
+                issues.append(issue(f"spans[{n}] redacts audio, but this record has none"))
+            elif span.audio.end_s > conv.audio.duration_s + 0.5:
+                issues.append(
+                    issue(
+                        f"spans[{n}] redacts audio up to {span.audio.end_s}s, past the end "
+                        f"of the {conv.audio.duration_s}s recording"
+                    )
+                )
     return issues
 
 
@@ -281,21 +316,65 @@ def _check_consent(conv: Conversation, line: int, allow_unconsented: bool) -> li
     return []
 
 
+SPLITS = ("train", "val", "test")
+
+_JSON_KIND = {dict: "object", list: "array", str: "string", bool: "boolean", type(None): "null"}
+
+
+def json_kind(value: object) -> str:
+    """What a parsed JSON value was called in the file, for error messages."""
+    return _JSON_KIND.get(type(value), "number")
+
+
 def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
-    """`splits.json`, when present, must agree with meta.split and cover every id."""
+    """`splits.json`, when present, must agree with meta.split and cover every id.
+
+    The file is user-controlled, so its shape is checked before anything is read from it.
+    Valid JSON of the wrong shape used to crash validate — `[]` and `{"train": 42}` raised,
+    and `{"train": "conv_0001"}` was iterated character by character as a list of ids.
+    """
     path = root / "splits.json"
     if not path.exists():
         return []
+    issue = partial(Issue, "<splits.json>", "splits.json")
     try:
-        splits: dict[str, list[str]] = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return [Issue("<splits.json>", "splits.json", f"invalid JSON: {exc}", "fix the file")]
+        splits = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [issue(f"unreadable or invalid JSON: {exc}", "fix the file")]
+    if not isinstance(splits, dict):
+        return [
+            issue(
+                f"must be an object mapping split names to id lists, not {json_kind(splits)}",
+                'e.g. {"train": ["conv_0001"], "test": ["conv_0002"], "seed": 7}',
+            )
+        ]
+
+    issues = [
+        issue(f"unknown key {key!r}", f"use only {', '.join(SPLITS)} and seed")
+        for key in sorted(splits.keys() - {*SPLITS, "seed"})
+    ]
+    known = {c.id for c in convs}
     assigned: dict[str, str] = {}
-    issues = []
-    for split, ids in splits.items():
-        if split == "seed":
+    for split in SPLITS:
+        ids = splits.get(split, [])
+        if not isinstance(ids, list) or not all(isinstance(cid, str) for cid in ids):
+            issues.append(issue(f"{split!r} must be a list of conversation ids", "fix the file"))
             continue
+        listed: set[str] = set()
         for cid in ids:
+            if cid in listed:
+                issues.append(Issue(cid, "splits.json", f"listed twice in {split}", "keep one"))
+                continue
+            listed.add(cid)
+            if cid not in known:
+                issues.append(
+                    Issue(
+                        cid,
+                        "splits.json",
+                        "names no valid conversation in this manifest",
+                        "remove it, or fix the row it refers to",
+                    )
+                )
             if cid in assigned:
                 issues.append(
                     Issue(cid, "splits.json", f"in both {assigned[cid]} and {split}", "keep one")

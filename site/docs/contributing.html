@@ -93,21 +93,26 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>python<span class="w"> </span>scripts/build_docs.py
 </code></pre></div>
 <h2 id="what-ci-checks">What CI checks</h2>
-<p><code>lint</code>, <code>test-linux</code> (3.11/3.12/3.13), <code>test-windows</code>, <code>docs</code> (the generated site must match
-<code>docs/</code>), <code>package</code> (build, <code>twine check</code>, install the wheel into a clean environment, run the
-CLI from it), <code>coverage</code> (branch coverage, 90% floor) and <code>dependency-audit</code> (<code>pip-audit</code> over
-the locked runtime set).</p>
+<p><code>lint</code>, <code>test-linux</code> (3.11–3.14, every version <code>requires-python</code> admits), <code>test-windows</code>,
+<code>docs</code> (the generated site must match <code>docs/</code>), <code>package</code> (build, <code>twine check</code>, install the
+wheel into a clean environment, run the CLI from it), <code>coverage</code> (branch coverage, 90% floor)
+and <code>dependency-audit</code> (<code>pip-audit</code> over the locked runtime set).</p>
 <p>Every action is pinned to a commit SHA — a moving tag like <code>v7</code> can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing <code># v7</code> comment so the
 release is still readable.</p>
+<p>The rest of the toolchain is pinned the same way. <code>UV_VERSION</code> at the top of <code>ci.yml</code> and
+<code>release.yml</code> sets the uv every job uses; keep the two in step. <code>twine</code>, <code>pip-audit</code> and
+<code>pytest-cov</code> come from the locked <code>ci</code> dependency group, never <code>uvx</code>, so a job runs the same
+version of each tool until someone changes <code>uv.lock</code>. The build backend is pinned exactly in
+<code>[build-system]</code>.</p>
 <h2 id="branches-and-commits">Branches and commits</h2>
 <ul>
-<li><strong>Features and anything substantial</strong> go on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>ci/…</code>, <code>docs/…</code>) and land through a pull request. Merge only when CI is green.</li>
-<li><strong>Small fixes</strong> (typos, one-line corrections, copy tweaks) may go straight to <code>main</code>.</li>
-<li><code>main</code> has no branch protection while the repository is private on the free plan, so these rules are enforced by review, not by GitHub. Do not force-push <code>main</code>.</li>
+<li><strong>Every change</strong> goes on a branch from <code>main</code> (<code>feat/&lt;area&gt;-&lt;short&gt;</code>, <code>fix/…</code>, <code>ci/…</code>, <code>docs/…</code>) and lands through a pull request, merged only when CI is green. That includes typos and one-line fixes: CI is what catches a stale <code>site/docs/</code> or a lockfile out of step, and it has to pass before a change lands, not after.</li>
+<li>Small, unrelated fixes can share one branch, one commit each, rather than a pull request apiece.</li>
+<li>Nothing is pushed to <code>main</code> directly, and <code>main</code> is never force-pushed.</li>
 <li>Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.</li>
 <li>Conventional commit messages: <code>feat(prepare): roman-hindi language tagging</code>.</li>
-<li>One logical change per PR. Large recipes land as a sequence: adapter → train wrapper → eval → serve.</li>
+<li>Large recipes land as a sequence of pull requests: adapter → train wrapper → eval → serve.</li>
 </ul>
 <h2 id="releases">Releases</h2>
 <ol>

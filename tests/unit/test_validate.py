@@ -83,12 +83,19 @@ def test_redaction_log_must_be_a_real_log(tmp_path):
     row["meta"] = dict(row["meta"], redaction_log="log.json")
     _, issues = validate_manifest(_write(tmp_path, row))
     assert [i.field for i in issues] == ["meta.redaction_log"]
-    assert "unreadable or malformed" in issues[0].message
+    # The message names a field, not just "1 validation error for RedactionLog".
+    assert "malformed at notes" in issues[0].message
 
 
 @pytest.mark.parametrize(
     "escape",
-    ["../outside.json", "a/../../outside.json", "/etc/passwd", "C:\\Windows\\win.ini"],
+    [
+        "../outside.json",
+        "a/../../outside.json",
+        "/etc/passwd",
+        "C:\\Windows\\win.ini",
+        "D:outside.json",
+    ],
 )
 def test_the_redaction_log_cannot_point_outside_the_dataset(tmp_path, escape):
     # A manifest is data — generated, downloaded, handed over with a dataset. Every path it
@@ -118,6 +125,63 @@ def test_a_symlinked_redaction_log_that_leaves_the_dataset_is_rejected(tmp_path)
     assert "outside the dataset" in issues[0].message
 
 
+def _symlink_or_skip(link: Path, target: Path) -> None:
+    try:
+        link.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks need privileges on this platform")
+
+
+def test_an_audio_symlink_that_leaves_the_dataset_is_rejected(tmp_path):
+    # The containment check covered redaction logs and was forgotten for audio, which is
+    # the file validate actually opens and decodes.
+    outside = write_wav(tmp_path / "elsewhere" / "call.wav", channels=2)
+    ds = tmp_path / "ds"
+    (ds / "audio").mkdir(parents=True)
+    _symlink_or_skip(ds / "audio" / "conv_0001.wav", outside)
+    _, issues = validate_manifest(_write(ds, conversation()))
+    assert [i.field for i in issues] == ["audio.path"]
+    assert "outside the dataset" in issues[0].message
+
+
+def test_an_audio_symlink_that_stays_inside_the_dataset_is_fine(tmp_path):
+    ds = tmp_path / "ds"
+    real = write_wav(ds / "store" / "call.wav", channels=2)
+    (ds / "audio").mkdir()
+    _symlink_or_skip(ds / "audio" / "conv_0001.wav", real)
+    _, issues = validate_manifest(_write(ds, conversation()))
+    assert issues == []
+
+
+@pytest.mark.parametrize(
+    ("body", "needle"),
+    [
+        ("[]", "must be an object"),
+        ("null", "must be an object"),
+        ('{"train": 42}', "'train' must be a list"),
+        # A string is iterable, so this used to be read as ids "c", "o", "n", "v", ...
+        ('{"train": "conv_0001"}', "'train' must be a list"),
+        ('{"train": [1, 2]}', "'train' must be a list"),
+        ('{"training": ["conv_0001"]}', "unknown key 'training'"),
+    ],
+)
+def test_a_malformed_splits_file_is_reported_not_crashed_on(project, body, needle):
+    (project / "splits.json").write_text(body, encoding="utf-8")
+    _, issues = validate_manifest(project / "vakforge.jsonl")
+    assert any(needle in i.message for i in issues), [i.message for i in issues]
+
+
+def test_splits_report_duplicates_and_ids_the_manifest_does_not_have(project):
+    (project / "splits.json").write_text(
+        json.dumps({"train": ["conv_0001", "conv_0001", "conv_9999"], "seed": 1}),
+        encoding="utf-8",
+    )
+    _, issues = validate_manifest(project / "vakforge.jsonl")
+    messages = {(i.conv_id, i.message) for i in issues}
+    assert ("conv_0001", "listed twice in train") in messages
+    assert ("conv_9999", "names no valid conversation in this manifest") in messages
+
+
 def test_a_log_from_another_conversation_is_not_evidence(tmp_path):
     (tmp_path / "log.json").write_text(
         json.dumps({"conversation_id": "someone_else", "spans": []}), encoding="utf-8"
@@ -129,47 +193,113 @@ def test_a_log_from_another_conversation_is_not_evidence(tmp_path):
     assert "not this one" in issues[0].message
 
 
-def test_a_span_must_describe_a_redaction_that_happened(tmp_path):
-    (tmp_path / "log.json").write_text(
-        json.dumps({"spans": [{"type": "ssn", "turn": 0, "placeholder": "<SSN_1>"}]}),
-        encoding="utf-8",
-    )
-    row = _redacted_row(text="nothing was removed here")  # no placeholder in the text
+def _validate_with_log(tmp_path, row, *spans, conversation_id="conv_0001"):
+    """Write a redaction log beside the row, point the row at it, and validate."""
+    log = {"conversation_id": conversation_id, "spans": list(spans)}
+    (tmp_path / "log.json").write_text(json.dumps(log), encoding="utf-8")
     row["meta"] = dict(row["meta"], redaction_log="log.json")
-    _, issues = validate_manifest(_write(tmp_path, row))
+    return validate_manifest(_write(tmp_path, row))[1]
+
+
+def test_a_span_must_describe_a_redaction_that_happened(tmp_path):
+    issues = _validate_with_log(
+        tmp_path,
+        _redacted_row(text="nothing was removed here"),  # no placeholder in the text
+        {"type": "ssn", "turn": 0, "placeholder": "<SSN_1>"},
+    )
     assert [i.field for i in issues] == ["meta.redaction_log"]
     assert "does not contain it" in issues[0].message
 
 
 def test_a_span_pointing_at_a_turn_that_does_not_exist_is_rejected(tmp_path):
-    (tmp_path / "log.json").write_text(
-        json.dumps({"spans": [{"type": "ssn", "turn": 9}]}), encoding="utf-8"
+    issues = _validate_with_log(
+        tmp_path, _redacted_row(), {"type": "ssn", "turn": 9, "placeholder": "<SSN_1>"}
     )
-    row = _redacted_row()
-    row["meta"] = dict(row["meta"], redaction_log="log.json")
-    _, issues = validate_manifest(_write(tmp_path, row))
     assert "does not exist" in issues[0].message
 
 
 def test_an_empty_span_list_is_accepted(tmp_path):
     # A conversation may genuinely contain no personal data. The substantive proof is the
     # rescan of the text, not the length of the log.
-    (tmp_path / "log.json").write_text('{"spans": []}', encoding="utf-8")
-    row = _redacted_row(text="nothing sensitive here at all")
-    row["meta"] = dict(row["meta"], redaction_log="log.json")
-    _, issues = validate_manifest(_write(tmp_path, row))
-    assert issues == []
+    assert _validate_with_log(tmp_path, _redacted_row(text="nothing sensitive here")) == []
 
 
 def test_a_properly_redacted_row_passes(tmp_path):
-    (tmp_path / "log.json").write_text(
-        json.dumps({"spans": [{"turn": 0, "type": "ssn", "placeholder": "<SSN_1>"}]}),
-        encoding="utf-8",
+    issues = _validate_with_log(
+        tmp_path,
+        _redacted_row(text="my ssn is <SSN_1>, thanks"),
+        {"turn": 0, "type": "ssn", "placeholder": "<SSN_1>"},
     )
-    row = _redacted_row(text="my ssn is <SSN_1>, thanks")
+    assert issues == []
+
+
+@pytest.mark.parametrize(
+    ("span", "needle"),
+    [
+        # The reported case: a span that says nothing checkable used to pass.
+        ({"type": "phone"}, "spans.0.placeholder"),
+        ({"type": "phone", "placeholder": "<P>"}, "needs `turn`"),
+        ({"type": "phone", "field": "system_prompt", "turn": 0, "placeholder": "<P>"}, "drop"),
+        ({"type": "phone", "turn": 0, "placeholder": "<P>", "field": "notes"}, "spans.0.field"),
+        (
+            {"type": "phone", "turn": 0, "placeholder": "<P>", "audio": {"start_s": 2.0}},
+            "spans.0.audio",
+        ),
+        (
+            {
+                "type": "phone",
+                "turn": 0,
+                "placeholder": "<P>",
+                "audio": {"start_s": 2.0, "end_s": 1.0, "method": "tone"},
+            },
+            "must be after",
+        ),
+    ],
+)
+def test_a_span_has_to_say_enough_to_be_checked(tmp_path, span, needle):
+    issues = _validate_with_log(tmp_path, _redacted_row(text="call <P> later"), span)
+    assert [i.field for i in issues] == ["meta.redaction_log"], issues
+    assert needle in issues[0].message
+
+
+def test_a_log_without_its_conversation_id_is_rejected(tmp_path):
+    (tmp_path / "log.json").write_text('{"spans": []}', encoding="utf-8")
+    row = _redacted_row()
     row["meta"] = dict(row["meta"], redaction_log="log.json")
     _, issues = validate_manifest(_write(tmp_path, row))
-    assert issues == []
+    assert "malformed at conversation_id" in issues[0].message
+
+
+def test_a_placeholder_in_a_tool_argument_is_found_where_the_span_says(tmp_path):
+    row = _redacted_row(
+        speaker="agent",
+        end=0.0,
+        text=None,
+        lang=None,
+        tool_call={
+            "id": "c1",
+            "name": "book_appointment",
+            "arguments": {"customer_id": "A-1", "cb": "<PHONE_1>"},
+        },
+    )
+    span = {"type": "phone", "turn": 0, "field": "tool_call.arguments", "placeholder": "<PHONE_1>"}
+    assert _validate_with_log(tmp_path, row, span) == []
+    # ... and the same placeholder claimed in the spoken text of that turn is not there.
+    wrong = dict(span, field="text")
+    issues = _validate_with_log(tmp_path, _redacted_row(**row["turns"][0]), wrong)
+    assert "does not contain it" in issues[0].message
+
+
+def test_audio_redaction_must_fit_the_recording(tmp_path):
+    # A text-only row has no recording to have redacted anything from.
+    span = {
+        "type": "phone",
+        "turn": 0,
+        "placeholder": "<P>",
+        "audio": {"start_s": 0.1, "end_s": 0.5, "method": "tone"},
+    }
+    issues = _validate_with_log(tmp_path, _redacted_row(text="call <P> later"), span)
+    assert "this record has none" in issues[0].message
 
 
 def test_unredacted_rows_are_not_rescanned(tmp_path):
