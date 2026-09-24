@@ -122,7 +122,18 @@ def test_recommend_reports_a_bad_locale_the_same_way_from_either_source(tmp_path
 
 @pytest.mark.parametrize(
     ("body", "needle"),
-    [("{not json", "cannot read"), ('{"locale": "en-US"}', "no 'summary'")],
+    [
+        ("{not json", "cannot read"),
+        ('{"locale": "en-US"}', "no 'summary'"),
+        # Valid JSON that is not an object used to reach report.get() and raise.
+        ("[]", "holds JSON array, not an object"),
+        ("null", "holds JSON null, not an object"),
+        ("42", "holds JSON number, not an object"),
+        # A summary of the wrong shape used to crash three functions into the rules.
+        ('{"locale": "en-US", "summary": []}', "summary"),
+        ('{"locale": "en-US", "summary": {"counts": 5}}', "summary.counts"),
+        ('{"locale": "en-US", "summary": {"tool_candidates": "x"}}', "summary.tool_candidates"),
+    ],
 )
 def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body, needle):
     (tmp_path / "r.json").write_text(body, encoding="utf-8")

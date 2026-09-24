@@ -14,6 +14,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from vakforge.locales.base import LocalePack
 
 Goal = Literal["knowledge", "tools", "workflow", "recognition", "voice", "duplex", "language"]
@@ -511,10 +513,37 @@ def _project_verdict(decisions: list[GoalDecision]) -> tuple[Eligibility, str]:
 DEFAULT_CONSTRAINTS = Constraints()
 
 
+class InspectSummary(BaseModel):
+    """The part of `inspect.json` that `recommend` reads, checked before it is trusted.
+
+    A report is a file, and a file can be hand-edited or arrive from somewhere else.
+    Checking only that `summary` is an object would still let `{"counts": 5}` through to
+    crash three functions later, so every field the rules read is typed here, once, at
+    the entry point every caller goes through. Unknown keys are kept.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    counts: dict[str, int] = Field(default_factory=dict)
+    profiled: dict[str, int] | None = None
+    document_words: int = 0
+    chat_messages: int = 0
+    audio_hours: float = 0.0
+    two_channel_audio_files: int = 0
+    languages: dict[str, int] = Field(default_factory=dict)
+    pii: dict[str, int] = Field(default_factory=dict)
+    tool_candidates: list[str] = Field(default_factory=list)
+
+
 def recommend(
     summary: dict[str, Any], pack: LocalePack, c: Constraints = DEFAULT_CONSTRAINTS
 ) -> Recommendation:
-    """Apply the decision guide to an inspect summary."""
+    """Apply the decision guide to an inspect summary.
+
+    Raises `pydantic.ValidationError` if the summary does not have the shape `inspect`
+    writes.
+    """
+    summary = InspectSummary.model_validate(summary).model_dump()
     goals = list(c.goals) or infer_goals(summary, pack)
     if c.duplex and "duplex" not in goals:
         goals.insert(0, "duplex")
