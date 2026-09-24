@@ -1,5 +1,5 @@
-# original high-res brand images (23 MB); optimized copies live in site/assets/
-assets-src/
+# machine-local files; never committed
+.local/
 
 # python
 __pycache__/
@@ -35,13 +35,3 @@ wandb/
 .idea/
 .DS_Store
 Thumbs.db
-
-# local layout probes
-site/_*.html
-
-# raw literature-review outputs; the conclusions live in docs/RESEARCH.md
-Research outcomes/
-image.png
-
-# local working list of audit findings; delete once merged
-audit-findings.md
