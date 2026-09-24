@@ -255,35 +255,50 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
         return [issue(f"{conv.meta.redaction_log} does not exist", "point at the real log")]
     try:
         log = RedactionLog.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValidationError as exc:
+        # Name the field. The first line of pydantic's own text is just a count.
+        first = exc.errors()[0]
+        where = ".".join(str(p) for p in first["loc"]) or "<log>"
+        return [issue(f"malformed at {where}: {first['msg']}", "see docs/DATA_FORMAT.md")]
     except (OSError, ValueError) as exc:
-        first = str(exc).splitlines()[0]
-        return [issue(f"unreadable or malformed: {first}", "see docs/DATA_FORMAT.md")]
+        return [issue(f"unreadable: {exc}", "see docs/DATA_FORMAT.md")]
 
     issues = []
-    if log.conversation_id and log.conversation_id != conv.id:
+    if log.conversation_id != conv.id:
         issues.append(
             issue(
                 f"names conversation {log.conversation_id!r}, not this one",
                 "a log from another conversation is not evidence about this one",
             )
         )
+    # Every field a span can name, as the same text the rescan reads, so a placeholder in
+    # a tool argument is checked exactly as one in a spoken turn.
+    fields = dict(_redactable_text(conv))
     for n, span in enumerate(log.spans):
-        if span.turn is None:
-            continue
-        if not 0 <= span.turn < len(conv.turns):
+        if span.turn is not None and span.turn >= len(conv.turns):
             issues.append(issue(f"spans[{n}] points at turn {span.turn}, which does not exist"))
             continue
+        where = "system_prompt" if span.turn is None else f"turns[{span.turn}].{span.field}"
         # The placeholder is what should be left behind where the data was removed. If it
         # is not there, the log is describing a redaction that did not happen.
-        text = conv.turns[span.turn].text or ""
-        if span.placeholder and span.placeholder not in text:
+        if span.placeholder not in fields.get(where, ""):
             issues.append(
                 issue(
-                    f"spans[{n}] claims placeholder {span.placeholder!r} in turn "
-                    f"{span.turn}, which does not contain it",
+                    f"spans[{n}] claims placeholder {span.placeholder!r} in {where}, "
+                    "which does not contain it",
                     "write the log from the redaction that actually ran",
                 )
             )
+        if span.audio is not None:
+            if conv.audio is None:
+                issues.append(issue(f"spans[{n}] redacts audio, but this record has none"))
+            elif span.audio.end_s > conv.audio.duration_s + 0.5:
+                issues.append(
+                    issue(
+                        f"spans[{n}] redacts audio up to {span.audio.end_s}s, past the end "
+                        f"of the {conv.audio.duration_s}s recording"
+                    )
+                )
     return issues
 
 

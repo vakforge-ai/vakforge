@@ -195,19 +195,45 @@ class Turn(_Strict):
                 )
 
 
-class RedactionSpan(_Strict):
-    """One thing a redaction pass removed, and where it was."""
+RedactedField = Literal["text", "system_prompt", "tool_call.arguments", "tool_result.content"]
 
-    type: str
-    turn: int | None = None
-    field: str = "text"
-    start: int | None = None
-    end: int | None = None
-    placeholder: str | None = None
-    audio: dict[str, Any] | None = None
+
+class AudioRedaction(_Strict):
+    """Where in the recording a span was silenced or masked, and how."""
+
+    start_s: float = Field(ge=0)
+    end_s: float = Field(ge=0)
+    method: Literal["tone", "silence", "noise"]
 
     @model_validator(mode="after")
-    def _bounds(self) -> RedactionSpan:
+    def _ordered(self) -> AudioRedaction:
+        if self.end_s <= self.start_s:
+            raise ValueError(f"end_s ({self.end_s}) must be after start_s ({self.start_s})")
+        return self
+
+
+class RedactionSpan(_Strict):
+    """One thing a redaction pass removed, where it was, and what was left in its place.
+
+    `placeholder` is required because it is the only part of a span that can be checked
+    against the record: a span that names no placeholder cannot be told apart from one
+    that describes a redaction that never ran. `{"type": "phone"}` used to pass.
+    """
+
+    type: str
+    field: RedactedField = "text"
+    turn: int | None = Field(default=None, ge=0)
+    placeholder: str = Field(min_length=1)
+    start: int | None = None
+    end: int | None = None
+    audio: AudioRedaction | None = None
+
+    @model_validator(mode="after")
+    def _located(self) -> RedactionSpan:
+        if self.field == "system_prompt" and self.turn is not None:
+            raise ValueError("a system_prompt span belongs to no turn; drop `turn`")
+        if self.field != "system_prompt" and self.turn is None:
+            raise ValueError(f"a {self.field} span needs `turn`, the turn it was removed from")
         if (self.start is None) != (self.end is None):
             raise ValueError("set both start and end, or neither")
         if self.start is not None and (self.start < 0 or self.end < self.start):
@@ -218,14 +244,17 @@ class RedactionSpan(_Strict):
 class RedactionLog(_Strict):
     """What a redaction pass says it removed from one conversation.
 
+    `conversation_id` is required: without it a log copied from another conversation
+    reads as evidence about this one, and nothing can tell the difference.
+
     An empty `spans` list is legitimate — a conversation may genuinely contain no personal
     data — and is not treated as a failed claim. The substantive check is the rescan in
     `vakforge.validate`, which reads the text itself; this model checks that the log is
     internally coherent and actually describes the record it is attached to.
     """
 
+    conversation_id: str = Field(min_length=1)
     spans: list[RedactionSpan]
-    conversation_id: str | None = None
 
 
 class Transcription(_Strict):

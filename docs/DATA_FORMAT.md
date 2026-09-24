@@ -141,6 +141,8 @@ fails a record that claims something it cannot show:
   ]
 }
 ```
+
+  Required, because each is what makes a span checkable against the record rather than a bare assertion: `conversation_id` (it must be this record's `id`); on every span `type` and `placeholder`, the text left behind, which must actually appear where the span says; and `turn` unless `field` is `system_prompt`. `field` is one of `text`, `system_prompt`, `tool_call.arguments`, `tool_result.content`, and defaults to `text`. `audio`, when present, needs `start_s` < `end_s` inside the recording and a `method` of `tone`, `silence` or `noise`, and is rejected on a record with no audio. `{"spans": [{"type": "phone"}]}` fails: it says something was removed without saying anything that could be checked.
 - `allowed_uses` says what the row may be trained for: `asr`, `workflow`, `evaluation`, `voice_clone`. It defaults to the three ordinary uses, because that is what a recording is normally collected for. An empty list is rejected — a row allowed for nothing does not belong in a dataset.
 - `allowed_uses` containing `voice_clone` on `source: real` requires `voice_consent_ref`. Consent to record a call is not consent to reproduce the caller's voice. This is scoped to cloning deliberately: requiring voice consent for audio only ever used to train recognition is a rule broad enough that the easy way past it is a dummy value, which is worse than no rule.
 

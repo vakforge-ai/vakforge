@@ -22,7 +22,7 @@ These are enforced in the code you write for `prepare`, not just documented. Ful
 1. Pattern detection: shared patterns (email, cards by Luhn, IBAN) plus the pack's `pii_patterns` (phones, national IDs with checksums, postal codes when next to a street address). `pack.find_pii(text)` returns non-overlapping spans.
 2. NER for person names, organisations, locations with a small multilingual model; redact anything above a low confidence threshold. Over-redaction is cheap; under-redaction is not.
 3. Audio: replace each redacted span's audio with a tone or silence so training audio never carries the PII even if the transcript is later fixed.
-4. Log every span to `redactions/<id>.json` (span, type, method, placeholder) so eval can still ask "did the model handle a phone number here".
+4. Log every span to `redactions/<id>.json` so eval can still ask "did the model handle a phone number here". `vakforge validate` rejects a log that cannot be checked, so write exactly this shape: top-level `conversation_id` (the record's `id`) and `spans`; each span with `type`, `placeholder` (the text you actually left behind), `field` (`text`, `system_prompt`, `tool_call.arguments` or `tool_result.content`) and `turn` (omit it only for `system_prompt`); for audio, `{"start_s", "end_s", "method": "tone" | "silence" | "noise"}` inside the recording. The placeholder must appear in that field of that turn, or the span fails as describing a redaction that did not happen. Keep the log inside the dataset directory; a path or symlink that leaves it is rejected.
 5. Keep-list: the user's own product names, branch names and support number go in `configs/keep_list.yaml` and are never redacted.
 
 Placeholders stay consistent within a conversation: `<PERSON_1>` is the same person
