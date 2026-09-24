@@ -146,6 +146,13 @@ def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body
     assert needle in flat(r)
 
 
+def test_recommend_reads_a_report_saved_with_a_byte_order_mark(tmp_path):
+    # What Windows PowerShell 5.1 writes after a user edits the report by hand.
+    (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8-sig")
+    r = runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-o", str(tmp_path / "o.json")])
+    assert r.exit_code == 0, r.output
+
+
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2

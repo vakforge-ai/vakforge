@@ -282,7 +282,7 @@ def recommend(
         summary = inspect_dir(source, pack)["summary"]
     else:
         try:
-            report = json.loads(source.read_text(encoding="utf-8"))
+            report = json.loads(source.read_text(encoding="utf-8-sig"))
         except (OSError, ValueError) as exc:
             err_console.print(f"[red]cannot read {source}[/]: {exc}")
             raise typer.Exit(2) from None
