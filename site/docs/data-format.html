@@ -203,7 +203,10 @@ fails a record that claims something it cannot show:</p>
 </ul>
 <p>Synthetic rows are exempt from the redaction rules because they contain no real person's data.</p>
 <h2 id="splits">Splits</h2>
-<p>Split by conversation id <strong>and</strong> ensure no speaker (agent voice or, where known, customer) appears in more than one split. <code>splits.json</code> records the assignment and the seed so evaluation is reproducible.</p>
+<p>Split by conversation id <strong>and</strong> ensure no speaker (agent voice or, where known, customer) appears in more than one split. <code>splits.json</code> records the assignment and the seed so evaluation is reproducible:</p>
+<div class="code-block"><span class="code-lang">json</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="p">{</span><span class="nt">"train"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"conv_0001"</span><span class="p">,</span><span class="w"> </span><span class="s2">"conv_0002"</span><span class="p">],</span><span class="w"> </span><span class="nt">"val"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"conv_0003"</span><span class="p">],</span><span class="w"> </span><span class="nt">"test"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"conv_0004"</span><span class="p">],</span><span class="w"> </span><span class="nt">"seed"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">}</span>
+</code></pre></div>
+<p><code>validate</code> holds it to that shape: only <code>train</code>, <code>val</code>, <code>test</code> and <code>seed</code>; each split a list of conversation ids, none listed twice and each naming a valid row in the manifest; every row in exactly one split, the one its <code>meta.split</code> says; <code>seed</code> a whole number.</p>
 <h2 id="adapters">Adapters</h2>
 <div class="table-wrap"><table>
 <thead>
