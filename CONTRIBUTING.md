@@ -35,14 +35,20 @@ uv run --group docs python scripts/build_docs.py
 
 ## What CI checks
 
-`lint`, `test-linux` (3.11/3.12/3.13), `test-windows`, `docs` (the generated site must match
-`docs/`), `package` (build, `twine check`, install the wheel into a clean environment, run the
-CLI from it), `coverage` (branch coverage, 90% floor) and `dependency-audit` (`pip-audit` over
-the locked runtime set).
+`lint`, `test-linux` (3.11–3.14, every version `requires-python` admits), `test-windows`,
+`docs` (the generated site must match `docs/`), `package` (build, `twine check`, install the
+wheel into a clean environment, run the CLI from it), `coverage` (branch coverage, 90% floor)
+and `dependency-audit` (`pip-audit` over the locked runtime set).
 
 Every action is pinned to a commit SHA — a moving tag like `v7` can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing `# v7` comment so the
 release is still readable.
+
+The rest of the toolchain is pinned the same way. `UV_VERSION` at the top of `ci.yml` and
+`release.yml` sets the uv every job uses; keep the two in step. `twine`, `pip-audit` and
+`pytest-cov` come from the locked `ci` dependency group, never `uvx`, so a job runs the same
+version of each tool until someone changes `uv.lock`. The build backend is pinned exactly in
+`[build-system]`.
 
 ## Branches and commits
 
