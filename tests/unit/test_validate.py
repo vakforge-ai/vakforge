@@ -163,6 +163,10 @@ def test_an_audio_symlink_that_stays_inside_the_dataset_is_fine(tmp_path):
         ('{"train": "conv_0001"}', "'train' must be a list"),
         ('{"train": [1, 2]}', "'train' must be a list"),
         ('{"training": ["conv_0001"]}', "unknown key 'training'"),
+        ('{"train": ["conv_0001"], "seed": "7"}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": 7.5}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": true}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": null}', "'seed' must be a whole number"),
     ],
 )
 def test_a_malformed_splits_file_is_reported_not_crashed_on(project, body, needle):
@@ -180,6 +184,25 @@ def test_splits_report_duplicates_and_ids_the_manifest_does_not_have(project):
     messages = {(i.conv_id, i.message) for i in issues}
     assert ("conv_0001", "listed twice in train") in messages
     assert ("conv_9999", "names no valid conversation in this manifest") in messages
+
+
+def test_files_saved_with_a_byte_order_mark_are_read(tmp_path):
+    # What Windows PowerShell 5.1 `Set-Content -Encoding utf8` writes.
+    row = _redacted_row(text="my ssn is <SSN_1>, thanks")
+    row["meta"] = dict(row["meta"], redaction_log="log.json")
+    log = {
+        "conversation_id": "conv_0001",
+        "spans": [{"turn": 0, "type": "ssn", "placeholder": "<SSN_1>"}],
+    }
+    for name, body in [
+        ("vakforge.jsonl", json.dumps(row) + "\n"),
+        ("log.json", json.dumps(log)),
+        ("splits.json", json.dumps({"train": ["conv_0001"], "seed": 7})),
+    ]:
+        (tmp_path / name).write_text(body, encoding="utf-8-sig")
+    convs, issues = validate_manifest(tmp_path / "vakforge.jsonl")
+    assert [c.id for c in convs] == ["conv_0001"]
+    assert issues == []
 
 
 def test_a_log_from_another_conversation_is_not_evidence(tmp_path):

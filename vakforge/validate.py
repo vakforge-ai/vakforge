@@ -254,7 +254,7 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
     if not path.exists():
         return [issue(f"{conv.meta.redaction_log} does not exist", "point at the real log")]
     try:
-        log = RedactionLog.model_validate_json(path.read_text(encoding="utf-8"))
+        log = RedactionLog.model_validate_json(path.read_text(encoding="utf-8-sig"))
     except ValidationError as exc:
         # Name the field. The first line of pydantic's own text is just a count.
         first = exc.errors()[0]
@@ -338,7 +338,7 @@ def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
         return []
     issue = partial(Issue, "<splits.json>", "splits.json")
     try:
-        splits = json.loads(path.read_text(encoding="utf-8"))
+        splits = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         return [issue(f"unreadable or invalid JSON: {exc}", "fix the file")]
     if not isinstance(splits, dict):
@@ -353,6 +353,10 @@ def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
         issue(f"unknown key {key!r}", f"use only {', '.join(SPLITS)} and seed")
         for key in sorted(splits.keys() - {*SPLITS, "seed"})
     ]
+    # The seed is what makes the split reproducible; bool is an int subclass in Python.
+    seed = splits.get("seed", 0)
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        issues.append(issue(f"'seed' must be a whole number, got {json.dumps(seed)}", "fix it"))
     known = {c.id for c in convs}
     assigned: dict[str, str] = {}
     for split in SPLITS:
@@ -407,7 +411,10 @@ def validate_manifest(
     issues: list[Issue] = []
     seen_ids: set[str] = set()
 
-    with manifest.open(encoding="utf-8") as fh:
+    # utf-8-sig for every file a user may have written by hand, as inspect reads its
+    # inputs: Windows PowerShell 5.1 starts files with a byte-order mark, which plain utf-8
+    # keeps as text, so the first line would fail to parse as JSON.
+    with manifest.open(encoding="utf-8-sig") as fh:
         for line_no, raw in enumerate(fh, start=1):
             if not raw.strip():
                 continue

@@ -147,3 +147,21 @@ jobs:
         run: |
           uv export --frozen --no-dev --no-emit-project --format requirements-txt > locked.txt
           uv run --locked --group ci pip-audit --requirement locked.txt --strict
+
+  # The one check the branch ruleset requires. Listing every job and matrix entry there
+  # instead would go stale the day a Python version is added or dropped. `always()`, not
+  # `!cancelled()`: a required check that is skipped counts as passed.
+  required:
+    if: always()
+    needs: [lint, test-linux, test-windows, docs, package, coverage, dependency-audit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::a job this depends on ended $r"; exit 1; }
+          done

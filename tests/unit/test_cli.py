@@ -133,6 +133,10 @@ def test_recommend_reports_a_bad_locale_the_same_way_from_either_source(tmp_path
         ('{"locale": "en-US", "summary": []}', "summary"),
         ('{"locale": "en-US", "summary": {"counts": 5}}', "summary.counts"),
         ('{"locale": "en-US", "summary": {"tool_candidates": "x"}}', "summary.tool_candidates"),
+        # A locale that is not a string used to reach the pack lookup and die unhashable.
+        ('{"locale": ["en-US"], "summary": {}}', "locale: must be a string, not JSON array"),
+        ('{"locale": {"id": "en-US"}, "summary": {}}', "must be a string, not JSON object"),
+        ('{"locale": true, "summary": {}}', "must be a string, not JSON boolean"),
     ],
 )
 def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body, needle):
@@ -140,6 +144,13 @@ def test_recommend_rejects_a_malformed_report_without_a_traceback(tmp_path, body
     r = runner.invoke(app, ["recommend", str(tmp_path / "r.json")])
     assert r.exit_code == 2, r.output
     assert needle in flat(r)
+
+
+def test_recommend_reads_a_report_saved_with_a_byte_order_mark(tmp_path):
+    # What Windows PowerShell 5.1 writes after a user edits the report by hand.
+    (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8-sig")
+    r = runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-o", str(tmp_path / "o.json")])
+    assert r.exit_code == 0, r.output
 
 
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):

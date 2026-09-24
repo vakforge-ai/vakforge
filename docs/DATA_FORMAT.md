@@ -150,7 +150,13 @@ Synthetic rows are exempt from the redaction rules because they contain no real 
 
 ## Splits
 
-Split by conversation id **and** ensure no speaker (agent voice or, where known, customer) appears in more than one split. `splits.json` records the assignment and the seed so evaluation is reproducible.
+Split by conversation id **and** ensure no speaker (agent voice or, where known, customer) appears in more than one split. `splits.json` records the assignment and the seed so evaluation is reproducible:
+
+```json
+{"train": ["conv_0001", "conv_0002"], "val": ["conv_0003"], "test": ["conv_0004"], "seed": 7}
+```
+
+`validate` holds it to that shape: only `train`, `val`, `test` and `seed`; each split a list of conversation ids, none listed twice and each naming a valid row in the manifest; every row in exactly one split, the one its `meta.split` says; `seed` a whole number.
 
 ## Adapters
 

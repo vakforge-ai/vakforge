@@ -49,7 +49,7 @@ adapter; nothing reads raw user data directly. `vakforge schema` exports the JSO
 - Provenance claims must carry evidence, or the record fails: `recorded_verbal`/`written` need `consent_ref`, `public_license` needs `license`, `synthetic` consent needs `synthetic` source. `source: real` needs `pii_redacted: true` **and** a `redaction_log`, and `validate` re-scans the text to prove that claim rather than trusting it.
 - `meta.allowed_uses` says what the row may be trained for (`asr`, `workflow`, `evaluation`, `voice_clone`), defaulting to the three ordinary uses. Adding `voice_clone` to real audio requires `voice_consent_ref`: consent to record a call is not consent to reproduce the caller's voice.
 - Duplicate tool names are rejected: two schemas under one name make every call to it ambiguous.
-- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed. `validate` can only check the conversation half — the format carries no speaker identity — so keeping a speaker out of two splits is your pipeline's job, and it should record how it did it.
+- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed, exactly as `{"train": [ids], "val": [ids], "test": [ids], "seed": <integer>}` — no other keys, every row in the split its `meta.split` names. `validate` can only check the conversation half — the format carries no speaker identity — so keeping a speaker out of two splits is your pipeline's job, and it should record how it did it.
 
 ## Adapter targets (what `train/` produces from the manifest)
 

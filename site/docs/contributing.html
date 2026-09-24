@@ -96,7 +96,9 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <p><code>lint</code>, <code>test-linux</code> (3.11–3.14, every version <code>requires-python</code> admits), <code>test-windows</code>,
 <code>docs</code> (the generated site must match <code>docs/</code>), <code>package</code> (build, <code>twine check</code>, install the
 wheel into a clean environment, run the CLI from it), <code>coverage</code> (branch coverage, 90% floor)
-and <code>dependency-audit</code> (<code>pip-audit</code> over the locked runtime set).</p>
+and <code>dependency-audit</code> (<code>pip-audit</code> over the locked runtime set). A final <code>required</code> job
+passes only if every one of those did, and it is the single check <code>main</code> requires, so the
+ruleset does not change when the Python versions do.</p>
 <p>Every action is pinned to a commit SHA — a moving tag like <code>v7</code> can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing <code># v7</code> comment so the
 release is still readable.</p>
