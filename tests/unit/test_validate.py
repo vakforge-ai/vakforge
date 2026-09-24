@@ -163,6 +163,10 @@ def test_an_audio_symlink_that_stays_inside_the_dataset_is_fine(tmp_path):
         ('{"train": "conv_0001"}', "'train' must be a list"),
         ('{"train": [1, 2]}', "'train' must be a list"),
         ('{"training": ["conv_0001"]}', "unknown key 'training'"),
+        ('{"train": ["conv_0001"], "seed": "7"}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": 7.5}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": true}', "'seed' must be a whole number"),
+        ('{"train": ["conv_0001"], "seed": null}', "'seed' must be a whole number"),
     ],
 )
 def test_a_malformed_splits_file_is_reported_not_crashed_on(project, body, needle):

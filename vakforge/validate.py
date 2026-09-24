@@ -353,6 +353,10 @@ def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
         issue(f"unknown key {key!r}", f"use only {', '.join(SPLITS)} and seed")
         for key in sorted(splits.keys() - {*SPLITS, "seed"})
     ]
+    # The seed is what makes the split reproducible; bool is an int subclass in Python.
+    seed = splits.get("seed", 0)
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        issues.append(issue(f"'seed' must be a whole number, got {json.dumps(seed)}", "fix it"))
     known = {c.id for c in convs}
     assigned: dict[str, str] = {}
     for split in SPLITS:
