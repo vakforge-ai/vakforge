@@ -38,7 +38,9 @@ uv run --group docs python scripts/build_docs.py
 `lint`, `test-linux` (3.11–3.14, every version `requires-python` admits), `test-windows`,
 `docs` (the generated site must match `docs/`), `package` (build, `twine check`, install the
 wheel into a clean environment, run the CLI from it), `coverage` (branch coverage, 90% floor)
-and `dependency-audit` (`pip-audit` over the locked runtime set).
+and `dependency-audit` (`pip-audit` over the locked runtime set). A final `required` job
+passes only if every one of those did, and it is the single check `main` requires, so the
+ruleset does not change when the Python versions do.
 
 Every action is pinned to a commit SHA — a moving tag like `v7` can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing `# v7` comment so the
