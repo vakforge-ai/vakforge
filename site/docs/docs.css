@@ -116,6 +116,18 @@ svg { display: block; }
 .prose pre code { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; }
 .prose img { max-width: 100%; height: auto; border-radius: var(--r); }
 .prose hr { margin: 32px 0; border: 0; border-top: 1px solid var(--line-soft); }
+/* an h2 already draws its own rule; a markdown `---` right above it would double it */
+.prose hr:has(+ h2) { display: none; }
+/* spec-sheet rows (pages built with spec=True): label column, then the text */
+.spec-row { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: 4px 20px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+h2 + .spec-row, h3 + .spec-row { border-top: 0; padding-top: 4px; }
+.spec-k { padding-top: 3px; color: var(--dim); font-family: var(--mono); font-size: .7rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+.spec-v { color: var(--muted); }
+.spec-v p, .spec-v ul { margin: 0; }
+.spec-v ul { padding-left: 18px; }
+.spec-v li + li { margin-top: 4px; }
+.spec-row + p, .spec-row + ul { margin-top: 18px; }
+.prose td code { white-space: nowrap; }  /* identifiers break mid-name otherwise */
 .table-wrap { margin: 0 0 18px; overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--r); }
 .prose table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .prose th, .prose td { padding: 9px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; color: var(--muted); }
@@ -123,8 +135,7 @@ svg { display: block; }
 .prose tr:last-child td { border-bottom: 0; }
 .prose tbody tr:hover td { background: var(--hover); }
 .code-block { position: relative; margin: 0 0 18px; border: 1px solid var(--line-soft); border-radius: var(--r); background: var(--code-bg); }
-.code-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.6; }
-.code-lang { position: absolute; top: 6px; right: 66px; color: var(--faint); font-family: var(--mono); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; }
+.code-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; color: var(--text); font-family: var(--mono); font-size: .82rem; line-height: 1.6; }
 .code-copy { position: absolute; top: 6px; right: 8px; padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--bg-2); color: var(--dim); font-family: var(--mono); font-size: .66rem; opacity: 0; transition: opacity .15s; }
 .code-block:hover .code-copy, .code-copy:focus-visible { opacity: 1; }
 .code-copy.done { color: var(--cyan); border-color: var(--cyan); }
@@ -183,6 +194,7 @@ svg { display: block; }
   .right { display: none; }
 }
 @media (max-width: 860px) {
+  .spec-row { grid-template-columns: minmax(0, 1fr); }
   .layout { grid-template-columns: minmax(0, 1fr); padding: 0 16px; }
   .menu-btn { display: grid; }
   .sidebar { position: fixed; left: 0; top: var(--top-h); z-index: 25; width: min(300px, 86vw); height: calc(100vh - var(--top-h)); padding: 20px 16px; background: var(--bg); border-right: 1px solid var(--line); transform: translateX(-100%); transition: transform .2s ease; }
@@ -202,7 +214,6 @@ span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; pad
 td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
 .highlight .hll { background-color: #6e7681 }
-.highlight { background: #0d1117; color: #E6EDF3 }
 .highlight .c { color: #8B949E; font-style: italic } /* Comment */
 .highlight .err { color: #F85149 } /* Error */
 .highlight .esc { color: #E6EDF3 } /* Escape */
@@ -282,13 +293,13 @@ span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 
 .highlight .vi { color: #79C0FF } /* Name.Variable.Instance */
 .highlight .vm { color: #79C0FF } /* Name.Variable.Magic */
 .highlight .il { color: #A5D6FF } /* Literal.Number.Integer.Long */
+:root[data-theme=light] .highlight * { color: inherit; background: transparent; font-style: inherit; font-weight: inherit; }
 pre { line-height: 125%; }
 td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 :root[data-theme=light] .highlight .hll { background-color: #ffffcc }
-:root[data-theme=light] .highlight { background: #f0f0f0; }
 :root[data-theme=light] .highlight .c { color: #60A0B0; font-style: italic } /* Comment */
 :root[data-theme=light] .highlight .err { border: 1px solid #F00 } /* Error */
 :root[data-theme=light] .highlight .k { color: #007020; font-weight: bold } /* Keyword */
@@ -358,13 +369,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 :root[data-theme=light] .highlight .vm { color: #BB60D5 } /* Name.Variable.Magic */
 :root[data-theme=light] .highlight .il { color: #40A070 } /* Literal.Number.Integer.Long */
 @media (prefers-color-scheme: light) {
+:root:not([data-theme=dark]) .highlight * { color: inherit; background: transparent; font-style: inherit; font-weight: inherit; }
 pre { line-height: 125%; }
 td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 :root:not([data-theme=dark]) .highlight .hll { background-color: #ffffcc }
-:root:not([data-theme=dark]) .highlight { background: #f0f0f0; }
 :root:not([data-theme=dark]) .highlight .c { color: #60A0B0; font-style: italic } /* Comment */
 :root:not([data-theme=dark]) .highlight .err { border: 1px solid #F00 } /* Error */
 :root:not([data-theme=dark]) .highlight .k { color: #007020; font-weight: bold } /* Keyword */

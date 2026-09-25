@@ -67,23 +67,27 @@
   </aside>
   <main class="content">
     <article class="prose" id="article">
-      <p>&lt;p align=&quot;center&quot;&gt;
-&lt;img src=&quot;https://vakforge.pages.dev/assets/social/readme-banner.png&quot; alt=&quot;vakforge: your data, your voice assistant, your hardware&quot; width=&quot;100%&quot;&gt;
-&lt;/p&gt;</p>
-<h1 id="vakforge">vakforge</h1>
+      <h1 id="vakforge">vakforge</h1>
 <p><strong>The decision layer for open voice AI.</strong></p>
 <p>vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.</p>
-<p>&lt;p align=&quot;center&quot;&gt;
-&lt;img src=&quot;https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp&quot; alt=&quot;Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers.&quot; width=&quot;100%&quot;&gt;
-&lt;/p&gt;</p>
+<p><img src="../assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." /></p>
 <ul>
-<li><strong>Bring any data:</strong> documents, FAQs, database tables, chat logs, CRM records, recorded calls.</li>
+<li><strong>Bring the data you have:</strong> documents, FAQs, database tables, chat logs, CRM exports, recorded calls. PDF, Word and Excel files are listed as skipped until text extraction lands; export them to text or CSV for now.</li>
 <li><strong>Open models only:</strong> the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)</li>
 <li><strong>Any language:</strong> through locale packs. Launching with English (US, UK, India) and Hinglish.</li>
 </ul>
 <blockquote>
-<p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>validate</code> and the locale packs work today. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
+<p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>validate</code> and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
 </blockquote>
+<h2 id="try-it">Try it</h2>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
+vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>en-US<span class="w">       </span><span class="c1"># or en-GB, en-IN, hi-Latn-IN</span>
+<span class="c1"># copy your files into my-assistant/data/raw/, then:</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw<span class="w"> </span>-o<span class="w"> </span>inspect.json
+vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>-o<span class="w"> </span>recommend.json
+</code></pre></div>
+<p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.</p>
+<p>No data to hand? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project with both reports committed next to it.</p>
 <h2 id="why-vakforge-exists">Why vakforge exists</h2>
 <p>Open voice models are good enough today. Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni can listen and talk, and strong open speech-to-text and text-to-speech models exist too. Yet most companies still pay per minute for a closed voice API.</p>
 <p>That is not because the open models are worse. It is because nobody helps them answer four questions:</p>
@@ -101,9 +105,7 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 </blockquote>
 <p>vakforge is about that last word: owning your voice AI instead of renting it.</p>
 <h2 id="how-it-works">How it works</h2>
-<p>&lt;p align=&quot;center&quot;&gt;
-&lt;img src=&quot;https://vakforge.pages.dev/assets/diagrams/workflow-light.webp&quot; alt=&quot;Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates.&quot; width=&quot;100%&quot;&gt;
-&lt;/p&gt;</p>
+<p><img src="../assets/diagrams/workflow-light.webp" alt="Seven steps: init, inspect, recommend, prepare, train, eval, serve. Recommend and eval are decision gates." /></p>
 <ol>
 <li><strong><code>init</code></strong> creates a project folder for your language and market.</li>
 <li><strong><code>inspect</code></strong> reads your data folder and reports what is in it: languages, personal data, tables that could become tools, audio quality.</li>
@@ -165,7 +167,7 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 <h2 id="whats-in-the-repo">What's in the repo</h2>
 <ol>
 <li><strong>A small library and command-line tool</strong> (<code>pip install vakforge</code>). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.</li>
-<li><strong>An agent skill</strong> (<code>skill/vakforge/</code>). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.</li>
+<li><strong>An agent skill</strong> (<code>skill/vakforge/</code>). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs. It has not been run end to end on a real project yet; that is the next milestone on the roadmap.</li>
 <li><strong>Recipes</strong> (<a href="recipes.html"><code>docs/RECIPES.md</code></a>). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.</li>
 </ol>
 <div class="table-wrap"><table>
@@ -218,18 +220,19 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 <p>The skill is where the knowledge lives. Copy it into your project and the agent follows the
 vakforge workflow: inspect, recommend, then write and test the prepare, train, eval and serve
 code for your case, verifying every upstream API against installed source first.</p>
-<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="c1"># Claude Code: project-level skill (or ~/.claude/skills/vakforge for every project)</span>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code><span class="c1"># Claude Code: project-level skill (or ~/.claude/skills/vakforge for every project)</span>
 mkdir<span class="w"> </span>-p<span class="w"> </span>.claude/skills
 cp<span class="w"> </span>-r<span class="w"> </span>path/to/vakforge/skill/vakforge<span class="w"> </span>.claude/skills/vakforge
 </code></pre></div>
 <p>Then ask: <em>&quot;Build a Hinglish support assistant from the data in data/raw.&quot;</em> Other agents that
 read <code>SKILL.md</code>-style instructions work the same way; point them at the folder.</p>
-<h2 id="bring-any-data">Bring any data</h2>
+<h2 id="bring-the-data-you-have">Bring the data you have</h2>
+<p><code>inspect</code> reads Markdown, text and HTML documents; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports and JSON chat logs; and WAV, FLAC, OGG and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
 <th>You have</th>
-<th>What vakforge does with it</th>
+<th>Where it goes</th>
 </tr>
 </thead>
 <tbody>
@@ -384,7 +387,7 @@ read <code>SKILL.md</code>-style instructions work the same way; point them at t
 <h2 id="why-english-and-hinglish-first">Why English and Hinglish first</h2>
 <p>English has the strongest open voice models, so every recipe works for US, UK and Indian English. Hinglish is the hard test: people switch between Hindi and English mid-sentence, write Hindi in Roman or Devanagari script, and say amounts like &quot;2 lakh rupees&quot; on noisy phone lines. If vakforge handles that, adding another language is mostly filling in a new pack.</p>
 <h2 id="quick-start">Quick start</h2>
-<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>hi-Latn-IN
 <span class="c1"># put your documents, tables, chat exports and call recordings in my-assistant/data/raw/</span>
 vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw
@@ -411,11 +414,11 @@ vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data
     </article>
     <div class="prev-next"><span></span><a class="pn next" href="decision-guide.html"><small>Next</small><b>Decision guide</b></a></div>
     <footer class="page-foot">
-      <span>Apache-2.0 · vakforge</span>
+      <span>Apache-2.0 · vakforge · built by <a href="https://github.com/Achal13jain" target="_blank" rel="noopener">Achal Jain</a></span>
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#why-vakforge-exists">Why vakforge exists</a></li><li class="lvl2"><a href="#how-it-works">How it works</a></li><li class="lvl2"><a href="#how-the-decision-is-made">How the decision is made</a></li><li class="lvl2"><a href="#the-problem-for-engineers">The problem, for engineers</a></li><li class="lvl2"><a href="#whats-in-the-repo">What&#x27;s in the repo</a></li><li class="lvl2"><a href="#use-it-with-a-coding-agent">Use it with a coding agent</a></li><li class="lvl2"><a href="#bring-any-data">Bring any data</a></li><li class="lvl2"><a href="#locale-packs">Locale packs</a></li><li class="lvl2"><a href="#recipes">Recipes</a></li><li class="lvl2"><a href="#connecting-your-app">Connecting your app</a></li><li class="lvl2"><a href="#why-english-and-hinglish-first">Why English and Hinglish first</a></li><li class="lvl2"><a href="#quick-start">Quick start</a></li><li class="lvl2"><a href="#documentation">Documentation</a></li><li class="lvl2"><a href="#related-projects-we-build-on-these-not-against-them">Related projects (we build on these, not against them)</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#try-it">Try it</a></li><li class="lvl2"><a href="#why-vakforge-exists">Why vakforge exists</a></li><li class="lvl2"><a href="#how-it-works">How it works</a></li><li class="lvl2"><a href="#how-the-decision-is-made">How the decision is made</a></li><li class="lvl2"><a href="#the-problem-for-engineers">The problem, for engineers</a></li><li class="lvl2"><a href="#whats-in-the-repo">What&#x27;s in the repo</a></li><li class="lvl2"><a href="#use-it-with-a-coding-agent">Use it with a coding agent</a></li><li class="lvl2"><a href="#bring-the-data-you-have">Bring the data you have</a></li><li class="lvl2"><a href="#locale-packs">Locale packs</a></li><li class="lvl2"><a href="#recipes">Recipes</a></li><li class="lvl2"><a href="#connecting-your-app">Connecting your app</a></li><li class="lvl2"><a href="#why-english-and-hinglish-first">Why English and Hinglish first</a></li><li class="lvl2"><a href="#quick-start">Quick start</a></li><li class="lvl2"><a href="#documentation">Documentation</a></li><li class="lvl2"><a href="#related-projects-we-build-on-these-not-against-them">Related projects (we build on these, not against them)</a></li><li class="lvl2"><a href="#licence">Licence</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>
