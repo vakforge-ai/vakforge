@@ -123,8 +123,7 @@ svg { display: block; }
 .prose tr:last-child td { border-bottom: 0; }
 .prose tbody tr:hover td { background: var(--hover); }
 .code-block { position: relative; margin: 0 0 18px; border: 1px solid var(--line-soft); border-radius: var(--r); background: var(--code-bg); }
-.code-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.6; }
-.code-lang { position: absolute; top: 6px; right: 66px; color: var(--faint); font-family: var(--mono); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; }
+.code-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; color: var(--text); font-family: var(--mono); font-size: .82rem; line-height: 1.6; }
 .code-copy { position: absolute; top: 6px; right: 8px; padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--bg-2); color: var(--dim); font-family: var(--mono); font-size: .66rem; opacity: 0; transition: opacity .15s; }
 .code-block:hover .code-copy, .code-copy:focus-visible { opacity: 1; }
 .code-copy.done { color: var(--cyan); border-color: var(--cyan); }

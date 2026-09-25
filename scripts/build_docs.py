@@ -196,9 +196,9 @@ def make_renderer(page: Page) -> MarkdownIt:
             )
         except ClassNotFound:
             body = html.escape(code)
-        label = f'<span class="code-lang">{html.escape(lang)}</span>' if lang else ""
+        # No language tag in the corner: absolutely positioned, it sat on top of long lines.
         return (
-            f'<div class="code-block">{label}'
+            '<div class="code-block">'
             '<button class="code-copy" type="button" aria-label="Copy code">copy</button>'
             f'<pre class="highlight"><code>{body}</code></pre></div>\n'
         )
@@ -378,8 +378,21 @@ def main() -> None:
     )
     # pygments colours, both themes, appended to the hand-written stylesheet at build time
     css_src = (ROOT / "scripts" / "docs.css").read_text(encoding="utf-8")
-    dark = HtmlFormatter(style="github-dark").get_style_defs(".highlight")
-    light = HtmlFormatter(style="friendly").get_style_defs(".highlight")
+
+    def token_rules(style: str) -> str:
+        # Each style's base `.highlight { background; color }` is dropped: the page theme
+        # sets those (docs.css, `.code-block`), so plain text follows the theme. Left in,
+        # the dark style's near-white base colour showed through on the light background.
+        defs = HtmlFormatter(style=style).get_style_defs(".highlight")
+        return "\n".join(ln for ln in defs.splitlines() if not ln.startswith(".highlight {"))
+
+    dark = token_rules("github-dark")
+    # Tokens the dark style colours and the light one does not would keep their dark-theme
+    # colour; in light mode everything starts from the text colour, then the light style.
+    light = (
+        ".highlight * { color: inherit; background: transparent; font-style: inherit; "
+        "font-weight: inherit; }\n" + token_rules("friendly")
+    )
     light_scoped = "\n".join(
         ":root[data-theme=light] " + line if line.startswith(".highlight") else line
         for line in light.splitlines()
