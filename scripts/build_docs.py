@@ -28,6 +28,7 @@ OUT = ROOT / "site" / "docs"
 DIAGRAMS = Path(__file__).resolve().parent / "diagrams"
 MISSING: list[str] = []  # mermaid blocks with no drawn counterpart, reported at the end
 REPO = "https://github.com/vakforge-ai/vakforge"
+SITE_DOCS = "https://vakforge.pages.dev/docs/"
 
 
 @dataclass
@@ -142,6 +143,10 @@ def slugify(text: str) -> str:
 
 def rewrite_href(href: str, page: Page) -> str:
     """Markdown-to-markdown links become page links; other repo paths go to GitHub."""
+    # The README links to the published docs by absolute URL, because PyPI shows it as the
+    # package page and cannot resolve relative paths. Inside the docs they stay local.
+    if href.startswith(SITE_DOCS):
+        return href[len(SITE_DOCS) :] or "./"
     if re.match(r"^(https?:|mailto:|#)", href):
         return href
     target, _, anchor = href.partition("#")
