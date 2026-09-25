@@ -175,11 +175,11 @@ h2 + .spec-row, h3 + .spec-row { border-top: 0; padding-top: 4px; }
 .d-msg { font-size: 11.5px; fill: var(--muted); text-anchor: middle; paint-order: stroke; stroke: var(--bg-3); stroke-width: 5px; stroke-linejoin: round; }
 .d-msg.d-mono { font-family: var(--mono); font-size: 11px; fill: var(--tint); }
 .d-left { text-anchor: start; }
+/* Scaled down to a phone's width the text became unreadable, since it shrinks with the
+   drawing; instead the drawing keeps a readable size and the figure scrolls sideways. */
 @media (max-width: 720px) {
-  .diagram-figure { padding: 12px 10px; margin-inline: -6px; }
-  .d-s, .d-note, .d-lbl { display: none; }
-  .d-msg { font-size: 13px; }
-  .d-t { font-size: 15px; }
+  .diagram-figure { padding: 12px 10px; margin-inline: -6px; overflow-x: auto; }
+  .diagram { min-width: 680px; }
 }
 
 /* ---- prev / next, footer ---- */
