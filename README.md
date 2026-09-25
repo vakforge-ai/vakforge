@@ -12,11 +12,25 @@ vakforge helps you build a voice assistant from the data your company already ha
   <img src="https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." width="100%">
 </p>
 
-- **Bring any data:** documents, FAQs, database tables, chat logs, CRM records, recorded calls.
+- **Bring the data you have:** documents, FAQs, database tables, chat logs, CRM exports, recorded calls. PDF, Word and Excel files are listed as skipped until text extraction lands; export them to text or CSV for now.
 - **Open models only:** the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)
 - **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
 
-> Status: pre-alpha. `init`, `inspect`, `recommend`, `validate` and the locale packs work today. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> Status: pre-alpha. `init`, `inspect`, `recommend`, `validate` and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See [`docs/ROADMAP.md`](https://vakforge.pages.dev/docs/roadmap.html).
+
+## Try it
+
+```bash
+pip install vakforge
+vakforge init my-assistant --locale en-US       # or en-GB, en-IN, hi-Latn-IN
+# copy your files into my-assistant/data/raw/, then:
+vakforge inspect my-assistant/data/raw -o inspect.json
+vakforge recommend inspect.json -o recommend.json
+```
+
+`inspect` reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. `recommend` says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.
+
+No data to hand? [`examples/hinglish-shop`](https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop) is a small synthetic project with both reports committed next to it.
 
 ## Why vakforge exists
 
@@ -65,7 +79,7 @@ Today the CLI covers `init`, `inspect`, `recommend`, `validate` and the locale p
 
 Every route ends the same way: test it against your own held-out data, and ship only if it beats the base model.
 
-Each goal has its own fix, and most of them are not a full fine-tune. The detailed rules, with how much data each route needs and what hardware it takes, are in [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md).
+Each goal has its own fix, and most of them are not a full fine-tune. The detailed rules, with how much data each route needs and what hardware it takes, are in [`docs/DECISION_GUIDE.md`](https://vakforge.pages.dev/docs/decision-guide.html).
 
 ## The problem, for engineers
 
@@ -74,8 +88,8 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 ## What's in the repo
 
 1. **A small library and command-line tool** (`pip install vakforge`). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.
-2. **An agent skill** (`skill/vakforge/`). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs.
-3. **Recipes** ([`docs/RECIPES.md`](docs/RECIPES.md)). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.
+2. **An agent skill** (`skill/vakforge/`). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs. It has not been run end to end on a real project yet; that is the next milestone on the roadmap.
+3. **Recipes** ([`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html)). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.
 
 | Command | What it does | Status |
 |---|---|---|
@@ -102,9 +116,11 @@ cp -r path/to/vakforge/skill/vakforge .claude/skills/vakforge
 Then ask: *"Build a Hinglish support assistant from the data in data/raw."* Other agents that
 read `SKILL.md`-style instructions work the same way; point them at the folder.
 
-## Bring any data
+## Bring the data you have
 
-| You have | What vakforge does with it |
+`inspect` reads Markdown, text and HTML documents; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports and JSON chat logs; and WAV, FLAC, OGG and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.
+
+| You have | Where it goes |
 |---|---|
 | Documents, FAQs, policies | Looks facts up at answer time (retrieval), so prices and policies stay current without retraining. |
 | Database tables, CRM, product catalogue | Turns them into tools the assistant can call, like "look up order by order id". |
@@ -114,7 +130,7 @@ read `SKILL.md`-style instructions work the same way; point them at the folder.
 
 ## Locale packs
 
-The core works in any language. Everything that changes by language or country lives in a locale pack: how money, dates and phone numbers are written, which ID numbers count as personal data, the local privacy and call-recording rules, and which open models support the language. Adding a new market means adding a pack, not changing the core. See [`docs/LOCALE_PACKS.md`](docs/LOCALE_PACKS.md), or run `vakforge locales`.
+The core works in any language. Everything that changes by language or country lives in a locale pack: how money, dates and phone numbers are written, which ID numbers count as personal data, the local privacy and call-recording rules, and which open models support the language. Adding a new market means adding a pack, not changing the core. See [`docs/LOCALE_PACKS.md`](https://vakforge.pages.dev/docs/locale-packs.html), or run `vakforge locales`.
 
 | Pack | Covers | Can the assistant speak it? | Status |
 |---|---|---|---|
@@ -132,7 +148,7 @@ The core works in any language. Everything that changes by language or country l
 | `qwen-omni` | Qwen3-Omni | multilingual incl. Mandarin, function calling | near-duplex | 80 GB / multi-GPU | planned |
 | `cascade` | STT + LLM LoRA + TTS chosen by locale | any language with a good STT+TTS pair | turn-based | 1x 24 GB GPU | planned |
 
-"Duplex" means the assistant can listen while it talks, so callers can interrupt it naturally. Details in [`docs/RECIPES.md`](docs/RECIPES.md).
+"Duplex" means the assistant can listen while it talks, so callers can interrupt it naturally. Details in [`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html).
 
 ## Connecting your app
 
@@ -165,19 +181,19 @@ vakforge inspect my-assistant/data/raw
 
 `inspect` prints a summary and writes `inspect.json`. `vakforge recommend inspect.json` reads it and writes `recommend.json`.
 
-No data of your own yet? [`examples/hinglish-shop`](examples/hinglish-shop) is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.
+No data of your own yet? [`examples/hinglish-shop`](https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop) is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.
 
 ## Documentation
 
-- [`docs/DECISION_GUIDE.md`](docs/DECISION_GUIDE.md): what needs customizing, and when not to fine-tune
-- [`docs/LOCALE_PACKS.md`](docs/LOCALE_PACKS.md): what a locale pack contains, and how to add one
-- [`docs/DATA_FORMAT.md`](docs/DATA_FORMAT.md): the dataset format
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): how the code fits together, with diagrams
-- [`docs/RECIPES.md`](docs/RECIPES.md): per-model training recipes
-- [`docs/EVALUATION.md`](docs/EVALUATION.md): metrics, report format, per-locale benchmarks
-- [`docs/DATA_ETHICS.md`](docs/DATA_ETHICS.md): consent, PII, licences, privacy law by region
-- [`docs/ROADMAP.md`](docs/ROADMAP.md): status
-- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`docs/DECISION_GUIDE.md`](https://vakforge.pages.dev/docs/decision-guide.html): what needs customizing, and when not to fine-tune
+- [`docs/LOCALE_PACKS.md`](https://vakforge.pages.dev/docs/locale-packs.html): what a locale pack contains, and how to add one
+- [`docs/DATA_FORMAT.md`](https://vakforge.pages.dev/docs/data-format.html): the dataset format
+- [`docs/ARCHITECTURE.md`](https://vakforge.pages.dev/docs/architecture.html): how the code fits together, with diagrams
+- [`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html): per-model training recipes
+- [`docs/EVALUATION.md`](https://vakforge.pages.dev/docs/evaluation.html): metrics, report format, per-locale benchmarks
+- [`docs/DATA_ETHICS.md`](https://vakforge.pages.dev/docs/data-ethics.html): consent, PII, licences, privacy law by region
+- [`docs/ROADMAP.md`](https://vakforge.pages.dev/docs/roadmap.html): status
+- [`CONTRIBUTING.md`](https://vakforge.pages.dev/docs/contributing.html)
 
 ## Related projects (we build on these, not against them)
 
@@ -185,4 +201,4 @@ Unsloth, LLaMA-Factory, ms-swift, kyutai-labs/moshi-finetune, NVIDIA PersonaPlex
 
 ## Licence
 
-Apache-2.0 for this code. Each open model keeps its own licence; see [`docs/RECIPES.md`](docs/RECIPES.md). Datasets you create with vakforge are yours. The consent records vakforge asks for are there to keep it that way.
+Apache-2.0 for this code. Each open model keeps its own licence; see [`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html). Datasets you create with vakforge are yours. The consent records vakforge asks for are there to keep it that way.

@@ -24,8 +24,8 @@ Inverter aur battery ki installation free hai Jaipur mein. Bahar ke liye ₹500 
 
 ## Contact
 
-Call ya WhatsApp: +91 98765 43210 (Mon–Sat, 10 am to 8 pm)
-Email: help@sharma-electronics.in
+Call ya WhatsApp: +91 74281 96530 (Mon–Sat, 10 am to 8 pm)
+Email: help@sharma-electronics.example
 Shop 1: MI Road, Jaipur 302001
 Shop 2: Vaishali Nagar, Jaipur 302021
 

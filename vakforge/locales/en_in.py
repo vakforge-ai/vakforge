@@ -49,7 +49,7 @@ class EnIN(EnglishPack):
         currency_symbols=("₹", "Rs.", "Rs", "INR"),
         currency_words=("rupees", "lakh", "crore"),
         date_order="DMY",
-        phone_example="+91 98765 43210",
+        phone_example="+91 74281 96530",
         postal_example="560001",
     )
     pii_patterns = [AADHAAR, PAN, PHONE_IN]

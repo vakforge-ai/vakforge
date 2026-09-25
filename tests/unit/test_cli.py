@@ -195,6 +195,20 @@ def test_inspect_uses_project_locale_and_writes_report(tmp_path, monkeypatch):
     assert report["locale"] == "hi-Latn-IN"
 
 
+def test_inspect_says_when_table_counts_come_from_a_sample(tmp_path, monkeypatch):
+    from vakforge.inspect import profile
+
+    monkeypatch.setattr(profile, "TABLE_SCAN_CHARS", 30)
+    (tmp_path / "crm.csv").write_text("email\n" + "a@example.com\n" * 10, encoding="utf-8")
+    (tmp_path / "more.csv").write_text("email\nb@example.com\n", encoding="utf-8")
+    r = runner.invoke(
+        app, ["inspect", str(tmp_path), "-l", "en-US", "-o", str(tmp_path / "i.json")]
+    )
+    assert r.exit_code == 0, r.output
+    assert "2 tables" in flat(r)
+    assert "(large tables sampled)" in flat(r)
+
+
 def test_inspect_without_locale_explains(tmp_path):
     r = runner.invoke(app, ["inspect", str(tmp_path)])
     assert r.exit_code == 2

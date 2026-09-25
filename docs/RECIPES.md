@@ -8,6 +8,15 @@ A recipe is a path from base model → adapter → training → eval → serve.
 
 Locale packs declare per-recipe support (`native | understand_only | cascade | unsupported`); `recommend` reads that, not this file.
 
+## At a glance
+
+| Recipe | Base model | Good for | Duplex | Train on | Status |
+|---|---|---|---|---|---|
+| [`lfm25-audio`](#recipe-a-lfm25-audio-default-ship-first) | LiquidAI LFM2.5-Audio-1.5B | workflow, tool use, style, CPU deploy | turn-based | 1× 24 GB | research, first to build |
+| [`moshi-lora`](#recipe-b-moshi-lora-advanced-full-duplex) | Kyutai Moshi / NVIDIA PersonaPlex | interruptions, natural timing, persona | full-duplex | 40–80 GB | research |
+| [`qwen-omni`](#recipe-d-qwen-omni-multilingual-mandarin-first) | Qwen3-Omni | multilingual incl. Mandarin, tool calling | near-duplex | 80 GB or multi-GPU | research |
+| [`cascade`](#recipe-c-cascade-any-language) | STT + LLM LoRA + TTS, chosen by the pack | any language with a good STT and TTS | turn-based | 1× 24 GB per part | research |
+
 ---
 
 ## Recipe A — `lfm25-audio` (default, ship first)
@@ -72,7 +81,7 @@ Locale packs declare per-recipe support (`native | understand_only | cascade | u
 
 **Locales:** `zh-CN` native; `en-*` native; `hi-Latn-IN`, `es`, `de`, `fr`, `ja`, `ar` — verify per language before marking native.
 
-**Training approach:** **Thinker LoRA with Talker frozen**, via ms-swift (supports Qwen3-Omni). This teaches workflow, tool use, and understanding without touching speech generation. Talker adaptation (speaker fine-tune stage) is upstream's multi-stage pipeline and is *out of scope* until packaged. Known pitfall: Thinker-only checkpoints saved by some frameworks use a key layout the full model cannot load without re-keying and merging Talker/code2wav from the vanilla checkpoint — the adapter must handle this and test it.
+**Training approach:** *Thinker LoRA with Talker frozen*, via ms-swift (supports Qwen3-Omni). This teaches workflow, tool use, and understanding without touching speech generation. Talker adaptation (speaker fine-tune stage) is upstream's multi-stage pipeline and is *out of scope* until packaged. Known pitfall: Thinker-only checkpoints saved by some frameworks use a key layout the full model cannot load without re-keying and merging Talker/code2wav from the vanilla checkpoint — the adapter must handle this and test it.
 
 **Adapter:** canonical → ms-swift multimodal chat JSONL (system, user audio, assistant text + tool calls). Audio-only training targets for the Thinker; speech output comes from the frozen Talker at inference.
 

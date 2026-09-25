@@ -28,6 +28,7 @@ OUT = ROOT / "site" / "docs"
 DIAGRAMS = Path(__file__).resolve().parent / "diagrams"
 MISSING: list[str] = []  # mermaid blocks with no drawn counterpart, reported at the end
 REPO = "https://github.com/vakforge-ai/vakforge"
+SITE_DOCS = "https://vakforge.pages.dev/docs/"
 
 
 @dataclass
@@ -37,6 +38,7 @@ class Page:
     source: Path  # markdown file, relative to ROOT
     group: str
     blurb: str = ""
+    spec: bool = False  # render "**Label:** text" paragraphs as spec-sheet rows
     headings: list[tuple[int, str, str]] = field(default_factory=list)  # level, text, id
     body: str = ""
     search: list[dict] = field(default_factory=list)
@@ -91,6 +93,7 @@ PAGES = [
         Path("docs/RECIPES.md"),
         "Reference",
         "Per-model training recipes and their status",
+        spec=True,
     ),
     Page(
         "evaluation",
@@ -140,6 +143,10 @@ def slugify(text: str) -> str:
 
 def rewrite_href(href: str, page: Page) -> str:
     """Markdown-to-markdown links become page links; other repo paths go to GitHub."""
+    # The README links to the published docs by absolute URL, because PyPI shows it as the
+    # package page and cannot resolve relative paths. Inside the docs they stay local.
+    if href.startswith(SITE_DOCS):
+        return href[len(SITE_DOCS) :] or "./"
     if re.match(r"^(https?:|mailto:|#)", href):
         return href
     target, _, anchor = href.partition("#")
@@ -196,9 +203,9 @@ def make_renderer(page: Page) -> MarkdownIt:
             )
         except ClassNotFound:
             body = html.escape(code)
-        label = f'<span class="code-lang">{html.escape(lang)}</span>' if lang else ""
+        # No language tag in the corner: absolutely positioned, it sat on top of long lines.
         return (
-            f'<div class="code-block">{label}'
+            '<div class="code-block">'
             '<button class="code-copy" type="button" aria-label="Copy code">copy</button>'
             f'<pre class="highlight"><code>{body}</code></pre></div>\n'
         )
@@ -264,13 +271,43 @@ def render(page: Page, text: str) -> None:
         r"<li>\[x\] ", '<li class="task done"><input type="checkbox" checked disabled> ', body
     )
     body = re.sub(r"<li>\[ \] ", '<li class="task"><input type="checkbox" disabled> ', body)
-    # README banner is for GitHub; the docs shell has its own header
-    body = re.sub(r'<p align="center">\s*<img[^>]*readme-banner[^>]*>\s*</p>', "", body)
+    if page.spec:
+        body = _SPEC_ROW.sub(_spec_row, body)
     page.body = body
 
 
+# A page of "**Label:** text" paragraphs reads as a wall of bold words; as a spec sheet the
+# labels line up in one column and the text in another. A label followed straight by a
+# list ("**Components:**" then bullets) takes the list as its text.
+_SPEC_ROW = re.compile(
+    r"<p><strong>([^<]{1,48}):</strong>(?:</p>\n(<ul>.*?</ul>)|\s*(?!</p>)(.+?)</p>)", re.S
+)
+
+
+def _spec_row(m: re.Match[str]) -> str:
+    label, items, text = m.groups()
+    value = items if items is not None else f"<p>{text}</p>"
+    return (
+        f'<div class="spec-row"><div class="spec-k">{label}</div>'
+        f'<div class="spec-v">{value}</div></div>'
+    )
+
+
+# The README centres its images with HTML, which GitHub renders. The renderer escapes raw
+# HTML, so those blocks were published as literal "<p align=...>" text; each one becomes a
+# markdown image instead. The banner is dropped: the docs shell has its own header.
+_CENTRED_IMG = re.compile(r'<p align="center">\s*<img\s+src="([^"]+)"\s+alt="([^"]*)"[^>]*>\s*</p>')
+
+
+def _centred_image(m: re.Match[str]) -> str:
+    src, alt = m.groups()
+    # The README needs absolute URLs; the docs sit next to the same assets.
+    src = src.replace("https://vakforge.pages.dev/", "../")
+    return "" if "readme-banner" in src else f"![{alt}]({src})"
+
+
 def load_source(page: Page) -> str:
-    text = (ROOT / page.source).read_text(encoding="utf-8")
+    text = _CENTRED_IMG.sub(_centred_image, (ROOT / page.source).read_text(encoding="utf-8"))
     if text.startswith("---"):  # skill frontmatter
         text = re.sub(r"^---\n.*?\n---\n", "", text, count=1, flags=re.S)
         preamble = (
@@ -367,8 +404,21 @@ def main() -> None:
     )
     # pygments colours, both themes, appended to the hand-written stylesheet at build time
     css_src = (ROOT / "scripts" / "docs.css").read_text(encoding="utf-8")
-    dark = HtmlFormatter(style="github-dark").get_style_defs(".highlight")
-    light = HtmlFormatter(style="friendly").get_style_defs(".highlight")
+
+    def token_rules(style: str) -> str:
+        # Each style's base `.highlight { background; color }` is dropped: the page theme
+        # sets those (docs.css, `.code-block`), so plain text follows the theme. Left in,
+        # the dark style's near-white base colour showed through on the light background.
+        defs = HtmlFormatter(style=style).get_style_defs(".highlight")
+        return "\n".join(ln for ln in defs.splitlines() if not ln.startswith(".highlight {"))
+
+    dark = token_rules("github-dark")
+    # Tokens the dark style colours and the light one does not would keep their dark-theme
+    # colour; in light mode everything starts from the text colour, then the light style.
+    light = (
+        ".highlight * { color: inherit; background: transparent; font-style: inherit; "
+        "font-weight: inherit; }\n" + token_rules("friendly")
+    )
     light_scoped = "\n".join(
         ":root[data-theme=light] " + line if line.startswith(".highlight") else line
         for line in light.splitlines()

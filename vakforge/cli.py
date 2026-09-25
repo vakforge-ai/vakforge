@@ -183,7 +183,11 @@ def inspect(
     table = Table(title=f"{path} · locale {pack.id}", title_justify="left", show_header=False)
     table.add_column(style="dim")
     table.add_column()
-    counts = ", ".join(f"{n} {k}" for k, n in s["counts"].items() if n)
+    counts = ", ".join(
+        f"{n} {k}" + ("s" if n > 1 and k not in {"audio", "other"} else "")
+        for k, n in s["counts"].items()
+        if n
+    )
     found = sum(s["counts"].values())
     profiled = sum(s["profiled"].values())
     table.add_row("files", counts or "none")
@@ -195,9 +199,15 @@ def inspect(
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
     table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
-    table.add_row(
-        "personal data", ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
+    # A large table is scanned from a sample, so its counts are not totals; say so.
+    sampled = any(
+        t["rows_scanned"] < t["rows"]
+        for f in report["files"]
+        for t in f.get("facts", {}).get("tables", {}).values()
+        if "rows_scanned" in t
     )
+    pii = ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
+    table.add_row("personal data", pii + (" (large tables sampled)" if sampled else ""))
     table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
     console.print(table)
     for f in report["files"]:

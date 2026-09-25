@@ -61,8 +61,9 @@ vakforge inspect <project>/data/raw
 
 Read `inspect.json` in full. Done when you can state, in one paragraph to the user: which
 source kinds exist, how many conversation turns and audio hours, which languages appear,
-what personal data was found, which files were skipped and why, and which tool candidates
-the tables suggest.
+what personal data was found (for tables, in which columns: `pii_columns`, counted over
+`rows_scanned` rows, which can be fewer than `rows`), which files were skipped and why, and
+which tool candidates the tables suggest.
 
 ### 3. Recommend
 

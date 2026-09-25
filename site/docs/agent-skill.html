@@ -99,21 +99,22 @@ GPU and model-download tests are marked <code>@pytest.mark.gpu</code> / <code>@p
 <h2 id="workflow">Workflow</h2>
 <p>Run the steps in order. Each step names what &quot;done&quot; means; do not start the next before it.</p>
 <h3 id="1-set-up">1. Set up</h3>
-<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge<span class="w">            </span><span class="c1"># or: uv add vakforge</span>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge<span class="w">            </span><span class="c1"># or: uv add vakforge</span>
 vakforge<span class="w"> </span>locales<span class="w">                </span><span class="c1"># pick the locale pack(s) for the user's market</span>
 vakforge<span class="w"> </span>init<span class="w"> </span>&lt;project&gt;<span class="w"> </span>--locale<span class="w"> </span>&lt;id&gt;<span class="w"> </span><span class="o">[</span>--locale<span class="w"> </span>&lt;id2&gt;<span class="o">]</span>
 </code></pre></div>
 <p>Done when the project folder exists and the user has put their data under
 <code>&lt;project&gt;/data/raw/</code> (or told you where it is).</p>
 <h3 id="2-inspect">2. Inspect</h3>
-<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>inspect<span class="w"> </span>&lt;project&gt;/data/raw
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>inspect<span class="w"> </span>&lt;project&gt;/data/raw
 </code></pre></div>
 <p>Read <code>inspect.json</code> in full. Done when you can state, in one paragraph to the user: which
 source kinds exist, how many conversation turns and audio hours, which languages appear,
-what personal data was found, which files were skipped and why, and which tool candidates
-the tables suggest.</p>
+what personal data was found (for tables, in which columns: <code>pii_columns</code>, counted over
+<code>rows_scanned</code> rows, which can be fewer than <code>rows</code>), which files were skipped and why, and
+which tool candidates the tables suggest.</p>
 <h3 id="3-recommend">3. Recommend</h3>
-<div class="code-block"><span class="code-lang">bash</span><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span><span class="o">[</span>--goal<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--gpu<span class="w"> </span><span class="m">24</span><span class="p">|</span><span class="m">48</span><span class="p">|</span><span class="m">80</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--duplex<span class="o">]</span>
+<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span><span class="o">[</span>--goal<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--gpu<span class="w"> </span><span class="m">24</span><span class="p">|</span><span class="m">48</span><span class="p">|</span><span class="m">80</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--duplex<span class="o">]</span>
 </code></pre></div>
 <p>Ask the user for the three constraints if you do not know them: what should improve (see
 <code>references/decision-rules.md</code> for the goal list), the largest GPU they can train on, and
@@ -194,7 +195,7 @@ one recommendation, not a menu.</p>
     </article>
     <div class="prev-next"><a class="pn prev" href="decision-guide.html"><small>Previous</small><b>Decision guide</b></a><a class="pn next" href="data-format.html"><small>Next</small><b>Data format</b></a></div>
     <footer class="page-foot">
-      <span>Apache-2.0 · vakforge</span>
+      <span>Apache-2.0 · vakforge · built by <a href="https://github.com/Achal13jain" target="_blank" rel="noopener">Achal Jain</a></span>
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/skill/vakforge/SKILL.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
