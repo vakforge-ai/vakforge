@@ -37,6 +37,7 @@ class Page:
     source: Path  # markdown file, relative to ROOT
     group: str
     blurb: str = ""
+    spec: bool = False  # render "**Label:** text" paragraphs as spec-sheet rows
     headings: list[tuple[int, str, str]] = field(default_factory=list)  # level, text, id
     body: str = ""
     search: list[dict] = field(default_factory=list)
@@ -91,6 +92,7 @@ PAGES = [
         Path("docs/RECIPES.md"),
         "Reference",
         "Per-model training recipes and their status",
+        spec=True,
     ),
     Page(
         "evaluation",
@@ -264,7 +266,26 @@ def render(page: Page, text: str) -> None:
         r"<li>\[x\] ", '<li class="task done"><input type="checkbox" checked disabled> ', body
     )
     body = re.sub(r"<li>\[ \] ", '<li class="task"><input type="checkbox" disabled> ', body)
+    if page.spec:
+        body = _SPEC_ROW.sub(_spec_row, body)
     page.body = body
+
+
+# A page of "**Label:** text" paragraphs reads as a wall of bold words; as a spec sheet the
+# labels line up in one column and the text in another. A label followed straight by a
+# list ("**Components:**" then bullets) takes the list as its text.
+_SPEC_ROW = re.compile(
+    r"<p><strong>([^<]{1,48}):</strong>(?:</p>\n(<ul>.*?</ul>)|\s*(?!</p>)(.+?)</p>)", re.S
+)
+
+
+def _spec_row(m: re.Match[str]) -> str:
+    label, items, text = m.groups()
+    value = items if items is not None else f"<p>{text}</p>"
+    return (
+        f'<div class="spec-row"><div class="spec-k">{label}</div>'
+        f'<div class="spec-v">{value}</div></div>'
+    )
 
 
 # The README centres its images with HTML, which GitHub renders. The renderer escapes raw
