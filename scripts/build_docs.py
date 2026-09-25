@@ -264,13 +264,24 @@ def render(page: Page, text: str) -> None:
         r"<li>\[x\] ", '<li class="task done"><input type="checkbox" checked disabled> ', body
     )
     body = re.sub(r"<li>\[ \] ", '<li class="task"><input type="checkbox" disabled> ', body)
-    # README banner is for GitHub; the docs shell has its own header
-    body = re.sub(r'<p align="center">\s*<img[^>]*readme-banner[^>]*>\s*</p>', "", body)
     page.body = body
 
 
+# The README centres its images with HTML, which GitHub renders. The renderer escapes raw
+# HTML, so those blocks were published as literal "<p align=...>" text; each one becomes a
+# markdown image instead. The banner is dropped: the docs shell has its own header.
+_CENTRED_IMG = re.compile(r'<p align="center">\s*<img\s+src="([^"]+)"\s+alt="([^"]*)"[^>]*>\s*</p>')
+
+
+def _centred_image(m: re.Match[str]) -> str:
+    src, alt = m.groups()
+    # The README needs absolute URLs; the docs sit next to the same assets.
+    src = src.replace("https://vakforge.pages.dev/", "../")
+    return "" if "readme-banner" in src else f"![{alt}]({src})"
+
+
 def load_source(page: Page) -> str:
-    text = (ROOT / page.source).read_text(encoding="utf-8")
+    text = _CENTRED_IMG.sub(_centred_image, (ROOT / page.source).read_text(encoding="utf-8"))
     if text.startswith("---"):  # skill frontmatter
         text = re.sub(r"^---\n.*?\n---\n", "", text, count=1, flags=re.S)
         preamble = (
