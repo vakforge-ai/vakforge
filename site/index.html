@@ -265,10 +265,10 @@
   .hero .lede { margin-top: 22px; max-width: 52ch; font-size: 1.08rem; }
   .hero .actions { margin-top: 32px; }
   .install {
-    display: flex; align-items: center; gap: 8px; max-width: 640px; margin-top: 18px; padding: 6px 6px 6px 0;
+    display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; margin-top: 18px; padding: 6px 6px 6px 0;
     border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel-2); overflow: hidden;
   }
-  .install code { flex: 1; min-width: 0; padding: 8px 16px; mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); overflow: auto; white-space: nowrap; scrollbar-width: none; font-family: var(--mono); font-size: .84rem; color: var(--tint); }
+  .install code { flex: 1; min-width: 0; padding: 8px 16px; overflow: auto; white-space: nowrap; scrollbar-width: none; font-family: var(--mono); font-size: .84rem; color: var(--tint); }
   .install code::before { content: "$ "; color: var(--cyan); }
   .copy { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-3); color: var(--text); font-family: var(--mono); font-size: .76rem; font-weight: 500; transition: .15s; }
   .copy svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
