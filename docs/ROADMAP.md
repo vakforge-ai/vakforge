@@ -32,6 +32,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `vakforge locales` to list packs and show resolved settings
 - [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal
 - [x] `inspect` for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports
+- [x] `inspect` scans table cells for PII, per column, with the column name as context (`order_id` digits are a reference, an `ssn` column is the cue); a sample of each table, with `rows_scanned` saying how much
 - [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
 - [x] `inspect.json` report for `recommend` and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover
 - [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals

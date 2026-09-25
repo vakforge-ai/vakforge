@@ -1,7 +1,8 @@
 """Per-source facts for `inspect`. Deliberately shallow: enough for `recommend` to decide.
 
 Documents: words, languages, PII counts. Tables: columns, rows, id-like columns (tool
-candidates). Chats: messages and speakers. Audio: duration, format, clipping, silence.
+candidates), PII counts per column. Chats: messages and speakers. Audio: duration, format,
+clipping, silence.
 
 Every number here is measured, never inferred. A low silence ratio, for example, is
 reported as it is and not turned into a verdict of "noisy", because unbroken energy is
@@ -15,6 +16,7 @@ import csv
 import json
 import re
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +39,10 @@ _CREATE_TABLE = re.compile(
 )
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
 MAX_CHARS = 2_000_000  # read at most this much text per file
+# Table cells are scanned one at a time, with the column name as context, which costs about
+# 5 s per million characters. A few thousand rows are plenty to show which columns hold
+# personal data, and `rows_scanned` says how much of the table the counts cover.
+TABLE_SCAN_CHARS = 200_000
 
 
 class FileTooLarge(ValueError):
@@ -120,41 +126,98 @@ def _jsonl_rows(text: str, truncated: bool) -> tuple[list[Any], list[str]]:
     return rows, errors
 
 
+def _record_cells(record: dict[str, Any], prefix: str = "") -> Iterator[tuple[str, str]]:
+    """Every scalar in a JSON record as (column, text); nested keys join with a dot."""
+    for key, value in record.items():
+        name = f"{prefix}{key}"
+        for item in value if isinstance(value, list) else [value]:
+            if isinstance(item, dict):
+                yield from _record_cells(item, f"{name}.")
+            elif isinstance(item, str | int | float) and not isinstance(item, bool):
+                yield name, str(item)
+
+
+def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> dict[str, Any]:
+    """Personal data in a table's cells, by column, from the rows that fit TABLE_SCAN_CHARS.
+
+    A CRM export keeps its phone numbers and emails in cells, so reading only the header
+    reported "none found" for exactly the files most likely to hold some. Each cell is
+    scanned with its column name in front, as the context a lone cell lacks: ten digits in
+    `order_id` then read as a reference, as they would in a sentence, and an `ssn` column
+    supplies the cue a bare nine-digit number needs.
+    """
+    by_column: dict[str, Counter[str]] = {}
+    cues: dict[str, str] = {}
+    scanned = chars = 0
+    for cells in rows:
+        if chars > TABLE_SCAN_CHARS:
+            break
+        scanned += 1
+        for column, value in cells:
+            chars += len(value)
+            if column not in cues:
+                cues[column] = re.sub(r"[\W_]+", " ", column).strip() + ": "
+            cue = cues[column]
+            for span in pack.find_pii(cue + value):
+                if span.start >= len(cue):  # a match inside the column name is not data
+                    by_column.setdefault(column, Counter())[span.type] += 1
+    total: Counter[str] = sum(by_column.values(), Counter())
+    return {
+        "pii": dict(total.most_common()),
+        "pii_columns": {col: dict(n.most_common()) for col, n in by_column.items()},
+        "rows_scanned": scanned,
+    }
+
+
 def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     tables: dict[str, dict[str, Any]] = {}
     truncated = False
     parse_errors: list[str] = []
+    pii: Counter[str] = Counter()
     if src.format in {"csv", "tsv"}:
         with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
             reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
-            # Counted, not collected: only the number was ever used, and a large CRM
-            # export should not have to fit in memory to be counted.
-            n_rows = sum(1 for _ in reader)
-        tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": n_rows}
+            n_rows = 0
+
+            def cells() -> Iterator[list[tuple[str, str]]]:
+                nonlocal n_rows
+                for row in reader:
+                    n_rows += 1
+                    # Surplus fields land under the key None as a list; they have no column.
+                    yield [(c, v) for c, v in row.items() if c and isinstance(v, str) and v]
+
+            scan = _table_pii(cells(), pack)
+            # Counted, not collected: a large CRM export should not have to fit in memory
+            # to be counted, including the rows past the scanning budget.
+            n_rows += sum(1 for _ in reader)
+        tables[src.path.stem] = {"columns": reader.fieldnames or [], "rows": n_rows, **scan}
     elif src.format == "sql":
         sql, truncated = _read_text(src.path)
         for match in _CREATE_TABLE.finditer(sql):
             body = sql[match.end() : sql.find(";", match.end())]
             cols = re.findall(r"^\s*[`\"\[]?(\w+)[`\"\]]?\s+\w+", body, re.M)
             tables[match.group(1)] = {"columns": cols, "rows": None}
-    elif src.format == "json":
-        data = json.loads(_whole_text(src.path))
-        rows = (
-            data
-            if isinstance(data, list)
-            else next((v for v in data.values() if isinstance(v, list)), [data])
-        )
+        # A dump's INSERT statements carry the data; it is scanned as text, like a document.
+        pii.update(span.type for span in pack.find_pii(sql))
+    else:
+        if src.format == "json":
+            data = json.loads(_whole_text(src.path))
+            rows = (
+                data
+                if isinstance(data, list)
+                else next((v for v in data.values() if isinstance(v, list)), [data])
+            )
+        else:  # jsonl / ndjson records
+            text, truncated = _read_text(src.path)
+            rows, parse_errors = _jsonl_rows(text, truncated)
         rows = [r for r in rows if isinstance(r, dict)]
-        tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
-    else:  # jsonl / ndjson records
-        text, truncated = _read_text(src.path)
-        records, parse_errors = _jsonl_rows(text, truncated)
-        rows = [r for r in records if isinstance(r, dict)]
-        tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows)}
+        scan = _table_pii((_record_cells(r) for r in rows), pack)
+        tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows), **scan}
     for name, t in tables.items():
         t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(c)]
         t["tool_candidates"] = [f"lookup_{name}_by_{c}" for c in t["id_columns"][:3]]
-    facts: dict[str, Any] = {"tables": tables}
+        pii.update(t.pop("pii", {}))
+    facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:
         facts["truncated"] = True  # row counts cover the part we read, not the whole file
     if parse_errors:

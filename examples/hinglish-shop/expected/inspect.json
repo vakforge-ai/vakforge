@@ -75,6 +75,8 @@
               "city"
             ],
             "rows": 8,
+            "pii_columns": {},
+            "rows_scanned": 8,
             "id_columns": [
               "order_id",
               "customer_id"
@@ -84,7 +86,8 @@
               "lookup_orders_by_customer_id"
             ]
           }
-        }
+        },
+        "pii": {}
       }
     },
     {
@@ -104,6 +107,8 @@
               "in_stock"
             ],
             "rows": 7,
+            "pii_columns": {},
+            "rows_scanned": 7,
             "id_columns": [
               "sku"
             ],
@@ -111,7 +116,8 @@
               "lookup_products_by_sku"
             ]
           }
-        }
+        },
+        "pii": {}
       }
     },
     {

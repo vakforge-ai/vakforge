@@ -59,9 +59,64 @@ def test_json_records(tmp_path):
     assert t == {
         "columns": ["sku", "price"],
         "rows": 2,
+        "pii_columns": {},
+        "rows_scanned": 2,
         "id_columns": ["sku"],
         "tool_candidates": ["lookup_catalog_by_sku"],
     }
+
+
+def test_table_cells_are_scanned_for_personal_data_by_column(tmp_path):
+    # A CRM export used to report "none found": only the header was ever read.
+    p = tmp_path / "customers.csv"
+    p.write_text(
+        "customer_id,mobile,email,order_id\n"
+        "C1,98765 43219,asha@example.com,9876543210\n"
+        "C2,+91 91234 56780,ravi@example.org,9123456780\n",
+        encoding="utf-8",
+    )
+    facts = profile_table(classify(p), HI)
+    t = facts["tables"]["customers"]
+    assert t["pii_columns"] == {"mobile": {"phone": 2}, "email": {"email": 2}}
+    assert t["rows_scanned"] == 2
+    # Ten digits under order_id are a reference, as "order id 9876543210" is in a sentence.
+    assert facts["pii"] == {"phone": 2, "email": 2}
+
+
+def test_a_column_name_supplies_the_cue_a_bare_number_needs(tmp_path):
+    p = tmp_path / "people.csv"
+    p.write_text("ssn,zip_plus_four\n536221234,536221234\n", encoding="utf-8")
+    t = profile_table(classify(p), get_pack("en-US"))["tables"]["people"]
+    assert t["pii_columns"] == {"ssn": {"ssn": 1}}
+
+
+def test_nested_json_records_are_scanned_with_dotted_columns(tmp_path):
+    p = tmp_path / "crm.json"
+    p.write_text(
+        json.dumps([{"id": 1, "contact": {"phone": "9876543219", "emails": ["a@b.co"]}}]),
+        encoding="utf-8",
+    )
+    t = profile_table(classify(p), HI)["tables"]["crm"]
+    assert t["pii_columns"] == {"contact.phone": {"phone": 1}, "contact.emails": {"email": 1}}
+
+
+def test_sql_dump_rows_are_scanned(tmp_path):
+    p = tmp_path / "dump.sql"
+    p.write_text(
+        "CREATE TABLE users (\n  id INT,\n  email TEXT\n);\n"
+        "INSERT INTO users VALUES (1, 'priya@example.in');\n",
+        encoding="utf-8",
+    )
+    assert profile_table(classify(p), HI)["pii"] == {"email": 1}
+
+
+def test_rows_past_the_scan_budget_are_still_counted(tmp_path, monkeypatch):
+    monkeypatch.setattr(profile, "TABLE_SCAN_CHARS", 30)
+    p = tmp_path / "big.csv"
+    p.write_text("email\n" + "someone@example.com\n" * 10, encoding="utf-8")
+    t = profile_table(classify(p), HI)["tables"]["big"]
+    assert t["rows"] == 10
+    assert t["rows_scanned"] < 10  # says the scan saw part of the table, not all of it
 
 
 def test_jsonl_chat(tmp_path):
