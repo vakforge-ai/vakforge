@@ -705,10 +705,29 @@
 
   .cta-bottom { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; padding: 20px clamp(28px, 4vw, 52px); border-top: 1px solid var(--line); background: var(--panel-2); }
   .cta-bottom::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan) 20%, var(--cyan) 50%, transparent); opacity: .6; }
-  .cta-cmd { flex: 1; min-width: 0; }
-  .cta-cmd small { display: block; margin-bottom: 6px; font-family: var(--mono); font-size: .7rem; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); }
-  .cta-cmd code { display: block; overflow-x: auto; white-space: nowrap; scrollbar-width: none; font-family: var(--mono); font-size: 1rem; color: var(--text); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
-  .cta-cmd code::before { content: "$ "; color: var(--cyan); }
+  /* quick start: the three commands from install to a decision, side by side */
+  /* the first two hug their commands; the last, and longest, takes what is left */
+  .qs { display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); width: 100%; margin: 0; padding: 0; list-style: none; }
+  .qs-step { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 2px 24px; border-left: 1px solid var(--line-soft); }
+  .qs-step:first-child { padding-left: 0; border-left: 0; }
+  .qs-step:last-child { padding-right: 0; }
+  .qs-head { display: flex; align-items: baseline; gap: 10px; font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; }
+  .qs-n { color: var(--cyan); font-weight: 600; }
+  .qs-t { color: var(--dim); font-weight: 500; }
+  .qs-cmd { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .qs-cmd code { min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; font-family: var(--mono); font-size: .86rem; color: var(--text); }
+  .qs-cmd code::before { content: "$ "; color: var(--cyan); }
+  .qs-copy { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dim); transition: .15s; }
+  .qs-copy:hover { color: var(--text); border-color: var(--line); background: var(--bg-3); }
+  .qs-copy.done { color: var(--cyan); border-color: var(--cyan); }
+  .qs-copy svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+  @media (max-width: 1100px) {
+    .qs { grid-template-columns: minmax(0, 1fr); }
+    .qs-step { padding: 14px 0; border-left: 0; }
+    .qs-step:first-child { padding-top: 0; }
+    .qs-step:last-child { padding-bottom: 0; }
+    .qs-step + .qs-step { border-top: 1px solid var(--line-soft); }
+  }
   .cta-wave { position: absolute; left: 0; right: 0; bottom: 84px; height: 56px; display: flex; align-items: flex-end; gap: 3px; padding: 0 16px; opacity: .08; pointer-events: none; z-index: 0; }
   .cta-wave i { flex: 1; border-radius: 2px 2px 0 0; background: var(--cyan); }
   .cta-wave i.t { background: var(--coral); }
@@ -859,7 +878,6 @@
 
     .cta-top { padding: 24px 18px; }
     .cta-bottom { padding: 16px 18px; }
-    .cta-cmd code { font-size: .82rem; }
     .cta-wave { display: none; }
 
     .foot-top { padding-block: 36px 28px; }
@@ -1210,8 +1228,11 @@
         </div>
       </div>
       <div class="cta-bottom">
-        <div class="cta-cmd"><small>Quick start</small><code id="cmd-final">pip install vakforge</code></div>
-        <button class="copy" type="button" data-copy="cmd-final"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>copy</span></button>
+        <ol class="qs" aria-label="Quick start">
+          <li class="qs-step"><span class="qs-head"><span class="qs-n">01</span><span class="qs-t">Install</span></span><span class="qs-cmd"><code id="qs-1">pip install vakforge</code><button class="qs-copy" type="button" data-copy="qs-1" aria-label="Copy: pip install vakforge" title="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span></li>
+          <li class="qs-step"><span class="qs-head"><span class="qs-n">02</span><span class="qs-t">Start a project</span></span><span class="qs-cmd"><code id="qs-2">vakforge init shop -l en-US</code><button class="qs-copy" type="button" data-copy="qs-2" aria-label="Copy: vakforge init shop -l en-US" title="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span></li>
+          <li class="qs-step"><span class="qs-head"><span class="qs-n">03</span><span class="qs-t">Add files, get the decision</span></span><span class="qs-cmd"><code id="qs-3">vakforge recommend shop/data/raw</code><button class="qs-copy" type="button" data-copy="qs-3" aria-label="Copy: vakforge recommend shop/data/raw" title="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span></li>
+        </ol>
       </div>
     </div>
   </div>
@@ -1311,9 +1332,10 @@
       var el = document.getElementById(btn.dataset.copy);
       if (!el || !navigator.clipboard) return;
       navigator.clipboard.writeText(el.textContent).then(function () {
-        var label = btn.querySelector("span");
-        label.textContent = "copied"; btn.classList.add("done");
-        setTimeout(function () { label.textContent = "copy"; btn.classList.remove("done"); }, 1600);
+        var label = btn.querySelector("span");  // icon-only buttons have none
+        if (label) label.textContent = "copied";
+        btn.classList.add("done");
+        setTimeout(function () { if (label) label.textContent = "copy"; btn.classList.remove("done"); }, 1600);
       });
     });
   });
