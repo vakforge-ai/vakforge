@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, TextIO
+from typing import Annotated, Any, TextIO
 
 import typer
 from rich.console import Console
@@ -160,6 +160,43 @@ def _project_locale(start: Path) -> str | None:
     return None
 
 
+def _inspect_with_progress(path: Path, pack: Any) -> dict[str, Any]:
+    """`inspect_dir`, with a progress bar on an interactive terminal.
+
+    A 600 MB export takes around 20 s, and a folder of them longer; with nothing on screen
+    that reads as a hang. The bar goes to stderr, only on a terminal, and clears when done,
+    so piped output and CI logs are unchanged.
+    """
+    from vakforge.inspect.report import inspect_dir
+
+    if not err_console.is_terminal:
+        return inspect_dir(path, pack)
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    columns = (
+        SpinnerColumn(),
+        TextColumn("[dim]inspecting[/]"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        TextColumn("{task.description}"),
+    )
+    with Progress(*columns, console=err_console, transient=True) as progress:
+        task = progress.add_task("", total=None)
+
+        def on_file(done: int, total: int, name: str) -> None:
+            progress.update(task, total=total, completed=done, description=name)
+
+        return inspect_dir(path, pack, on_file=on_file)
+
+
 @app.command()
 def inspect(
     path: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Data folder.")],
@@ -174,7 +211,7 @@ def inspect(
     """Report what is in a folder of documents, tables, chats and audio."""
     from rich.table import Table
 
-    from vakforge.inspect.report import inspect_dir, write_report
+    from vakforge.inspect.report import write_report
     from vakforge.locales import get_pack, list_packs
 
     pack_id = locale or _project_locale(path.resolve())
@@ -190,7 +227,7 @@ def inspect(
         err_console.print(f"[red]{exc.args[0]}[/]")
         raise typer.Exit(2) from None
 
-    report = inspect_dir(path, pack)
+    report = _inspect_with_progress(path, pack)
     s = report["summary"]
     table = Table(title=f"{path} · locale {pack.id}", title_justify="left", show_header=False)
     table.add_column(style="dim")
@@ -296,13 +333,11 @@ def recommend(
             raise typer.Exit(2) from None
 
     if source.is_dir():
-        from vakforge.inspect.report import inspect_dir
-
         pack = resolve_pack(
             locale or _project_locale(source.resolve()),
             "pass --locale or run inside a `vakforge init` project",
         )
-        summary = inspect_dir(source, pack)["summary"]
+        summary = _inspect_with_progress(source, pack)["summary"]
     else:
         try:
             report = json.loads(source.read_text(encoding="utf-8-sig"))

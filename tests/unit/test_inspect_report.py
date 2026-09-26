@@ -88,6 +88,14 @@ def test_utf8_bom_from_windows_tools_is_ignored(tmp_path):
     assert s["tool_candidates"] == ["lookup_orders_by_order_id"]
 
 
+def test_progress_is_reported_before_each_file(tmp_path):
+    (tmp_path / "a.md").write_text("Refunds take 5 days.", encoding="utf-8")
+    (tmp_path / "b.md").write_text("COD is available.", encoding="utf-8")
+    seen = []
+    inspect_dir(tmp_path, get_pack("en-US"), on_file=lambda *a: seen.append(a))
+    assert seen == [(0, 2, "a.md"), (1, 2, "b.md")]
+
+
 def test_an_faq_is_routed_to_retrieval(tmp_path):
     # Question/answer pairs are facts. Read as a chat, a public FAQ was sent to a behaviour
     # fine-tune; as a document it goes where facts belong.
