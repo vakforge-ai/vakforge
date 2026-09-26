@@ -46,6 +46,24 @@ def test_a_project_created_by_0_1_0_still_loads(tmp_path):
     assert r.exit_code == 0, r.output
 
 
+@pytest.mark.parametrize(
+    ("body", "needle"),
+    [
+        ("name: shop\nlocales: [en-US]\ncolour: red\n", "colour"),
+        ("name: shop\nlocales: []\n", "locales"),
+        ("name: shop\nlocales: [en-US\n", "not a valid project file"),
+        ("- just\n- a list\n", "not a valid project file"),
+    ],
+)
+def test_a_bad_project_file_is_an_error_message_not_a_traceback(tmp_path, body, needle):
+    (tmp_path / "vakforge.yaml").write_text(body, encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    r = runner.invoke(app, ["inspect", str(tmp_path / "data"), "-o", str(tmp_path / "i.json")])
+    assert r.exit_code == 2, r.output
+    assert "not a valid project file" in flat(r) and needle in flat(r)
+    assert "Traceback" not in r.output
+
+
 def test_init_rejects_unknown_locale(tmp_path):
     r = runner.invoke(app, ["init", str(tmp_path / "x"), "--locale", "xx-YY"])
     assert r.exit_code == 2
