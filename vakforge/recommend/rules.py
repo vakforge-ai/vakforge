@@ -364,8 +364,14 @@ _UNIT_NAME = {
 }
 
 
+def fmt_number(value: float) -> str:
+    """A count as people write it. `:g` prints 2002646 as 2.00265e+06 past six digits,
+    which is how a million-message export was reported."""
+    return f"{value:.15g}"
+
+
 def _amount(value: float, unit: str) -> str:
-    return f"{value:g} {_UNIT_NAME[unit]}"
+    return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
 
 
 def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
@@ -387,15 +393,15 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
         uncounted = []
         if audio_hours:
             uncounted.append(
-                f"{audio_hours:g} h of audio contributes no turns until it is transcribed "
-                "and diarized; inspect does neither"
+                f"{fmt_number(audio_hours)} h of audio contributes no turns until it is "
+                "transcribed and diarized; inspect does neither"
             )
         return float(messages), f"{messages} parsed chat messages", uncounted, True
 
     if bar.unit == "hours":
         return (
             audio_hours,
-            f"{audio_hours:g} h of recordings",
+            f"{fmt_number(audio_hours)} h of recordings",
             [
                 "duration only: no transcripts, no speaker labels and no consent record, "
                 "all of which recognition training needs"
@@ -406,7 +412,7 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
     seconds = audio_hours * 3600
     return (
         seconds,
-        f"{seconds:g} s of recordings",
+        f"{fmt_number(seconds)} s of recordings",
         [
             "not verified as one consented speaker recorded under consistent conditions, "
             "which is what a voice fine-tune actually needs"
@@ -609,7 +615,7 @@ def recommend(
     for d in decisions:
         if d.need is not None and d.have < d.need:
             steps.append(
-                f"{d.goal}: {d.have:g} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
+                f"{d.goal}: {fmt_number(d.have)} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
                 "run synth over your documents and tools for coverage, and keep the "
                 "evaluation set real"
             )

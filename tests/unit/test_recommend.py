@@ -245,6 +245,13 @@ def test_a_folder_with_nothing_usable_says_so_instead_of_guessing_knowledge():
     assert r.next_steps[0].startswith("nothing here is evidence yet")
 
 
+def test_large_counts_are_written_out_not_in_scientific_notation():
+    # A million-row export was reported as "2.00265e+06 conversation turns".
+    r = recommend(summary(counts={"chat": 1}, chat_messages=2002646), HI)
+    text = " ".join([d(r).reason, *r.next_steps])
+    assert "2002646" in text and "e+06" not in text
+
+
 def test_an_empty_folder_is_nothing_yet():
     r = recommend(summary(), US)
     assert r.primary_problem is None

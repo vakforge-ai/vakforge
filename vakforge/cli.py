@@ -270,7 +270,7 @@ def recommend(
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend import Constraints
     from vakforge.recommend import recommend as decide
-    from vakforge.recommend.rules import GOALS, GPU_GB
+    from vakforge.recommend.rules import GOALS, GPU_GB, fmt_number
 
     bad = [g for g in goal or [] if g not in GOALS]
     if bad:
@@ -368,7 +368,10 @@ def recommend(
         goal.add_column()
         goal.add_row("fine-tune?", f"{verdicts[d.eligibility]}  {d.reason}")
         if d.need is not None:
-            goal.add_row(f"data ({d.unit})", f"{d.have:g} of ~{d.need:g}  from {d.have_from}")
+            goal.add_row(
+                f"data ({d.unit})",
+                f"{fmt_number(d.have)} of ~{fmt_number(d.need)}  from {d.have_from}",
+            )
         for note in d.uncounted:
             goal.add_row("[yellow]not counted[/]", note)
         for blocker in d.blockers:
