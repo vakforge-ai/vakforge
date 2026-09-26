@@ -43,10 +43,10 @@ MAX_CHARS = 2_000_000  # read at most this much text per file
 # MAX_CHARS, which turned away a 2 MB export; parsing 32 million characters takes a couple
 # of seconds and roughly 150 MB, and anything bigger is better as JSONL anyway.
 MAX_WHOLE_CHARS = 32_000_000
-# Table cells are scanned one at a time, with the column name as context, which costs about
-# 5 s per million characters. A few thousand rows are plenty to show which columns hold
-# personal data, and `rows_scanned` says how much of the table the counts cover.
-TABLE_SCAN_CHARS = 200_000
+# Table cells are scanned one at a time, with the column name as context: about a second per
+# million characters on real exports. At 200,000 a text-heavy table was judged on 163 of
+# 26,872 rows, too few for "none found" to mean much; `rows_scanned` says what was covered.
+TABLE_SCAN_CHARS = 1_000_000
 
 
 class FileTooLarge(ValueError):
