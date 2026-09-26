@@ -259,6 +259,7 @@ def test_files_that_could_not_be_read_get_no_route():
     [route] = r.routes
     assert route.source == "nothing usable yet"
     assert "2 files could not be read" in route.why
+    assert "found 2 documents" in route.why  # it said "2 document"
     assert "id column" not in route.why  # nothing was read, so no column is to blame
 
 

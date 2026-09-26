@@ -288,7 +288,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
         )
     if not routes:
         start = "generate scenario dialogues, ship a v0, collect real data"
-        found = ", ".join(f"{n} {k}" for k, n in counts.items() if n)
+        found = fmt_kinds(counts)
         if found:
             # Say what was there and why it did not count, so a folder of unusable files
             # does not read as empty, and an unread file is not blamed on its columns.
@@ -380,6 +380,16 @@ def fmt_number(value: float) -> str:
     """A count as people write it. `:g` prints 2002646 as 2.00265e+06 past six digits,
     which is how a million-message export was reported."""
     return f"{value:.15g}"
+
+
+def fmt_kinds(counts: dict[str, int]) -> str:
+    """File counts in words: "1 document, 2 tables, 3 audio". Shared by inspect and
+    recommend, so neither writes "2 document" again."""
+    return ", ".join(
+        f"{n} {kind}{'s' if n > 1 and kind not in {'audio', 'other'} else ''}"
+        for kind, n in counts.items()
+        if n
+    )
 
 
 def _amount(value: float, unit: str) -> str:

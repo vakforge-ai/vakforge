@@ -214,6 +214,7 @@ def inspect(
 
     from vakforge.inspect.report import write_report
     from vakforge.locales import get_pack, list_packs
+    from vakforge.recommend.rules import fmt_kinds
 
     pack_id = locale or _project_locale(path.resolve())
     if pack_id is None:
@@ -233,11 +234,7 @@ def inspect(
     table = Table(title=f"{path} · locale {pack.id}", title_justify="left", show_header=False)
     table.add_column(style="dim")
     table.add_column()
-    counts = ", ".join(
-        f"{n} {k}" + ("s" if n > 1 and k not in {"audio", "other"} else "")
-        for k, n in s["counts"].items()
-        if n
-    )
+    counts = fmt_kinds(s["counts"])
     found = sum(s["counts"].values())
     profiled = sum(s["profiled"].values())
     table.add_row("files", counts or "none")
