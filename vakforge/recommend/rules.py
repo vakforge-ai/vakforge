@@ -33,6 +33,12 @@ GOALS: tuple[Goal, ...] = (
     "language",
 )
 GPU_GB = {"none": 0, "24": 24, "48": 48, "80": 80}
+# How each verdict reads to a person, in the terminal and in the HTML report alike.
+VERDICT_LABELS: dict[Eligibility, str] = {
+    "blocked": "no",
+    "baseline_first": "baseline first",
+    "candidate": "worth trying",
+}
 
 
 @dataclass(frozen=True)
@@ -127,15 +133,35 @@ BARS: dict[Goal, Bar] = {
     ),
 }
 
-# recipe -> minimum GPU memory to train, and the goals it addresses
+# recipe -> minimum GPU memory to train, the goals it addresses, and how it trains. The
+# method is the plan in docs/RECIPES.md, from each upstream trainer's own documentation;
+# no recipe has run end to end yet, and anything the upstream does not document says so.
 RECIPES: dict[str, dict[str, Any]] = {
-    "lfm25-audio": {"gpu": 24, "goals": {"tools", "workflow", "recognition"}, "duplex": False},
-    "moshi-lora": {"gpu": 48, "goals": {"duplex", "voice", "workflow"}, "duplex": True},
-    "qwen-omni": {"gpu": 80, "goals": {"language", "tools", "workflow"}, "duplex": False},
+    "lfm25-audio": {
+        "gpu": 24,
+        "goals": {"tools", "workflow", "recognition"},
+        "duplex": False,
+        "method": "full fine-tune in bf16 with the upstream liquid_audio trainer; LoRA "
+        "only if that trainer supports it, which is not verified",
+    },
+    "moshi-lora": {
+        "gpu": 48,
+        "goals": {"duplex", "voice", "workflow"},
+        "duplex": True,
+        "method": "LoRA with the official kyutai-labs/moshi-finetune",
+    },
+    "qwen-omni": {
+        "gpu": 80,
+        "goals": {"language", "tools", "workflow"},
+        "duplex": False,
+        "method": "LoRA on the Thinker with the Talker frozen, via ms-swift",
+    },
     "cascade": {
         "gpu": 24,
         "goals": {"recognition", "language", "voice", "workflow"},
         "duplex": False,
+        "method": "LoRA on a small instruct LLM (Unsloth or LLaMA-Factory); the "
+        "speech-to-text model is fine-tuned on its own",
     },
 }
 
@@ -169,6 +195,7 @@ class GoalDecision:
     have: float
     have_from: str  # what was counted to get `have`, in words
     uncounted: list[str]  # material that exists but cannot count yet, and what it needs
+    floor: float  # below this there is nothing to learn from; 0 when volume is not the question
     need: float | None
     unit: str
     evidence: str
@@ -176,6 +203,7 @@ class GoalDecision:
     recipe: str | None
     recipe_support: str | None
     recipe_reason: str
+    recipe_method: str | None  # how the recipe plans to train: LoRA, full fine-tune, ...
     blockers: list[str]  # what stands between this goal and training, beyond data volume
 
 
@@ -546,6 +574,7 @@ def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraint
         have=round(have, 2),
         have_from=have_from,
         uncounted=uncounted,
+        floor=bar.floor,
         need=bar.target,
         unit=bar.unit,
         evidence=bar.evidence,
@@ -553,6 +582,7 @@ def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraint
         recipe=recipe,
         recipe_support=level,
         recipe_reason=recipe_reason,
+        recipe_method=RECIPES[recipe]["method"] if recipe else None,
         blockers=blockers,
     )
 

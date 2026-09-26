@@ -105,6 +105,17 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def is_sampled(report: dict[str, Any]) -> bool:
+    """True when a large table or conversation export was scanned from a sample, so its
+    personal-data and language counts are not totals and should not be read as such."""
+    return any(
+        t["rows_scanned"] < t["rows"]
+        for f in report["files"]
+        for t in f.get("facts", {}).get("tables", {}).values()
+        if "rows_scanned" in t
+    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
+
+
 def write_report(report: dict[str, Any], out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

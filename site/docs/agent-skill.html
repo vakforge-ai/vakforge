@@ -128,11 +128,13 @@ whether callers must be able to interrupt. Read <code>recommend.json</code>. Don
 approved a plan that states: the routes per source, whether a fine-tune is on the table at
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.</p>
+<p>When the plan has to go to someone who will not read JSON, <code>vakforge report inspect.json recommend.json -o report.html</code> writes both reports as one page that opens offline and
+prints to PDF.</p>
 <p><code>recommend.json</code> answers <strong>every goal separately</strong> in <code>goal_decisions[]</code>. Each entry carries
-its own <code>eligibility</code>, <code>have</code>/<code>need</code>/<code>unit</code>, <code>evidence</code>, <code>confidence</code>, <code>recipe</code> and
-<code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions with different data
-behind them. Walk the list and give the user a line per goal. The top-level <code>fine_tune</code> is
-only the roll-up — the best state any goal reached — and is not the answer for any
+its own <code>eligibility</code>, <code>have</code>/<code>floor</code>/<code>need</code>/<code>unit</code>, <code>evidence</code>, <code>confidence</code>, <code>recipe</code>,
+<code>recipe_method</code> and <code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions
+with different data behind them. Walk the list and give the user a line per goal. The
+top-level <code>fine_tune</code> is only the roll-up — the best state any goal reached — and is not the answer for any
 particular goal.</p>
 <p>Each <code>eligibility</code> means a different plan:</p>
 <ul>
@@ -154,6 +156,10 @@ before it counts, and it belongs in the plan as a task, not as data the user alr
 whatever the counts say. A named <code>recipe</code> alongside a blocker means the base model is the
 right choice and the adaptation is not yet possible — recommend the model, and put the
 blocker in the plan.</p>
+<p><code>recipe_method</code> (LoRA, full fine-tune) is the recipe's plan from its upstream trainer's
+documentation, not a tested result. Confirm it against the pinned trainer before step 6,
+and do not switch to QLoRA or another method to fit a smaller GPU without verifying the
+trainer supports it for that model.</p>
 <h3 id="4-prepare">4. Prepare</h3>
 <p>Write <code>&lt;project&gt;/prepare/</code> so that it turns the raw sources into <code>data/vakforge.jsonl</code> in
 the canonical format (<code>references/data-format.md</code>), following <code>references/data-safety.md</code>:

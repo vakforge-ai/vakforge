@@ -78,11 +78,15 @@ approved a plan that states: the routes per source, whether a fine-tune is on th
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.
 
+When the plan has to go to someone who will not read JSON, `vakforge report inspect.json
+recommend.json -o report.html` writes both reports as one page that opens offline and
+prints to PDF.
+
 `recommend.json` answers **every goal separately** in `goal_decisions[]`. Each entry carries
-its own `eligibility`, `have`/`need`/`unit`, `evidence`, `confidence`, `recipe` and
-`blockers`, because "tools" and "recognition" are different questions with different data
-behind them. Walk the list and give the user a line per goal. The top-level `fine_tune` is
-only the roll-up — the best state any goal reached — and is not the answer for any
+its own `eligibility`, `have`/`floor`/`need`/`unit`, `evidence`, `confidence`, `recipe`,
+`recipe_method` and `blockers`, because "tools" and "recognition" are different questions
+with different data behind them. Walk the list and give the user a line per goal. The
+top-level `fine_tune` is only the roll-up — the best state any goal reached — and is not the answer for any
 particular goal.
 
 Each `eligibility` means a different plan:
@@ -107,6 +111,11 @@ before it counts, and it belongs in the plan as a task, not as data the user alr
 whatever the counts say. A named `recipe` alongside a blocker means the base model is the
 right choice and the adaptation is not yet possible — recommend the model, and put the
 blocker in the plan.
+
+`recipe_method` (LoRA, full fine-tune) is the recipe's plan from its upstream trainer's
+documentation, not a tested result. Confirm it against the pinned trainer before step 6,
+and do not switch to QLoRA or another method to fit a smaller GPU without verifying the
+trainer supports it for that model.
 
 ### 4. Prepare
 

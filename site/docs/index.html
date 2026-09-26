@@ -83,7 +83,7 @@
 <li><strong>Any language:</strong> through locale packs. Launching with English (US, UK, India) and Hinglish.</li>
 </ul>
 <blockquote>
-<p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>validate</code> and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
+<p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>report</code>, <code>validate</code> and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
 </blockquote>
 <h2 id="try-it">Try it</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
@@ -91,6 +91,7 @@ vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span cl
 <span class="c1"># copy your files into my-assistant/data/raw/, then:</span>
 vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw<span class="w"> </span>-o<span class="w"> </span>inspect.json
 vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>-o<span class="w"> </span>recommend.json
+vakforge<span class="w"> </span>report<span class="w"> </span>inspect.json<span class="w"> </span>recommend.json<span class="w"> </span>-o<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># one page to share or save as PDF</span>
 </code></pre></div>
 <p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.</p>
 <p>No data to hand? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project with both reports committed next to it.</p>
@@ -213,6 +214,11 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 <tr>
 <td><code>vakforge recommend</code></td>
 <td>Decide what needs changing, often &quot;retrieval, not training&quot;</td>
+<td>works</td>
+</tr>
+<tr>
+<td><code>vakforge report</code></td>
+<td>Turn both reports into one page to share, in light or dark, printable to PDF</td>
 <td>works</td>
 </tr>
 <tr>

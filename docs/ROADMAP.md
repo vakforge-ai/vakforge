@@ -44,6 +44,8 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `recommend`: per-goal bars with their own unit, floor, target, confidence label and citation (`BARS`); three-state verdict (`blocked` / `baseline_first` / `candidate`) instead of a boolean, per `docs/RESEARCH.md`
 - [x] `recommend` counts usable evidence only: raw audio is never converted into conversation turns, goals are inferred from profiled files rather than discovered ones, and evidence whose fitness is unproven cannot reach `candidate`
 - [x] `recommend`: a decision per goal (`goal_decisions[]`) — own unit, bar, evidence, recipe and blockers — with the project verdict as the roll-up; naming a duplex base model is separated from whether the data can adapt it
+- [x] `recommend`: each goal reports its floor beside its target, and the named recipe's planned training method (LoRA, full fine-tune) from its upstream trainer's documentation, marked planned until the recipe has run
+- [x] `report`: `inspect.json` and `recommend.json` as one self-contained HTML page (logo embedded, nothing fetched), light and dark, printable to PDF; each goal's data on a log scale against its floor and target, and the routes drawn as a flow; chat speaker names left out
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
 ## Phase 2 — Agent skill

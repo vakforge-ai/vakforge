@@ -72,6 +72,7 @@ The command prints, and writes to `recommend.json`, the following. Every term is
   - `worth trying` — the data clears the bar, so try it after measuring the baseline, and compare the two
 - **evidence**, with a confidence label: `measured` (a cited paper reports the number), `reported` (a model team stated it) or `heuristic` (we chose it and nothing supports or refutes it)
 - **recipe**, filtered by the locale pack's `recipe_support` and your `--gpu`; `understand_only` is called out so nobody expects Hindi speech from an English-output model
+- **method**: how that recipe plans to train (LoRA, or a full fine-tune), from its upstream trainer's documentation, marked planned until the recipe has run end to end
 - **data**, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning — with what was counted to get there, and a **not counted** line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and `inspect` does neither. Evidence whose fitness is unproven stops the verdict at `baseline first`, however much of it there is
 - **consent and privacy**: the pack's call-recording rule, any personal data `inspect` found, the pack's privacy notes
 - **next steps**, always starting with "measure the base model with prompt + retrieval first"

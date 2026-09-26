@@ -94,6 +94,7 @@ Everything below exists today, runs on CPU and imports no ML dependencies.
 | `locales/` | `base.py` pack protocol and registry, `checksums.py`, then one module per pack |
 | `inspect/` | `sources.py` classifies, `profile.py` gets per-kind facts, `report.py` summarises the folder |
 | `recommend/` | `rules.py`: the decision guide as data, plus the bars and their evidence |
+| `html_report.py` | `inspect.json` and `recommend.json` as one self-contained, printable HTML page; the logo it embeds is `assets/mark.png` |
 
 Outside the package: `skill/vakforge/` (the agent skill), `site/` (landing page and these docs),
 `examples/` (a synthetic project with its reports), `tests/unit/` (CPU, no downloads).

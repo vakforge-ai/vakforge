@@ -10,7 +10,7 @@ from typing import Annotated, Any, TextIO
 import typer
 from rich.console import Console
 
-from vakforge import __version__
+from vakforge import GLOSSARY_URL, __version__
 
 
 def make_stream_safe(stream: TextIO) -> None:
@@ -35,7 +35,6 @@ app = typer.Typer(
 )
 console = Console()
 err_console = Console(stderr=True)
-GLOSSARY_URL = "https://vakforge.pages.dev/docs/glossary.html"
 
 PROJECT_GITIGNORE = """# written by `vakforge init`
 data/raw/
@@ -161,6 +160,27 @@ def _project_locale(start: Path) -> str | None:
     return None
 
 
+def _read_json_object(path: Path, expect: str) -> dict[str, Any]:
+    """`path` parsed as a JSON object, or a clean error saying it should be `expect`.
+
+    Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
+    `report.get(...)` and die with an AttributeError.
+    """
+    from vakforge.validate import json_kind
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        err_console.print(f"[red]cannot read {path}[/]: {exc}")
+        raise typer.Exit(2) from None
+    if not isinstance(data, dict):
+        err_console.print(
+            f"[red]{path} holds JSON {json_kind(data)}, not an object[/]; is it {expect}?"
+        )
+        raise typer.Exit(2)
+    return data
+
+
 def _inspect_with_progress(path: Path, pack: Any) -> dict[str, Any]:
     """`inspect_dir`, with a progress bar on an interactive terminal.
 
@@ -212,7 +232,7 @@ def inspect(
     """Report what is in a folder of documents, tables, chats and audio."""
     from rich.table import Table
 
-    from vakforge.inspect.report import write_report
+    from vakforge.inspect.report import is_sampled, write_report
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend.rules import fmt_kinds
 
@@ -246,16 +266,8 @@ def inspect(
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
     table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
-    # A large table or conversation export is scanned from a sample, so its counts are not
-    # totals; say so.
-    sampled = any(
-        t["rows_scanned"] < t["rows"]
-        for f in report["files"]
-        for t in f.get("facts", {}).get("tables", {}).values()
-        if "rows_scanned" in t
-    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
     pii = ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
-    table.add_row("personal data", pii + (" (large files sampled)" if sampled else ""))
+    table.add_row("personal data", pii + (" (large files sampled)" if is_sampled(report) else ""))
     table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
     console.print(table)
     for f in report["files"]:
@@ -305,7 +317,7 @@ def recommend(
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend import Constraints
     from vakforge.recommend import recommend as decide
-    from vakforge.recommend.rules import GOALS, GPU_GB, fmt_number
+    from vakforge.recommend.rules import GOALS, GPU_GB, VERDICT_LABELS, fmt_number
 
     bad = [g for g in goal or [] if g not in GOALS]
     if bad:
@@ -337,21 +349,9 @@ def recommend(
         )
         summary = _inspect_with_progress(source, pack)["summary"]
     else:
-        try:
-            report = json.loads(source.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError) as exc:
-            err_console.print(f"[red]cannot read {source}[/]: {exc}")
-            raise typer.Exit(2) from None
         from vakforge.validate import json_kind
 
-        # Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
-        # `report.get(...)` and die with an AttributeError.
-        if not isinstance(report, dict):
-            err_console.print(
-                f"[red]{source} holds JSON {json_kind(report)}, not an object[/]; "
-                "is it an inspect.json?"
-            )
-            raise typer.Exit(2)
+        report = _read_json_object(source, "an inspect.json")
         # A list or object here used to reach the pack lookup and die unhashable.
         report_locale = report.get("locale")
         if not isinstance(report_locale, str | None):
@@ -385,11 +385,8 @@ def recommend(
     table.add_row("goals", ", ".join(rec.goals) or "-")
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
-    verdicts = {
-        "blocked": "[bold red]no[/]",
-        "baseline_first": "[bold yellow]baseline first[/]",
-        "candidate": "[bold green]worth trying[/]",
-    }
+    colours = {"blocked": "red", "baseline_first": "yellow", "candidate": "green"}
+    verdicts = {k: f"[bold {colours[k]}]{label}[/]" for k, label in VERDICT_LABELS.items()}
     table.add_row("fine-tune?", f"{verdicts[rec.fine_tune]}  {rec.fine_tune_reason}")
     console.print(table)
 
@@ -410,6 +407,9 @@ def recommend(
         for blocker in d.blockers:
             goal.add_row("[yellow]blocked on[/]", blocker)
         goal.add_row("recipe", f"{d.recipe or 'none'}  {d.recipe_reason}")
+        if d.recipe_method:
+            # The recipes are researched, not built; the method is their plan, not a result.
+            goal.add_row("method", f"{d.recipe_method}  [dim](planned, not yet run)[/]")
         # The confidence label matters as much as the verdict: a threshold we invented and
         # one a paper measured should not read the same way.
         goal.add_row(f"evidence ({d.confidence})", d.evidence)
@@ -429,6 +429,56 @@ def recommend(
         encoding="utf-8",
     )
     console.print(f"[green]wrote[/] {out}")
+
+
+@app.command()
+def report(
+    inspect_json: Annotated[
+        Path, typer.Argument(exists=True, dir_okay=False, help="inspect.json from `inspect`.")
+    ] = Path("inspect.json"),
+    recommend_json: Annotated[
+        Path | None,
+        typer.Argument(exists=True, dir_okay=False, help="recommend.json, to add the decision."),
+    ] = None,
+    out: Annotated[Path, typer.Option("--out", "-o", help="Where to write the page.")] = Path(
+        "report.html"
+    ),
+) -> None:
+    """Write one HTML page from inspect.json (and recommend.json) to share or save as PDF."""
+    from vakforge.html_report import render
+
+    data = _read_json_object(inspect_json, "an inspect.json")
+    if not isinstance(data.get("summary"), dict) or not isinstance(data.get("files"), list):
+        err_console.print(
+            f"[red]{inspect_json} has no summary and files[/]; is it an inspect.json?"
+        )
+        raise typer.Exit(2)
+    rec = None
+    if recommend_json:
+        rec = _read_json_object(recommend_json, "a recommend.json")
+        if "goal_decisions" not in rec:
+            err_console.print(
+                f"[red]{recommend_json} has no goal_decisions[/]; is it a recommend.json?"
+            )
+            raise typer.Exit(2)
+        if rec.get("locale") != data.get("locale"):
+            err_console.print(
+                f"[yellow]warning:[/] {recommend_json} is for locale {rec.get('locale')}, "
+                f"{inspect_json} for {data.get('locale')}; are they from the same folder?"
+            )
+    try:
+        page = render(data, rec)
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        # Only a hand-edited or foreign file gets here: inspect and recommend write the
+        # shape the page reads.
+        err_console.print(
+            f"[red]cannot build the page[/]: {type(exc).__name__}: {exc}; were both files "
+            "written by vakforge?"
+        )
+        raise typer.Exit(2) from None
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(page, encoding="utf-8")
+    console.print(f"[green]wrote[/] {out}  (open it in a browser; print it to save a PDF)")
 
 
 @app.command()

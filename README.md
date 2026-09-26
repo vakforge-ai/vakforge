@@ -16,7 +16,7 @@ vakforge helps you build a voice assistant from the data your company already ha
 - **Open models only:** the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)
 - **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
 
-> Status: pre-alpha. `init`, `inspect`, `recommend`, `validate` and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See [`docs/ROADMAP.md`](https://vakforge.pages.dev/docs/roadmap.html).
+> Status: pre-alpha. `init`, `inspect`, `recommend`, `report`, `validate` and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See [`docs/ROADMAP.md`](https://vakforge.pages.dev/docs/roadmap.html).
 
 ## Try it
 
@@ -26,6 +26,7 @@ vakforge init my-assistant --locale en-US       # or en-GB, en-IN, hi-Latn-IN
 # copy your files into my-assistant/data/raw/, then:
 vakforge inspect my-assistant/data/raw -o inspect.json
 vakforge recommend inspect.json -o recommend.json
+vakforge report inspect.json recommend.json -o report.html   # one page to share or save as PDF
 ```
 
 `inspect` reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. `recommend` says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.
@@ -99,6 +100,7 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 | `vakforge locales` | List language packs and show their rules | works |
 | `vakforge schema` | Export the dataset format as JSON Schema | works |
 | `vakforge recommend` | Decide what needs changing, often "retrieval, not training" | works |
+| `vakforge report` | Turn both reports into one page to share, in light or dark, printable to PDF | works |
 | `prepare`, `synth`, `train`, `eval`, `serve` | Build, test and host the assistant | written per project by the agent skill |
 
 ## Use it with a coding agent
