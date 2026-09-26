@@ -26,11 +26,11 @@ SKIP_DIRS = {".git", ".venv", "node_modules", "__pycache__", ".ipynb_checkpoints
 # "[12/03/24, 10:15] Name: text" that iOS exports use. The name is captured here rather
 # than recovered by splitting the match afterwards: the bracketed form has no " - " to
 # split on, so that approach produced speakers called "[12/03/24, 10:15] Priya".
-_WHATSAPP_LINE = re.compile(
-    r"^\[?\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4},? \d{1,2}:\d{2}(?::\d{2})?(?:\s?[ap]\.?m\.?)?\]?"
-    r"\s?[-–]?\s?(?P<speaker>[^:]{1,60}): ",
-    re.I,
-)
+# iOS exports may open a line with a left-to-right mark, which is invisible but not a digit.
+_STAMP = r"^‎?\[?\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4},? \d{1,2}:\d{2}(?::\d{2})?(?:\s?[ap]\.?m\.?)?\]?"
+_WHATSAPP_LINE = re.compile(_STAMP + r"\s?[-–]?\s?(?P<speaker>[^:]{1,60}): ", re.I)
+# A timestamp with no sender: a system line ("Messages and calls are end-to-end encrypted").
+_WHATSAPP_STAMP = re.compile(_STAMP, re.I)
 
 
 def column_key(name: object) -> str:
@@ -171,12 +171,18 @@ def _looks_like_chat_json(head: str, lines: bool) -> bool:
 
 
 def _looks_like_whatsapp(path: Path) -> bool:
+    """Three timestamped lines among the first 200.
+
+    It used to want three full message lines among the first 20, and a real export failed
+    that: its first line was a system notice with no sender, and its messages ran over many
+    lines each, so only one of the first 20 lines carried a timestamp.
+    """
     try:
         with path.open(encoding="utf-8-sig", errors="replace") as fh:
-            lines = [fh.readline() for _ in range(20)]
+            lines = [fh.readline() for _ in range(200)]
     except OSError:
         return False
-    return sum(bool(_WHATSAPP_LINE.match(line)) for line in lines) >= 3
+    return sum(bool(_WHATSAPP_STAMP.match(line)) for line in lines) >= 3
 
 
 def classify(path: Path) -> Source:

@@ -244,6 +244,25 @@ def test_whatsapp_chat(tmp_path):
     assert "hi-Latn" in facts["languages"]
 
 
+def test_a_whatsapp_export_with_long_messages_is_still_a_chat(tmp_path):
+    # A real export: a system notice first, with no sender, and messages that run over many
+    # lines, so only one of the first 20 lines carried a timestamp. It was read as a document.
+    long_message = "".join(f"line {i} of a long message\n" for i in range(25))
+    p = tmp_path / "WhatsApp Chat with Priya.txt"
+    p.write_text(
+        "26/09/2026, 9:18 am - Messages and calls are end-to-end encrypted.\n"
+        f"26/09/2026, 9:19 am - Priya: {long_message}"
+        f"26/09/2026, 9:20 am - Asha: {long_message}"
+        "26/09/2026, 9:21 am - Priya: ok\n",
+        encoding="utf-8",
+    )
+    src = classify(p)
+    assert (src.kind, src.format) == ("chat", "whatsapp")
+    facts = profile_chat(src, HI)
+    assert facts["messages"] == 3
+    assert facts["speakers"] == {"Priya": 2, "Asha": 1}
+
+
 def test_bracketed_whatsapp_export_names_the_speaker(tmp_path):
     # iOS exports use "[date, time] Name:" with no dash. Recovering the name by splitting
     # on " - " gave speakers called "[12/03/24, 10:15] Priya".

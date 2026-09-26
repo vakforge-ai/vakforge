@@ -24,6 +24,7 @@ import numpy as np
 
 from vakforge.inspect.sources import (
     _WHATSAPP_LINE,
+    _WHATSAPP_STAMP,
     Source,
     column_key,
     conversation_pair,
@@ -307,6 +308,8 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
                 speaker = m.group("speaker").strip()
                 speakers[speaker] += 1
                 messages.append(line[m.end() :])
+            elif _WHATSAPP_STAMP.match(line):
+                continue  # a system notice, not anyone's message and not a continuation
             elif messages:
                 # A message that wrapped onto its own line carries no timestamp header; it
                 # belongs to the message above, and dropping it loses most long messages.
