@@ -215,7 +215,7 @@ def test_every_exchange_is_counted_but_only_a_sample_is_read(tmp_path, monkeypat
     # A million-row export is counted in full; its text is sampled like any large file.
     monkeypatch.setattr(profile, "MAX_CHARS", 40)
     p = tmp_path / "pairs.csv"
-    p.write_text("question,answer\n" + "Where is my order?,On its way.\n" * 20, encoding="utf-8")
+    p.write_text("input,output\n" + "Where is my order?,On its way.\n" * 20, encoding="utf-8")
     facts = profile_chat(classify(p), HI)
     assert facts["messages"] == 40
     assert 0 < facts["messages_scanned"] < 40
@@ -255,6 +255,28 @@ def test_json_records_of_exchanges_are_read_as_messages(tmp_path):
     facts = profile_chat(classify(p), HI)
     assert facts["messages"] == 6
     assert facts["pair"] == ["instruction", "response"]
+
+
+@pytest.mark.parametrize(
+    ("name", "body"),
+    [
+        ("faq.csv", "Question,Answer\nRefund kab milega?,Paanch din mein.\nCOD?,Haan ji.\n"),
+        (
+            "faq.json",  # JSON Lines under a .json name, as a public FAQ dataset ships it
+            '{"question": "Refund kab milega?", "answer": "Paanch din mein."}\n'
+            '{"question": "COD?", "answer": "Haan ji."}\n',
+        ),
+    ],
+)
+def test_an_faq_is_read_as_the_text_it_is(tmp_path, name, body):
+    p = tmp_path / name
+    p.write_text(body, encoding="utf-8")
+    src = classify(p)
+    assert src.kind == "document"
+    facts = profile_document(src, HI)
+    assert facts["faq_pairs"] == 2
+    assert facts["words"] > 5
+    assert "hi-Latn" in facts["languages"]
 
 
 def test_whatsapp_chat(tmp_path):

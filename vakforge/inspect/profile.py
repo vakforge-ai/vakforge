@@ -30,6 +30,7 @@ from vakforge.inspect.sources import (
     Source,
     column_key,
     conversation_pair,
+    faq_pair,
     json_records,
     message_columns,
 )
@@ -100,7 +101,44 @@ def _text_facts(text: str, pack: LocalePack) -> dict[str, Any]:
     }
 
 
+def _records(src: Source) -> Iterator[Any]:
+    """The records of a CSV/TSV (streamed), JSON or JSONL file."""
+    if src.format in {"csv", "tsv"}:
+        with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+            yield from csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
+    elif src.format == "json":
+        yield from json_records(json.loads(_whole_text(src.path)))
+    else:  # jsonl / ndjson
+        yield from _jsonl_rows(*_read_text(src.path))[0]
+
+
+def _faq_text(src: Source) -> tuple[str, int, bool]:
+    """An FAQ file's questions and answers as text, the number of pairs, and whether the
+    text stopped short of the file. Every pair is counted; the text stops at MAX_CHARS."""
+    parts: list[str] = []
+    pairs = chars = 0
+    for rec in _records(src):
+        if not isinstance(rec, dict) or not (cols := faq_pair(rec)):
+            continue
+        pair = "\n\n".join(str(rec.get(c) or "") for c in cols).strip()
+        if not pair:
+            continue
+        pairs += 1
+        if chars < MAX_CHARS:
+            parts.append(pair)
+            chars += len(pair)
+    return "\n\n".join(parts), pairs, chars >= MAX_CHARS
+
+
 def profile_document(src: Source, pack: LocalePack) -> dict[str, Any]:
+    if src.format in {"csv", "tsv", "json", "jsonl", "ndjson"}:
+        # A question/answer file: an FAQ, read as the text it is.
+        text, pairs, truncated = _faq_text(src)
+        facts = _text_facts(text, pack)
+        facts["faq_pairs"] = pairs
+        if truncated:
+            facts["truncated"] = True
+        return facts
     text, truncated = _read_text(src.path)
     if src.format in {"html", "htm"}:
         text = _TAG.sub(" ", text)

@@ -66,7 +66,8 @@ def test_unreadable_sources_explain_what_to_do(tmp_path):
         # One exchange per row: conversations, not a lookup table. Read as a table, a
         # million-row export of them was reported as "nothing yet".
         ("pairs.csv", "input,output\nOrder kab aayega?,Kal tak.\n", "chat"),
-        ("faq.csv", "Question,Answer\nRefund?,5 days.\n", "chat"),
+        # Question and answer is an FAQ: knowledge, read as a document.
+        ("faq.csv", "Question,Answer\nRefund?,5 days.\n", "document"),
         ("train.tsv", "instruction\tcategory\tresponse\nhi\tX\thello\n", "chat"),
         ("orders.csv", "order_id,status\nA1,open\n", "table"),
         ("labels.csv", "text,category\nwhere is my card,card_arrival\n", "table"),
@@ -84,14 +85,14 @@ def test_json_lines_saved_as_json_are_read_as_json_lines(tmp_path):
     rows = [{"question": "How do I pay?", "answer": "By card or UPI."}] * 3
     (tmp_path / "train.json").write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     [src] = discover(tmp_path)
-    assert (src.kind, src.format) == ("chat", "jsonl")
+    assert (src.kind, src.format) == ("document", "jsonl")  # question/answer: an FAQ
 
 
 def test_records_nested_under_a_key_are_found(tmp_path):
     body = {"questions": [{"question": "Refund?", "answer": "5 days."}]}
     (tmp_path / "faq.json").write_text(json.dumps(body), encoding="utf-8")
     [src] = discover(tmp_path)
-    assert src.kind == "chat"
+    assert src.kind == "document"
 
 
 def test_a_large_json_chat_is_not_taken_for_a_table(tmp_path):

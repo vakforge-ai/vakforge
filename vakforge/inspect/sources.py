@@ -48,7 +48,6 @@ def column_key(name: object) -> str:
 CONVERSATION_PAIRS = (
     ("input", "output"),
     ("instruction", "response"),
-    ("question", "answer"),
     ("query", "response"),
     ("prompt", "response"),
     ("prompt", "completion"),
@@ -65,6 +64,21 @@ def conversation_pair(names: Iterable[object]) -> tuple[str, str] | None:
     for user, reply in CONVERSATION_PAIRS:
         if user in by_key and reply in by_key:
             return by_key[user], by_key[reply]
+    return None
+
+
+# A question column and an answer column are an FAQ: facts to look up at answer time, not
+# a conversation to learn a manner from. Read as chats, a public 79-pair FAQ was routed to
+# a behaviour fine-tune.
+FAQ_PAIRS = (("question", "answer"), ("questions", "answers"))
+
+
+def faq_pair(names: Iterable[object]) -> tuple[str, str] | None:
+    """The (question, answer) columns among `names`, in the file's own spelling, or None."""
+    by_key = {column_key(n): str(n) for n in names}
+    for q, a in FAQ_PAIRS:
+        if q in by_key and a in by_key:
+            return by_key[q], by_key[a]
     return None
 
 
@@ -160,9 +174,12 @@ def _head_records(head: str) -> list[Any]:
     return records
 
 
-def _looks_like_chat_json(head: str, lines: bool) -> bool:
-    """JSON or JSONL whose records carry role/speaker + content/text, a `messages` list, or
-    a user/reply pair of fields."""
+def _json_kind(head: str, lines: bool) -> Kind:
+    """What a JSON or JSONL file holds, from its first records.
+
+    A chat when records carry a speaker and a text, a `messages` list, or a user/reply
+    pair; a document when they are question/answer pairs (an FAQ); a table otherwise.
+    """
     records: list[Any] = []
     if lines:
         for line in head.splitlines()[:5]:
@@ -172,12 +189,13 @@ def _looks_like_chat_json(head: str, lines: bool) -> bool:
                 continue
     else:
         records = _head_records(head)
-    for rec in records[:5]:
-        if not isinstance(rec, dict):
-            continue
-        if isinstance(rec.get("messages"), list) or conversation_pair(rec) or message_columns(rec):
-            return True
-    return False
+    records = [r for r in records[:5] if isinstance(r, dict)]
+    if any(
+        isinstance(r.get("messages"), list) or conversation_pair(r) or message_columns(r)
+        for r in records
+    ):
+        return "chat"
+    return "document" if any(faq_pair(r) for r in records) else "table"
 
 
 def _looks_like_whatsapp(path: Path) -> bool:
@@ -207,11 +225,11 @@ def classify(path: Path) -> Source:
         head = _head(path)
         if ext == ".json" and _is_json_lines(head):
             fmt = "jsonl"  # what the file holds, which is what decides how to read it
-        if _looks_like_chat_json(head, lines=fmt in {"jsonl", "ndjson"}):
-            return Source(path, "chat", fmt)
-        return Source(path, "table", fmt)
+        return Source(path, _json_kind(head, lines=fmt in {"jsonl", "ndjson"}), fmt)
     if ext in TABLE_EXT:
         header = _csv_header(path, "\t" if ext == ".tsv" else ",") if ext != ".sql" else []
+        if faq_pair(header):
+            return Source(path, "document", fmt)
         if conversation_pair(header) or message_columns(header):
             return Source(path, "chat", fmt)
         return Source(path, "table", fmt)

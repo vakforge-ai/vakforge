@@ -86,3 +86,16 @@ def test_utf8_bom_from_windows_tools_is_ignored(tmp_path):
     assert s["counts"]["chat"] == 1
     assert s["chat_messages"] == 3
     assert s["tool_candidates"] == ["lookup_orders_by_order_id"]
+
+
+def test_an_faq_is_routed_to_retrieval(tmp_path):
+    # Question/answer pairs are facts. Read as a chat, a public FAQ was sent to a behaviour
+    # fine-tune; as a document it goes where facts belong.
+    from vakforge.recommend import recommend
+
+    (tmp_path / "faq.csv").write_text(
+        "question,answer\nHow do I pay?,By card or UPI.\nRefund?,Within 5 days.\n", "utf-8"
+    )
+    s = inspect_dir(tmp_path, get_pack("en-US"))["summary"]
+    assert s["counts"]["document"] == 1 and s["document_words"] > 0
+    assert [r.route for r in recommend(s, get_pack("en-US")).routes] == ["retrieval"]
