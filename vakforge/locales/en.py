@@ -9,17 +9,30 @@ from __future__ import annotations
 
 import re
 
-from vakforge.locales.base import LocaleFormats, LocalePack, PIIPattern, register
+from vakforge.locales.base import (
+    REFERENCE_WORDS,
+    LocaleFormats,
+    LocalePack,
+    PIIPattern,
+    reference_cue,
+    register,
+)
 from vakforge.locales.checksums import iban_valid, luhn_valid
 
 EMAIL = PIIPattern(
     "email",
     re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
 )
+# One number in ten passes the Luhn check, so a long order or purchase number regularly
+# reads as a card; a public support dataset had seven in its first 5,000 messages. The same
+# reference words that stop an order number reading as a phone apply here, except the
+# ones that introduce exactly the numbers this pattern is for.
+_CARD_WORDS = {"card", "account", "acc", "a/c"}
 CARD = PIIPattern(
     "card_number",
     re.compile(r"(?<![\d-])(?:\d[ -]?){12,18}\d(?![\d-])"),
     validate=luhn_valid,
+    context_deny=reference_cue(*(w for w in REFERENCE_WORDS if w not in _CARD_WORDS)),
 )
 IBAN = PIIPattern(
     "iban",

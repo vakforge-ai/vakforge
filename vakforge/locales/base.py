@@ -72,6 +72,7 @@ def reference_cue(*words: str) -> re.Pattern[str]:
 # Words that introduce a reference number in English-speaking markets. Packs extend this.
 REFERENCE_WORDS = (
     "order",
+    "purchase",
     "invoice",
     "ref",
     "reference",
