@@ -39,9 +39,11 @@ jobs:
           [ "v$pkg" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != version v$pkg"; exit 1; }
 
       - name: Tag is on main
-        # Nothing should reach PyPI that did not go through a reviewed merge.
+        # Nothing should reach PyPI that did not go through a reviewed merge. origin/main
+        # is already here: the checkout above fetches every branch (fetch-depth: 0), with
+        # the token it still has. A second `git fetch` failed on a private repository,
+        # because persist-credentials: false leaves git nothing to authenticate with.
         run: |
-          git fetch --no-tags origin main
           git merge-base --is-ancestor "${GITHUB_REF_NAME}" origin/main \
             || { echo "${GITHUB_REF_NAME} is not an ancestor of origin/main"; exit 1; }
 
