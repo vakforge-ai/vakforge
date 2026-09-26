@@ -16,8 +16,11 @@ DOCUMENT_EXT = {".txt", ".md", ".markdown", ".html", ".htm", ".rst"}
 BINARY_DOCUMENT_EXT = {".pdf", ".docx", ".doc", ".odt", ".rtf", ".pptx"}
 TABLE_EXT = {".csv", ".tsv", ".sql"}
 BINARY_TABLE_EXT = {".xlsx", ".xls", ".ods", ".parquet"}
-AUDIO_EXT = {".wav", ".flac", ".ogg", ".mp3"}
-UNREADABLE_AUDIO_EXT = {".m4a", ".aac", ".wma", ".opus", ".amr"}
+# .oga is how Wikimedia and others name Ogg audio, and .opus is Ogg Opus, the format of a
+# WhatsApp voice note; the libsndfile that soundfile bundles decodes both. Both used to be
+# turned away, the second with advice to convert a file that needed no converting.
+AUDIO_EXT = {".wav", ".flac", ".ogg", ".oga", ".opus", ".mp3"}
+UNREADABLE_AUDIO_EXT = {".m4a", ".aac", ".wma", ".amr"}
 JSON_EXT = {".json", ".jsonl", ".ndjson"}
 
 SKIP_DIRS = {".git", ".venv", "node_modules", "__pycache__", ".ipynb_checkpoints"}

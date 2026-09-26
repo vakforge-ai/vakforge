@@ -11,7 +11,7 @@ The words `vakforge inspect` and `vakforge recommend` use, and the fields they w
 | document | Text to look facts up in | Markdown, text, HTML, reStructuredText, and FAQ files |
 | table | Records with columns | CSV, TSV, SQL dumps, JSON, JSONL |
 | chat | Conversations | WhatsApp exports, JSON/JSONL chat logs, CSV/JSON with one exchange or one message per row |
-| audio | Recordings | WAV, FLAC, OGG, MP3 |
+| audio | Recordings | WAV, FLAC, OGG, Opus (WhatsApp voice notes), MP3 |
 | other | Anything else | Listed, not read |
 
 **Found and profiled.** *Found* (`counts`) is every file in the folder; *profiled* (`profiled`) is the ones that were actually read. Every other total comes from profiled files only, so the two numbers together say how much of the folder the report covers.

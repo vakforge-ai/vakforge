@@ -443,6 +443,23 @@ def test_audio_facts_are_measurements_not_verdicts(tmp_path):
     assert "condition_guess" not in facts
 
 
+@pytest.mark.parametrize(
+    ("name", "subtype"),
+    [
+        ("voice-note.opus", "OPUS"),  # a WhatsApp voice note: Ogg Opus
+        ("article.oga", "VORBIS"),  # Wikimedia's name for Ogg audio
+    ],
+)
+def test_opus_and_oga_are_read_as_audio(tmp_path, name, subtype):
+    # Both were turned away, .opus with advice to convert a file that needed no converting.
+    p = tmp_path / name
+    t = np.linspace(0, 1, 48000, endpoint=False, dtype=np.float32)
+    sf.write(str(p), 0.3 * np.sin(2 * np.pi * 300 * t), 48000, format="OGG", subtype=subtype)
+    src = classify(p)
+    assert (src.kind, src.readable) == ("audio", True)
+    assert profile_audio(src, HI)["duration_s"] == pytest.approx(1.0, abs=0.05)
+
+
 def test_phone_band_audio_marked_narrowband(tmp_path):
     p = tmp_path / "phone.wav"
     t = np.linspace(0, 1, 8000, endpoint=False, dtype=np.float32)

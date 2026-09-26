@@ -118,7 +118,7 @@ read `SKILL.md`-style instructions work the same way; point them at the folder.
 
 ## Bring the data you have
 
-`inspect` reads Markdown, text and HTML documents, and question/answer files (CSV or JSON) as FAQs; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports, JSON chat logs, CSV or JSON files with one exchange per row (`input`/`output`, `instruction`/`response`, `customer`/`agent` and similar), and CSV files with one message per row (a `role` or `speaker` column and a `text` or `message` column); and WAV, FLAC, OGG and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.
+`inspect` reads Markdown, text and HTML documents, and question/answer files (CSV or JSON) as FAQs; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports, JSON chat logs, CSV or JSON files with one exchange per row (`input`/`output`, `instruction`/`response`, `customer`/`agent` and similar), and CSV files with one message per row (a `role` or `speaker` column and a `text` or `message` column); and WAV, FLAC, OGG, Opus (including WhatsApp voice notes) and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.
 
 | You have | Where it goes |
 |---|---|
