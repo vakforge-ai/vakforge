@@ -22,7 +22,13 @@ from typing import Any
 
 import numpy as np
 
-from vakforge.inspect.sources import _WHATSAPP_LINE, Source, column_key, conversation_pair
+from vakforge.inspect.sources import (
+    _WHATSAPP_LINE,
+    Source,
+    column_key,
+    conversation_pair,
+    json_records,
+)
 from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
@@ -237,12 +243,7 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         pii.update(span.type for span in pack.find_pii(sql))
     else:
         if src.format == "json":
-            data = json.loads(_whole_text(src.path))
-            rows = (
-                data
-                if isinstance(data, list)
-                else next((v for v in data.values() if isinstance(v, list)), [data])
-            )
+            rows = json_records(json.loads(_whole_text(src.path)))
         else:  # jsonl / ndjson records
             text, truncated = _read_text(src.path)
             rows, parse_errors = _jsonl_rows(text, truncated)
@@ -313,8 +314,7 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     else:
         records: list[Any] = []
         if src.format == "json":
-            data = json.loads(_whole_text(src.path))
-            records += data if isinstance(data, list) else [data]
+            records += json_records(json.loads(_whole_text(src.path)))
         else:
             text, truncated = _read_text(src.path)
             rows, parse_errors = _jsonl_rows(text, truncated)

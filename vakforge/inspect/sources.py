@@ -8,7 +8,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 Kind = Literal["document", "table", "chat", "audio", "other"]
 
@@ -87,26 +87,77 @@ class Source:
     note: str = ""
 
 
-def _looks_like_chat_json(path: Path) -> bool:
-    """JSON or JSONL whose records carry role/speaker + content/text, or a `messages` list."""
+def json_records(data: Any) -> list[Any]:
+    """The records of a parsed JSON document: a top-level list, or the first list inside a
+    wrapper object ({"questions": [...]}), or the object itself."""
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return next((v for v in data.values() if isinstance(v, list)), [data])
+    return []
+
+
+def _head(path: Path) -> str:
     try:
         with path.open(encoding="utf-8-sig") as fh:
-            head = fh.read(20_000)
+            return fh.read(20_000)
     except (OSError, UnicodeDecodeError):
+        return ""
+
+
+def _is_json_lines(head: str) -> bool:
+    """One JSON record per line, whatever the file is called. Exports often save JSON Lines
+    as `.json`, and parsed as one document the file failed on its second line."""
+    lines = [line for line in head.splitlines() if line.strip()][:2]
+    if len(lines) < 2:
         return False
-    records = []
-    if path.suffix.lower() in {".jsonl", ".ndjson"}:
+    try:
+        return all(isinstance(json.loads(line), dict) for line in lines)
+    except json.JSONDecodeError:
+        return False
+
+
+def _head_records(head: str) -> list[Any]:
+    """The first few records of a JSON document from its opening characters alone.
+
+    The head of a large export is not valid JSON by itself, so parsing it whole meant any
+    JSON chat file over 20,000 characters was taken for a table. Records are decoded one
+    at a time from the first array instead.
+    """
+    text = head.lstrip()
+    try:
+        return json_records(json.loads(text))[:5]
+    except json.JSONDecodeError:
+        pass
+    start = text.find("[")
+    if start < 0:
+        return []
+    decoder, i, records = json.JSONDecoder(), start + 1, []
+    while len(records) < 5:
+        while i < len(text) and text[i] in " \t\r\n,":
+            i += 1
+        if i >= len(text) or text[i] == "]":
+            break
+        try:
+            record, i = decoder.raw_decode(text, i)
+        except json.JSONDecodeError:
+            break
+        records.append(record)
+    return records
+
+
+def _looks_like_chat_json(head: str, lines: bool) -> bool:
+    """JSON or JSONL whose records carry role/speaker + content/text, a `messages` list, or
+    a user/reply pair of fields."""
+    records: list[Any] = []
+    if lines:
         for line in head.splitlines()[:5]:
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
     else:
-        try:
-            data = json.loads(head)
-        except json.JSONDecodeError:
-            return False
-        records = data if isinstance(data, list) else [data]
+        records = _head_records(head)
     for rec in records[:5]:
         if not isinstance(rec, dict):
             continue
@@ -137,7 +188,10 @@ def classify(path: Path) -> Source:
     if ext in UNREADABLE_AUDIO_EXT:
         return Source(path, "audio", fmt, readable=False, note="convert to WAV or FLAC first")
     if ext in JSON_EXT:
-        if _looks_like_chat_json(path):
+        head = _head(path)
+        if ext == ".json" and _is_json_lines(head):
+            fmt = "jsonl"  # what the file holds, which is what decides how to read it
+        if _looks_like_chat_json(head, lines=fmt in {"jsonl", "ndjson"}):
             return Source(path, "chat", fmt)
         return Source(path, "table", fmt)
     if ext in TABLE_EXT:
