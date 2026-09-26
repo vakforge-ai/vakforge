@@ -160,6 +160,27 @@ def _project_locale(start: Path) -> str | None:
     return None
 
 
+def _read_json_object(path: Path, expect: str) -> dict[str, Any]:
+    """`path` parsed as a JSON object, or a clean error saying it should be `expect`.
+
+    Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
+    `report.get(...)` and die with an AttributeError.
+    """
+    from vakforge.validate import json_kind
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        err_console.print(f"[red]cannot read {path}[/]: {exc}")
+        raise typer.Exit(2) from None
+    if not isinstance(data, dict):
+        err_console.print(
+            f"[red]{path} holds JSON {json_kind(data)}, not an object[/]; is it {expect}?"
+        )
+        raise typer.Exit(2)
+    return data
+
+
 def _inspect_with_progress(path: Path, pack: Any) -> dict[str, Any]:
     """`inspect_dir`, with a progress bar on an interactive terminal.
 
@@ -328,21 +349,9 @@ def recommend(
         )
         summary = _inspect_with_progress(source, pack)["summary"]
     else:
-        try:
-            report = json.loads(source.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError) as exc:
-            err_console.print(f"[red]cannot read {source}[/]: {exc}")
-            raise typer.Exit(2) from None
         from vakforge.validate import json_kind
 
-        # Valid JSON is not necessarily an object: `[]`, `null` or `42` used to reach
-        # `report.get(...)` and die with an AttributeError.
-        if not isinstance(report, dict):
-            err_console.print(
-                f"[red]{source} holds JSON {json_kind(report)}, not an object[/]; "
-                "is it an inspect.json?"
-            )
-            raise typer.Exit(2)
+        report = _read_json_object(source, "an inspect.json")
         # A list or object here used to reach the pack lookup and die unhashable.
         report_locale = report.get("locale")
         if not isinstance(report_locale, str | None):
