@@ -22,7 +22,7 @@ from typing import Any
 
 import numpy as np
 
-from vakforge.inspect.sources import _WHATSAPP_LINE, Source, column_key
+from vakforge.inspect.sources import _WHATSAPP_LINE, Source, column_key, conversation_pair
 from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
@@ -234,12 +234,41 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     return facts
 
 
+def _csv_exchanges(
+    src: Source, speakers: Counter[str], messages: list[str]
+) -> tuple[int, list[str]]:
+    """One exchange per row, user column then reply: every message counted, text sampled.
+
+    Counting streams the whole file, so a million-row export is counted in full; the text
+    kept for languages and personal data stops at MAX_CHARS, as it does for any file.
+    """
+    total = chars = 0
+    with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+        reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
+        pair = list(conversation_pair(reader.fieldnames or []) or [])
+        for row in reader:
+            for col in pair:
+                body = row.get(col) or ""
+                if not body.strip():
+                    continue
+                total += 1
+                speakers[col] += 1
+                if chars < MAX_CHARS:
+                    messages.append(body)
+                    chars += len(body)
+    return total, pair
+
+
 def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     speakers: Counter[str] = Counter()
     messages: list[str] = []
     truncated = False
     parse_errors: list[str] = []
-    if src.format == "whatsapp":
+    counted: int | None = None  # set when every message is counted but not every one read
+    pair: list[str] = []
+    if src.format in {"csv", "tsv"}:
+        counted, pair = _csv_exchanges(src, speakers, messages)
+    elif src.format == "whatsapp":
         text, truncated = _read_text(src.path)
         for line in text.splitlines():
             if m := _WHATSAPP_LINE.match(line):
@@ -261,6 +290,13 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
             for row in rows:
                 records += row if isinstance(row, list) else [row]
         for rec in records:
+            if isinstance(rec, dict) and "messages" not in rec and (cols := conversation_pair(rec)):
+                pair = list(cols)
+                for col in cols:
+                    if rec.get(col):
+                        speakers[col] += 1
+                        messages.append(str(rec[col]))
+                continue
             turns = rec.get("messages", [rec]) if isinstance(rec, dict) else []
             for turn in turns:
                 who = next(
@@ -272,7 +308,14 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
                 speakers[str(who)] += 1
                 messages.append(str(body))
     facts = _text_facts("\n\n".join(messages), pack)
-    facts.update(messages=len(messages), speakers=dict(speakers.most_common(10)))
+    facts.update(
+        messages=len(messages) if counted is None else counted,
+        speakers=dict(speakers.most_common(10)),
+    )
+    if pair:
+        facts["pair"] = pair  # the columns read as user and reply
+    if counted is not None and len(messages) < counted:
+        facts["messages_scanned"] = len(messages)  # languages and PII cover these only
     if truncated:
         facts["truncated"] = True  # message count covers the part we read
     if parse_errors:

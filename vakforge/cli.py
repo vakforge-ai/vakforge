@@ -211,15 +211,16 @@ def inspect(
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
     table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
-    # A large table is scanned from a sample, so its counts are not totals; say so.
+    # A large table or conversation export is scanned from a sample, so its counts are not
+    # totals; say so.
     sampled = any(
         t["rows_scanned"] < t["rows"]
         for f in report["files"]
         for t in f.get("facts", {}).get("tables", {}).values()
         if "rows_scanned" in t
-    )
+    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
     pii = ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
-    table.add_row("personal data", pii + (" (large tables sampled)" if sampled else ""))
+    table.add_row("personal data", pii + (" (large files sampled)" if sampled else ""))
     table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
     console.print(table)
     for f in report["files"]:

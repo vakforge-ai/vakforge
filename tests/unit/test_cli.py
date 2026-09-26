@@ -235,7 +235,7 @@ def test_inspect_says_when_table_counts_come_from_a_sample(tmp_path, monkeypatch
     )
     assert r.exit_code == 0, r.output
     assert "2 tables" in flat(r)
-    assert "(large tables sampled)" in flat(r)
+    assert "(large files sampled)" in flat(r)
 
 
 def test_inspect_without_locale_explains(tmp_path):

@@ -177,6 +177,42 @@ def test_oversized_jsonl_keeps_whole_lines_and_says_it_was_cut(tmp_path, monkeyp
     assert 0 < facts["tables"]["rows"]["rows"] < 50
 
 
+def test_a_csv_of_exchanges_is_read_as_messages(tmp_path):
+    p = tmp_path / "pairs.csv"
+    p.write_text(
+        "input,output\n"
+        "Mera order kab aayega?,Kal tak aa jayega.\n"
+        "Refund kab milega?,Paanch din mein aa jayega.\n"
+        "Theek hai thanks,\n",  # an empty reply is not a message
+        encoding="utf-8",
+    )
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 5
+    assert facts["speakers"] == {"input": 3, "output": 2}
+    assert facts["pair"] == ["input", "output"]
+    assert "hi-Latn" in facts["languages"]
+    assert "messages_scanned" not in facts  # all of it was read
+
+
+def test_every_exchange_is_counted_but_only_a_sample_is_read(tmp_path, monkeypatch):
+    # A million-row export is counted in full; its text is sampled like any large file.
+    monkeypatch.setattr(profile, "MAX_CHARS", 40)
+    p = tmp_path / "pairs.csv"
+    p.write_text("question,answer\n" + "Where is my order?,On its way.\n" * 20, encoding="utf-8")
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 40
+    assert 0 < facts["messages_scanned"] < 40
+
+
+def test_json_records_of_exchanges_are_read_as_messages(tmp_path):
+    p = tmp_path / "train.json"
+    rows = [{"instruction": "cancel my order", "response": "Done.", "intent": "cancel"}] * 3
+    p.write_text(json.dumps(rows), encoding="utf-8")
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 6
+    assert facts["pair"] == ["instruction", "response"]
+
+
 def test_whatsapp_chat(tmp_path):
     p = tmp_path / "export.txt"
     p.write_text(

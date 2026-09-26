@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from tests.conftest import write_wav
 from vakforge.inspect.sources import discover
 
@@ -56,3 +58,28 @@ def test_unreadable_sources_explain_what_to_do(tmp_path):
     notes = {s.path.name: s.note for s in discover(tmp_path) if not s.readable and s.note}
     assert notes["call2.m4a"] == "convert to WAV or FLAC first"
     assert notes["prices.xlsx"] == "export to CSV to profile"
+
+
+@pytest.mark.parametrize(
+    ("name", "body", "kind"),
+    [
+        # One exchange per row: conversations, not a lookup table. Read as a table, a
+        # million-row export of them was reported as "nothing yet".
+        ("pairs.csv", "input,output\nOrder kab aayega?,Kal tak.\n", "chat"),
+        ("faq.csv", "Question,Answer\nRefund?,5 days.\n", "chat"),
+        ("train.tsv", "instruction\tcategory\tresponse\nhi\tX\thello\n", "chat"),
+        ("orders.csv", "order_id,status\nA1,open\n", "table"),
+        ("labels.csv", "text,category\nwhere is my card,card_arrival\n", "table"),
+    ],
+)
+def test_a_csv_of_exchanges_is_a_chat(tmp_path, name, body, kind):
+    (tmp_path / name).write_text(body, encoding="utf-8")
+    [src] = discover(tmp_path)
+    assert src.kind == kind
+
+
+def test_json_records_of_exchanges_are_a_chat(tmp_path):
+    rows = [{"instruction": "cancel my order", "response": "Done.", "intent": "cancel"}]
+    (tmp_path / "train.json").write_text(json.dumps(rows), encoding="utf-8")
+    [src] = discover(tmp_path)
+    assert (src.kind, src.format) == ("chat", "json")

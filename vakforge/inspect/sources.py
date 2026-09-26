@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -40,6 +42,40 @@ def column_key(name: object) -> str:
     return re.sub(r"[^0-9a-z]+", "_", str(name).lower()).strip("_")
 
 
+# Column (or key) pairs that hold one exchange per row: what the user said, then the reply.
+# Support exports and training sets name them many ways; these are the common ones. A CSV
+# with such a pair is conversations, not a lookup table, and read as one it was ignored.
+CONVERSATION_PAIRS = (
+    ("input", "output"),
+    ("instruction", "response"),
+    ("question", "answer"),
+    ("query", "response"),
+    ("prompt", "response"),
+    ("prompt", "completion"),
+    ("customer", "agent"),
+    ("user", "assistant"),
+    ("user", "agent"),
+    ("user", "bot"),
+)
+
+
+def conversation_pair(names: Iterable[object]) -> tuple[str, str] | None:
+    """The (user, reply) columns among `names`, in the file's own spelling, or None."""
+    by_key = {column_key(n): str(n) for n in names}
+    for user, reply in CONVERSATION_PAIRS:
+        if user in by_key and reply in by_key:
+            return by_key[user], by_key[reply]
+    return None
+
+
+def _csv_header(path: Path, delimiter: str) -> list[str]:
+    try:
+        with path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+            return next(csv.reader(fh, delimiter=delimiter), [])
+    except (OSError, csv.Error):
+        return []
+
+
 @dataclass(frozen=True)
 class Source:
     """One file and what vakforge thinks it is."""
@@ -74,7 +110,7 @@ def _looks_like_chat_json(path: Path) -> bool:
     for rec in records[:5]:
         if not isinstance(rec, dict):
             continue
-        if isinstance(rec.get("messages"), list):
+        if isinstance(rec.get("messages"), list) or conversation_pair(rec):
             return True
         if ({"role", "speaker", "author", "from"} & rec.keys()) and (
             {"content", "text", "message", "body"} & rec.keys()
@@ -105,6 +141,9 @@ def classify(path: Path) -> Source:
             return Source(path, "chat", fmt)
         return Source(path, "table", fmt)
     if ext in TABLE_EXT:
+        delimiter = "\t" if ext == ".tsv" else ","
+        if ext != ".sql" and conversation_pair(_csv_header(path, delimiter)):
+            return Source(path, "chat", fmt)
         return Source(path, "table", fmt)
     if ext in BINARY_TABLE_EXT:
         return Source(path, "table", fmt, readable=False, note="export to CSV to profile")
