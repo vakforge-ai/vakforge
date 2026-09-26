@@ -67,6 +67,13 @@ PAGES = [
         "The workflow a coding agent follows for your project",
     ),
     Page(
+        "glossary",
+        "Glossary",
+        Path("docs/GLOSSARY.md"),
+        "Reference",
+        "What the terms in inspect and recommend output mean",
+    ),
+    Page(
         "data-format",
         "Data format",
         Path("docs/DATA_FORMAT.md"),

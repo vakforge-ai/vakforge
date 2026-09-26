@@ -192,6 +192,12 @@ def test_recommend_says_when_nothing_is_usable(tmp_path):
     assert "facts belong in retrieval" not in flat(r)
 
 
+def test_recommend_points_to_the_glossary(tmp_path):
+    (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
+    r = runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-o", str(tmp_path / "o.json")])
+    assert "docs/glossary.html" in flat(r)
+
+
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2

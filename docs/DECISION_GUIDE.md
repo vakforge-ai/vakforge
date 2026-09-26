@@ -61,7 +61,7 @@ vakforge recommend inspect.json -g workflow --gpu 24
 vakforge recommend inspect.json --duplex --gpu 80
 ```
 
-The command prints, and writes to `recommend.json`:
+The command prints, and writes to `recommend.json`, the following. Every term is defined in the [glossary](GLOSSARY.md).
 
 - **primary problem** and the full list of goals (inferred from the data, or set with `--goal`). When nothing in the folder is evidence for any goal, it says so, with an empty goal list and what was found, rather than guessing one
 - **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack

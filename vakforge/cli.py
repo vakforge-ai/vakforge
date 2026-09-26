@@ -35,6 +35,7 @@ app = typer.Typer(
 )
 console = Console()
 err_console = Console(stderr=True)
+GLOSSARY_URL = "https://vakforge.pages.dev/docs/glossary.html"
 
 PROJECT_GITIGNORE = """# written by `vakforge init`
 data/raw/
@@ -423,6 +424,8 @@ def recommend(
     console.print("[bold]next steps[/]")
     for i, step in enumerate(rec.next_steps, 1):
         console.print(f"  {i}. {step}")
+    # The output uses its own vocabulary (turns, floor, baseline first); say where it's defined.
+    console.print(f"[dim]what these terms mean: {GLOSSARY_URL}[/]")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps({"locale": pack.id, **rec.to_dict()}, indent=2, ensure_ascii=False) + "\n",
