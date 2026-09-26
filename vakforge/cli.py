@@ -10,7 +10,7 @@ from typing import Annotated, Any, TextIO
 import typer
 from rich.console import Console
 
-from vakforge import __version__
+from vakforge import GLOSSARY_URL, __version__
 
 
 def make_stream_safe(stream: TextIO) -> None:
@@ -35,7 +35,6 @@ app = typer.Typer(
 )
 console = Console()
 err_console = Console(stderr=True)
-GLOSSARY_URL = "https://vakforge.pages.dev/docs/glossary.html"
 
 PROJECT_GITIGNORE = """# written by `vakforge init`
 data/raw/
@@ -212,7 +211,7 @@ def inspect(
     """Report what is in a folder of documents, tables, chats and audio."""
     from rich.table import Table
 
-    from vakforge.inspect.report import write_report
+    from vakforge.inspect.report import is_sampled, write_report
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend.rules import fmt_kinds
 
@@ -246,16 +245,8 @@ def inspect(
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
     table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
-    # A large table or conversation export is scanned from a sample, so its counts are not
-    # totals; say so.
-    sampled = any(
-        t["rows_scanned"] < t["rows"]
-        for f in report["files"]
-        for t in f.get("facts", {}).get("tables", {}).values()
-        if "rows_scanned" in t
-    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
     pii = ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
-    table.add_row("personal data", pii + (" (large files sampled)" if sampled else ""))
+    table.add_row("personal data", pii + (" (large files sampled)" if is_sampled(report) else ""))
     table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
     console.print(table)
     for f in report["files"]:
@@ -305,7 +296,7 @@ def recommend(
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend import Constraints
     from vakforge.recommend import recommend as decide
-    from vakforge.recommend.rules import GOALS, GPU_GB, fmt_number
+    from vakforge.recommend.rules import GOALS, GPU_GB, VERDICT_LABELS, fmt_number
 
     bad = [g for g in goal or [] if g not in GOALS]
     if bad:
@@ -385,11 +376,8 @@ def recommend(
     table.add_row("goals", ", ".join(rec.goals) or "-")
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
-    verdicts = {
-        "blocked": "[bold red]no[/]",
-        "baseline_first": "[bold yellow]baseline first[/]",
-        "candidate": "[bold green]worth trying[/]",
-    }
+    colours = {"blocked": "red", "baseline_first": "yellow", "candidate": "green"}
+    verdicts = {k: f"[bold {colours[k]}]{label}[/]" for k, label in VERDICT_LABELS.items()}
     table.add_row("fine-tune?", f"{verdicts[rec.fine_tune]}  {rec.fine_tune_reason}")
     console.print(table)
 

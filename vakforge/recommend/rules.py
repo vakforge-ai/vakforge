@@ -33,6 +33,12 @@ GOALS: tuple[Goal, ...] = (
     "language",
 )
 GPU_GB = {"none": 0, "24": 24, "48": 48, "80": 80}
+# How each verdict reads to a person, in the terminal and in the HTML report alike.
+VERDICT_LABELS: dict[Eligibility, str] = {
+    "blocked": "no",
+    "baseline_first": "baseline first",
+    "candidate": "worth trying",
+}
 
 
 @dataclass(frozen=True)
