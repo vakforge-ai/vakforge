@@ -40,6 +40,20 @@ def test_csv_columns_rows_and_tool_candidates(tmp_path):
     assert t["tool_candidates"][0] == "lookup_orders_by_order_id"
 
 
+def test_id_columns_are_found_however_the_export_spells_them(tmp_path):
+    # A real CRM export: title case and spaces. Read literally this matched nothing, and an
+    # 8,469-ticket table offered no tools at all.
+    p = tmp_path / "Support Tickets.csv"
+    p.write_text("Ticket ID,Customer-ID,Order No,Status\n1,C1,A9,open\n", encoding="utf-8")
+    t = profile_table(classify(p), HI)["tables"]["Support Tickets"]
+    assert t["id_columns"] == ["Ticket ID", "Customer-ID", "Order No"]
+    assert t["tool_candidates"] == [
+        "lookup_support_tickets_by_ticket_id",
+        "lookup_support_tickets_by_customer_id",
+        "lookup_support_tickets_by_order_no",
+    ]
+
+
 def test_sql_schema_tables(tmp_path):
     p = tmp_path / "schema.sql"
     p.write_text(

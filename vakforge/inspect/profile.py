@@ -22,7 +22,7 @@ from typing import Any
 
 import numpy as np
 
-from vakforge.inspect.sources import _WHATSAPP_LINE, Source
+from vakforge.inspect.sources import _WHATSAPP_LINE, Source, column_key
 from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
@@ -214,8 +214,12 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         scan = _table_pii((_record_cells(r) for r in rows), pack)
         tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows), **scan}
     for name, t in tables.items():
-        t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(c)]
-        t["tool_candidates"] = [f"lookup_{name}_by_{c}" for c in t["id_columns"][:3]]
+        # Matched on the key, not the header: a real export says "Ticket ID", and read
+        # literally that matched nothing, so an 8,000-ticket table offered no tools.
+        t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(column_key(c))]
+        t["tool_candidates"] = [
+            f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
+        ]
         pii.update(t.pop("pii", {}))
     facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:

@@ -31,6 +31,15 @@ _WHATSAPP_LINE = re.compile(
 )
 
 
+def column_key(name: object) -> str:
+    """A column name as a comparable key: "Ticket ID" and "ticket-id" both read "ticket_id".
+
+    Exports from Excel and CRMs title-case and space their headers, so every rule that
+    recognises a column by its name has to look through that.
+    """
+    return re.sub(r"[^0-9a-z]+", "_", str(name).lower()).strip("_")
+
+
 @dataclass(frozen=True)
 class Source:
     """One file and what vakforge thinks it is."""
