@@ -35,6 +35,17 @@ def test_init_creates_project(tmp_path):
     assert ProjectConfig.load(target).locales == ["en-US", "en-IN"]
 
 
+def test_a_project_created_by_0_1_0_still_loads(tmp_path):
+    # 0.1.0's init wrote data_dir into every vakforge.yaml; 0.2.0 must not reject it.
+    (tmp_path / "vakforge.yaml").write_text(
+        "name: shop\nlocales:\n- hi-Latn-IN\ndata_dir: data\n", encoding="utf-8"
+    )
+    assert ProjectConfig.load(tmp_path).locales == ["hi-Latn-IN"]
+    (tmp_path / "data").mkdir()
+    r = runner.invoke(app, ["inspect", str(tmp_path / "data"), "-o", str(tmp_path / "i.json")])
+    assert r.exit_code == 0, r.output
+
+
 def test_init_rejects_unknown_locale(tmp_path):
     r = runner.invoke(app, ["init", str(tmp_path / "x"), "--locale", "xx-YY"])
     assert r.exit_code == 2
