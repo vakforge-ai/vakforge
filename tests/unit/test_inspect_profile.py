@@ -31,6 +31,26 @@ def test_document_words_languages_and_pii(tmp_path):
     assert facts["pii"] == {"phone": 1, "email": 1}
 
 
+def test_an_html_page_is_read_as_a_reader_sees_it(tmp_path):
+    # A saved company page counted its CSS and JavaScript as prose: 15,616 "words" for 854
+    # visible ones, and a CSS line height (1.4285714286) as a phone number.
+    p = tmp_path / "page.html"
+    p.write_text(
+        "<html><head><title>Acme</title><style>p{line-height:1.4285714286}</style>"
+        "<script>var config = {tracking: 'abc', retries: 3};</script></head><body>"
+        "<!-- hidden note: call 415-555-0134 -->"
+        "<h1>Returns &amp; refunds</h1><p>Refunds take five days.</p>"
+        "<p>Call us on 415-555-0199.</p><svg><text>logo text</text></svg></body></html>",
+        encoding="utf-8",
+    )
+    facts = profile_document(classify(p), get_pack("en-US"))
+    assert (
+        facts["words"] == 12
+    )  # Returns refunds / Refunds take five days / Call us on 415 555 0199
+    assert facts["pii"] == {"phone": 1}  # the visible one; not the comment, not the CSS
+    assert facts["languages"] == {"en-US": 3}  # three paragraphs, not one
+
+
 def test_csv_columns_rows_and_tool_candidates(tmp_path):
     p = tmp_path / "orders.csv"
     p.write_text("order_id,customer_id,status\nA1,C1,open\nA2,C2,closed\n", encoding="utf-8")

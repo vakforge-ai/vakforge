@@ -13,6 +13,7 @@ skill, which say what evidence they used.
 from __future__ import annotations
 
 import csv
+import html
 import json
 import re
 from collections import Counter
@@ -37,6 +38,27 @@ from vakforge.inspect.sources import (
 from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
+# What a browser does not show: scripts, styles, comments, the <head>. Stripping only the
+# tags counted their contents as prose, so a saved company page gave 15,616 "words" where
+# a reader sees 854, and CSS line heights (1.4285714286) read as phone numbers.
+_HIDDEN = re.compile(
+    r"<(script|style|noscript|template|svg|head)\b.*?</\1\s*>|<!--.*?-->", re.I | re.S
+)
+# Block elements end a paragraph; without the breaks a page was one paragraph long, and the
+# per-paragraph language count saw a single sample.
+_BLOCK = re.compile(
+    r"</?(?:p|div|li|h[1-6]|br|tr|td|th|section|article|header|footer|nav|main|aside|"
+    r"blockquote|pre|dt|dd|figcaption|table|ul|ol|form|label|button)\b[^>]*>",
+    re.I,
+)
+
+
+def _html_text(markup: str) -> str:
+    """The text of an HTML page as a reader sees it, paragraph by paragraph."""
+    text = _BLOCK.sub("\n\n", _HIDDEN.sub(" ", markup))
+    return html.unescape(_TAG.sub(" ", text))
+
+
 _WORD = re.compile(r"\w+", re.UNICODE)
 # A schema or database prefix ("public.orders", "`shop`.`orders`") is matched and thrown
 # away so the table keeps its own name. This stays a regex rather than a SQL parser: core
@@ -141,7 +163,7 @@ def profile_document(src: Source, pack: LocalePack) -> dict[str, Any]:
         return facts
     text, truncated = _read_text(src.path)
     if src.format in {"html", "htm"}:
-        text = _TAG.sub(" ", text)
+        text = _html_text(text)
     facts = _text_facts(text, pack)
     if truncated:
         # Word and PII counts describe the part we read, so say so rather than let a
