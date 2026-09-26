@@ -47,6 +47,16 @@ def test_bad_file_is_recorded_not_fatal(tmp_path):
     assert files["orders.csv"]["facts"]["tables"]["orders"]["rows"] == 1
 
 
+def test_a_limit_we_set_is_reported_in_plain_words(tmp_path, monkeypatch):
+    # "FileTooLarge: over ..." named an internal class to a user who could do nothing with it.
+    from vakforge.inspect import profile
+
+    monkeypatch.setattr(profile, "MAX_WHOLE_CHARS", 10)
+    (tmp_path / "big.json").write_text(json.dumps([{"id": i} for i in range(50)]), "utf-8")
+    [f] = inspect_dir(tmp_path, get_pack("en-US"))["files"]
+    assert f["error"].startswith("over 10 characters and must be parsed whole")
+
+
 def test_report_round_trips_as_utf8_json(tmp_path):
     (tmp_path / "hi.md").write_text("मेरा ऑर्डर कहाँ है", encoding="utf-8")
     report = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))

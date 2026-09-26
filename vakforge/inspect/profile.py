@@ -39,6 +39,10 @@ _CREATE_TABLE = re.compile(
 )
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
 MAX_CHARS = 2_000_000  # read at most this much text per file
+# A JSON document cannot be read in part, so it gets its own, larger limit. It used to be
+# MAX_CHARS, which turned away a 2 MB export; parsing 32 million characters takes a couple
+# of seconds and roughly 150 MB, and anything bigger is better as JSONL anyway.
+MAX_WHOLE_CHARS = 32_000_000
 # Table cells are scanned one at a time, with the column name as context, which costs about
 # 5 s per million characters. A few thousand rows are plenty to show which columns hold
 # personal data, and `rows_scanned` says how much of the table the counts cover.
@@ -46,7 +50,7 @@ TABLE_SCAN_CHARS = 200_000
 
 
 class FileTooLarge(ValueError):
-    """Raised for a file that only parses as a whole and is over `MAX_CHARS`.
+    """Raised for a file that only parses as a whole and is over `MAX_WHOLE_CHARS`.
 
     Truncating such a file and parsing the fragment produces a syntax error that blames the
     file's contents for a limit we imposed, so `inspect` says what really happened instead.
@@ -62,10 +66,11 @@ def _read_text(path: Path) -> tuple[str, bool]:
 
 def _whole_text(path: Path) -> str:
     """Text of a file that has to be parsed in one piece, or `FileTooLarge`."""
-    text, truncated = _read_text(path)
-    if truncated:
+    with path.open(encoding="utf-8-sig", errors="replace") as fh:
+        text = fh.read(MAX_WHOLE_CHARS + 1)
+    if len(text) > MAX_WHOLE_CHARS:
         raise FileTooLarge(
-            f"over {MAX_CHARS:,} characters and must be parsed whole; "
+            f"over {MAX_WHOLE_CHARS:,} characters and must be parsed whole; "
             "split it or convert it to JSONL"
         )
     return text

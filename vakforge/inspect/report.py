@@ -8,7 +8,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from vakforge.inspect.profile import PROFILERS
+from vakforge.inspect.profile import PROFILERS, FileTooLarge
 from vakforge.inspect.sources import discover
 from vakforge.locales.base import LocalePack
 
@@ -34,7 +34,11 @@ def inspect_dir(root: Path, pack: LocalePack) -> dict[str, Any]:
                 entry["facts"] = PROFILERS[src.kind](src, pack)
             except FILE_ERRORS as exc:
                 entry["readable"] = False
-                entry["error"] = f"{type(exc).__name__}: {exc}"
+                # Our own limits explain themselves; any other error keeps its type, which is
+                # the useful half of, say, "UnicodeDecodeError: ...".
+                entry["error"] = (
+                    str(exc) if isinstance(exc, FileTooLarge) else f"{type(exc).__name__}: {exc}"
+                )
         files.append(entry)
     return {
         "report_version": REPORT_VERSION,

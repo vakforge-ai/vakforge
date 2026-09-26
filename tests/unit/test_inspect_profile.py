@@ -152,8 +152,16 @@ def test_jsonl_chat(tmp_path):
     assert facts["speakers"] == {"user": 1, "assistant": 1}
 
 
-def test_oversized_json_is_skipped_with_its_real_reason(tmp_path, monkeypatch):
+def test_a_json_file_over_the_text_limit_is_still_read_whole(tmp_path, monkeypatch):
+    # A 2.1 MB export used to be turned away at the 2,000,000-character text limit.
     monkeypatch.setattr(profile, "MAX_CHARS", 200)
+    p = tmp_path / "catalog.json"
+    p.write_text(json.dumps([{"sku": f"X{i}"} for i in range(200)]), encoding="utf-8")
+    assert profile_table(classify(p), HI)["tables"]["catalog"]["rows"] == 200
+
+
+def test_oversized_json_is_skipped_with_its_real_reason(tmp_path, monkeypatch):
+    monkeypatch.setattr(profile, "MAX_WHOLE_CHARS", 200)
     p = tmp_path / "catalog.json"
     p.write_text(json.dumps([{"sku": f"X{i}"} for i in range(200)]), encoding="utf-8")
     with pytest.raises(profile.FileTooLarge, match="must be parsed whole"):
