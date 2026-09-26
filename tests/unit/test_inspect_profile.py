@@ -277,6 +277,27 @@ def test_bracketed_whatsapp_export_names_the_speaker(tmp_path):
     assert facts["speakers"] == {"Priya": 2, "Acme Support": 1}
 
 
+def test_sql_constraint_lines_are_not_columns(tmp_path):
+    # Shaped like the public Sakila schema, which listed PRIMARY, KEY and CONSTRAINT as
+    # columns of every table.
+    p = tmp_path / "schema.sql"
+    p.write_text(
+        "CREATE TABLE customer (\n"
+        "  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,\n"
+        "  email VARCHAR(50) DEFAULT NULL,\n"
+        "  PRIMARY KEY  (customer_id),\n"
+        "  KEY idx_email (email),\n"
+        "  UNIQUE KEY uq (email),\n"
+        "  CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES x (id)\n"
+        ");",
+        encoding="utf-8",
+    )
+    assert profile_table(classify(p), HI)["tables"]["customer"]["columns"] == [
+        "customer_id",
+        "email",
+    ]
+
+
 def test_schema_qualified_sql_table_keeps_its_own_name(tmp_path):
     p = tmp_path / "schema.sql"
     p.write_text(

@@ -44,6 +44,9 @@ _CREATE_TABLE = re.compile(
     r"[`\"\[]?(\w+)",
     re.I,
 )
+_SQL_CONSTRAINT_WORDS = {
+    "PRIMARY", "KEY", "UNIQUE", "CONSTRAINT", "FOREIGN", "INDEX", "FULLTEXT", "SPATIAL", "CHECK",
+}  # fmt: skip
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
 MAX_CHARS = 2_000_000  # read at most this much text per file
 # A JSON document cannot be read in part, so it gets its own, larger limit. It used to be
@@ -239,6 +242,9 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         for match in _CREATE_TABLE.finditer(sql):
             body = sql[match.end() : sql.find(";", match.end())]
             cols = re.findall(r"^\s*[`\"\[]?(\w+)[`\"\]]?\s+\w+", body, re.M)
+            # "PRIMARY KEY (...)" and "KEY idx_x (...)" have the shape of a column line; the
+            # Sakila schema listed PRIMARY, KEY and CONSTRAINT as columns of every table.
+            cols = [c for c in cols if c.upper() not in _SQL_CONSTRAINT_WORDS]
             tables[match.group(1)] = {"columns": cols, "rows": None}
         # A dump's INSERT statements carry the data; it is scanned as text, like a document.
         pii.update(span.type for span in pack.find_pii(sql))
