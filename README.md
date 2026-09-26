@@ -64,7 +64,7 @@ vakforge is about that last word: owning your voice AI instead of renting it.
 3. **`recommend`** decides what needs changing. Often the answer is retrieval and tools, with no training at all.
 4. **`prepare`, `train`, `eval`, `serve`** are built for your project by a coding agent using the vakforge skill. It trains only what `recommend` asked for, and ships only if `eval` shows the result beats the base model.
 
-Today the CLI covers `init`, `inspect`, `recommend`, `validate` and the locale packs.
+Today the CLI covers `init`, `inspect`, `recommend`, `report`, `validate` and the locale packs.
 
 ## How the decision is made
 
