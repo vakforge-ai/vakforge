@@ -53,6 +53,22 @@ def test_discover_classifies_every_kind(tmp_path):
     }
 
 
+def test_a_saved_pages_asset_folder_is_not_data(tmp_path):
+    # "Save as Webpage, Complete" writes page.html plus page_files/ with its scripts,
+    # styles and images, which were each listed as a skipped source.
+    (tmp_path / "Help Centre.html").write_text("<p>Refunds take 5 days.</p>", "utf-8")
+    assets = tmp_path / "Help Centre_files"
+    assets.mkdir()
+    (assets / "app.js.download").write_text("var x = 1;", "utf-8")
+    (assets / "logo.webp").write_bytes(b"RIFF")
+    (assets / "saved_resource.html").write_text("<p></p>", "utf-8")
+    # A folder that merely ends in _files, with no page beside it, is still read.
+    (tmp_path / "exports_files").mkdir()
+    (tmp_path / "exports_files" / "orders.csv").write_text("order_id\nA1\n", "utf-8")
+    got = {s.path.relative_to(tmp_path).as_posix() for s in discover(tmp_path)}
+    assert got == {"Help Centre.html", "exports_files/orders.csv"}
+
+
 def test_unreadable_sources_explain_what_to_do(tmp_path):
     _make_tree(tmp_path)
     notes = {s.path.name: s.note for s in discover(tmp_path) if not s.readable and s.note}

@@ -248,12 +248,25 @@ def classify(path: Path) -> Source:
 
 
 def discover(root: Path) -> list[Source]:
-    """Every file under `root`, classified, in a stable order. Hidden files are skipped."""
+    """Every file under `root`, classified, in a stable order.
+
+    Hidden files are skipped, and so is the `<page>_files` folder a browser writes beside a
+    page saved as "Webpage, Complete": it holds that page's scripts, styles and images, and
+    listing each one as a skipped source buried the report (42 lines for two pages).
+    """
+    saved_page_assets = {
+        folder
+        for folder in root.rglob("*_files")
+        if folder.is_dir()
+        and any((folder.parent / f"{folder.name[:-6]}{ext}").is_file() for ext in (".html", ".htm"))
+    }
     sources = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.name.startswith("."):
             continue
         if any(part in SKIP_DIRS for part in path.relative_to(root).parts):
+            continue
+        if any(parent in saved_page_assets for parent in path.parents):
             continue
         sources.append(classify(path))
     return sources
