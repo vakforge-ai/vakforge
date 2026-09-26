@@ -34,7 +34,7 @@ SSN_COMPACT = PIIPattern(
 # order or account number matches this shape too, so the introducing word decides.
 PHONE_US = PIIPattern(
     "phone",
-    re.compile(r"(?<![\d+])(?:\+?1[\s.-]?)?\(?[2-9]\d{2}\)?[\s.-]?[2-9]\d{2}[\s.-]?\d{4}\b"),
+    re.compile(r"(?<![\w+])(?:\+?1[\s.-]?)?\(?[2-9]\d{2}\)?[\s.-]?[2-9]\d{2}[\s.-]?\d{4}\b"),
     context_deny=reference_cue(*REFERENCE_WORDS),
 )
 

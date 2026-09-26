@@ -66,6 +66,18 @@ def test_a_number_introduced_as_a_reference_is_not_a_card(text):
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        # MySQL writes map points as hex blobs; the Sakila dump gave thirteen "cards".
+        "'280578750435',/*!50705 0x0000000001010000006B8F2",
+        "ref ORD4111111111111111X",
+    ],
+)
+def test_digits_inside_a_longer_token_are_not_a_card(text):
+    assert [t for t, _ in types(text)] == []
+
+
+@pytest.mark.parametrize(
     "text", ["card number 4111111111111111", "account 4111111111111111", "a/c 4111111111111111"]
 )
 def test_card_and_account_still_introduce_cards(text):

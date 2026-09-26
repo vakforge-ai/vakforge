@@ -26,11 +26,13 @@ EMAIL = PIIPattern(
 # One number in ten passes the Luhn check, so a long order or purchase number regularly
 # reads as a card; a public support dataset had seven in its first 5,000 messages. The same
 # reference words that stop an order number reading as a phone apply here, except the
-# ones that introduce exactly the numbers this pattern is for.
+# ones that introduce exactly the numbers this pattern is for. Like every digit pattern in
+# the packs, it only matches a number standing on its own: digits inside a longer token (a
+# SQL dump's hex blob gave thirteen "cards", `ORD4111...` an order id) belong to that token.
 _CARD_WORDS = {"card", "account", "acc", "a/c"}
 CARD = PIIPattern(
     "card_number",
-    re.compile(r"(?<![\d-])(?:\d[ -]?){12,18}\d(?![\d-])"),
+    re.compile(r"(?<![\w-])(?:\d[ -]?){12,18}\d(?![\w-])"),
     validate=luhn_valid,
     context_deny=reference_cue(*(w for w in REFERENCE_WORDS if w not in _CARD_WORDS)),
 )

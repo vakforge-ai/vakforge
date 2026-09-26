@@ -85,6 +85,9 @@ def test_no_false_positives(text):
         "my order id is 9876543210",
         "tracking number 9876543210",
         "booking ref: 9876543210",
+        # Digits inside a longer token belong to that token.
+        "ORD9876543210",
+        "0x00F79876543210AB",
     ],
 )
 def test_reference_numbers_are_not_phones(text):
