@@ -1,3 +1,5 @@
+import pytest
+
 from vakforge.locales import get_pack
 from vakforge.recommend import Constraints, recommend
 
@@ -150,11 +152,12 @@ def test_no_conversations_means_nothing_to_train_on():
     assert "synth" in d(r).reason
 
 
-def test_hinglish_marks_lfm25_understand_only():
+@pytest.mark.parametrize("gpu", ["24", "none"])
+def test_hinglish_marks_lfm25_understand_only(gpu):
     r = recommend(
         summary(counts={"chat": 1}, chat_messages=800, languages={"hi-Latn": 20, "en-IN": 10}),
         HI,
-        Constraints(gpu="24"),
+        Constraints(gpu=gpu),
     )
     assert d(r).recipe == "lfm25-audio"
     assert d(r).recipe_support == "understand_only"

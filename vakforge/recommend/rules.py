@@ -352,19 +352,18 @@ def _pick_recipe(
                 "adapting it needs recordings with the user and the agent on separate "
                 "channels; inspect can see two channels but cannot verify who is on each"
             )
+        note = {
+            "understand_only": " (understand_only: input understood, speech output stays English)",
+            "cascade": " (cascade: runs through the locale pack's speech-to-text and TTS)",
+        }.get(level, "")
         if gpu < spec["gpu"]:
             return (
                 name,
                 level,
-                f"{name} fits, but training needs a {spec['gpu']} GB GPU "
+                f"{name} fits{note}, but training needs a {spec['gpu']} GB GPU "
                 f"(you have {c.gpu}); use Colab or rent one",
                 blockers,
             )
-        note = (
-            ""
-            if level == "native"
-            else f" ({level}: input understood, speech output stays English)"
-        )
         return name, level, f"{name}: {primary} on a {spec['gpu']} GB GPU{note}", blockers
     return None, None, "no recipe fits: " + "; ".join(reasons), []
 
