@@ -221,6 +221,30 @@ def test_every_exchange_is_counted_but_only_a_sample_is_read(tmp_path, monkeypat
     assert 0 < facts["messages_scanned"] < 40
 
 
+def test_a_csv_with_one_message_per_row_is_read_as_messages(tmp_path):
+    # The layout of a public support-conversations export (976,271 rows), which was read
+    # as a table and offered "lookup by conv_id" as its only use.
+    p = tmp_path / "conversations.csv"
+    p.write_text(
+        "conv_id,turn_index,Role,Text,customer_name\n"
+        "c1,0,customer,Mera order kab aayega?,Asha\n"
+        "c1,1,agent,Kal tak aa jayega.,Asha\n"
+        "c1,2,customer,,Asha\n"  # an empty message is not one
+        "c2,0,customer,Refund kab milega?,Ravi\n",
+        encoding="utf-8",
+    )
+    src = classify(p)
+    assert src.kind == "chat"
+    facts = profile_chat(src, HI)
+    assert facts["messages"] == 3
+    assert facts["speakers"] == {"customer": 2, "agent": 1}
+    assert facts["message_columns"] == ["Role", "Text"]
+    assert "hi-Latn" in facts["languages"]
+    # The name column beside the messages is still personal data.
+    assert facts["pii_columns"] == {"customer_name": {"person_name": 4}}
+    assert facts["pii"]["person_name"] == 4
+
+
 def test_json_records_of_exchanges_are_read_as_messages(tmp_path):
     p = tmp_path / "train.json"
     rows = [{"instruction": "cancel my order", "response": "Done.", "intent": "cancel"}] * 3

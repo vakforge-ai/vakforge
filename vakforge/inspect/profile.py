@@ -25,10 +25,13 @@ import numpy as np
 from vakforge.inspect.sources import (
     _WHATSAPP_LINE,
     _WHATSAPP_STAMP,
+    SPEAKER_KEYS,
+    TEXT_KEYS,
     Source,
     column_key,
     conversation_pair,
     json_records,
+    message_columns,
 )
 from vakforge.locales.base import LocalePack
 
@@ -273,29 +276,59 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     return facts
 
 
-def _csv_exchanges(
-    src: Source, speakers: Counter[str], messages: list[str]
-) -> tuple[int, list[str]]:
-    """One exchange per row, user column then reply: every message counted, text sampled.
+def _csv_messages(
+    src: Source, pack: LocalePack, speakers: Counter[str], messages: list[str]
+) -> tuple[int, dict[str, Any]]:
+    """Messages from a CSV in either chat layout: every one counted, their text sampled.
 
-    Counting streams the whole file, so a million-row export is counted in full; the text
-    kept for languages and personal data stops at MAX_CHARS, as it does for any file.
+    One exchange per row (a user column and a reply column), or one message per row (a
+    speaker column and a text column). Counting streams the whole file, so a million-row
+    export is counted in full; the text kept for languages and personal data stops at
+    MAX_CHARS, as it does for any file.
+
+    The other columns of the sampled rows are scanned as table cells are: a conversation
+    export often carries `customer_name` beside the messages, and reading only the message
+    text lost it. Returns the count and the facts about which columns were read.
     """
     total = chars = 0
+    others: list[list[tuple[str, str]]] = []
+
+    def keep(who: str, body: str) -> None:
+        nonlocal total, chars
+        if not body.strip():
+            return
+        total += 1
+        speakers[who] += 1
+        if chars < MAX_CHARS:
+            messages.append(body)
+            chars += len(body)
+
+    def rest(row: dict[str, Any], used: tuple[str, ...]) -> None:
+        if chars < MAX_CHARS:
+            others.append(
+                [(c, v) for c, v in row.items() if c and c not in used and isinstance(v, str) and v]
+            )
+
     with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
         reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
-        pair = list(conversation_pair(reader.fieldnames or []) or [])
-        for row in reader:
-            for col in pair:
-                body = row.get(col) or ""
-                if not body.strip():
-                    continue
-                total += 1
-                speakers[col] += 1
-                if chars < MAX_CHARS:
-                    messages.append(body)
-                    chars += len(body)
-    return total, pair
+        fields = reader.fieldnames or []
+        if pair := conversation_pair(fields):
+            read_as: dict[str, Any] = {"pair": list(pair)}
+            for row in reader:
+                rest(row, pair)
+                for col in pair:
+                    keep(col, row.get(col) or "")
+        else:
+            speaker, text = message_columns(fields) or ("", "")
+            read_as = {"message_columns": [speaker, text]}
+            for row in reader:
+                rest(row, (speaker, text))
+                keep((row.get(speaker) or "?").strip() or "?", row.get(text) or "")
+    scan = _table_pii(others, pack)
+    if scan["pii_columns"]:
+        read_as["pii_columns"] = scan["pii_columns"]
+        read_as["column_pii"] = scan["pii"]  # merged into the file's pii by the caller
+    return total, read_as
 
 
 def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
@@ -304,9 +337,9 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     truncated = False
     parse_errors: list[str] = []
     counted: int | None = None  # set when every message is counted but not every one read
-    pair: list[str] = []
+    read_as: dict[str, Any] = {}  # which columns held the conversation
     if src.format in {"csv", "tsv"}:
-        counted, pair = _csv_exchanges(src, speakers, messages)
+        counted, read_as = _csv_messages(src, pack, speakers, messages)
     elif src.format == "whatsapp":
         text, truncated = _read_text(src.path)
         for line in text.splitlines():
@@ -331,7 +364,7 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
                 records += row if isinstance(row, list) else [row]
         for rec in records:
             if isinstance(rec, dict) and "messages" not in rec and (cols := conversation_pair(rec)):
-                pair = list(cols)
+                read_as = {"pair": list(cols)}
                 for col in cols:
                     if rec.get(col):
                         speakers[col] += 1
@@ -339,12 +372,8 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
                 continue
             turns = rec.get("messages", [rec]) if isinstance(rec, dict) else []
             for turn in turns:
-                who = next(
-                    (turn[k] for k in ("role", "speaker", "author", "from") if k in turn), "?"
-                )
-                body = next(
-                    (turn[k] for k in ("content", "text", "message", "body") if k in turn), ""
-                )
+                who = next((turn[k] for k in SPEAKER_KEYS if k in turn), "?")
+                body = next((turn[k] for k in TEXT_KEYS if k in turn), "")
                 speakers[str(who)] += 1
                 messages.append(str(body))
     facts = _text_facts("\n\n".join(messages), pack)
@@ -352,8 +381,9 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
         messages=len(messages) if counted is None else counted,
         speakers=dict(speakers.most_common(10)),
     )
-    if pair:
-        facts["pair"] = pair  # the columns read as user and reply
+    if column_pii := read_as.pop("column_pii", None):
+        facts["pii"] = dict((Counter(facts["pii"]) + Counter(column_pii)).most_common())
+    facts.update(read_as)  # "pair" or "message_columns": which columns were read
     if counted is not None and len(messages) < counted:
         facts["messages_scanned"] = len(messages)  # languages and PII cover these only
     if truncated:

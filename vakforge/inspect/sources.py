@@ -68,6 +68,20 @@ def conversation_pair(names: Iterable[object]) -> tuple[str, str] | None:
     return None
 
 
+# Who spoke and what they said, one message per row: the other common layout for chat
+# exports (`conv_id, turn_index, role, text, ...`), and the fields a JSON chat record uses.
+SPEAKER_KEYS = ("role", "speaker", "author", "from", "sender")
+TEXT_KEYS = ("text", "content", "message", "body", "utterance")
+
+
+def message_columns(names: Iterable[object]) -> tuple[str, str] | None:
+    """The (speaker, text) columns among `names`, in the file's own spelling, or None."""
+    by_key = {column_key(n): str(n) for n in names}
+    speaker = next((by_key[k] for k in SPEAKER_KEYS if k in by_key), None)
+    text = next((by_key[k] for k in TEXT_KEYS if k in by_key), None)
+    return (speaker, text) if speaker and text else None
+
+
 def _csv_header(path: Path, delimiter: str) -> list[str]:
     try:
         with path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
@@ -161,11 +175,7 @@ def _looks_like_chat_json(head: str, lines: bool) -> bool:
     for rec in records[:5]:
         if not isinstance(rec, dict):
             continue
-        if isinstance(rec.get("messages"), list) or conversation_pair(rec):
-            return True
-        if ({"role", "speaker", "author", "from"} & rec.keys()) and (
-            {"content", "text", "message", "body"} & rec.keys()
-        ):
+        if isinstance(rec.get("messages"), list) or conversation_pair(rec) or message_columns(rec):
             return True
     return False
 
@@ -201,8 +211,8 @@ def classify(path: Path) -> Source:
             return Source(path, "chat", fmt)
         return Source(path, "table", fmt)
     if ext in TABLE_EXT:
-        delimiter = "\t" if ext == ".tsv" else ","
-        if ext != ".sql" and conversation_pair(_csv_header(path, delimiter)):
+        header = _csv_header(path, "\t" if ext == ".tsv" else ",") if ext != ".sql" else []
+        if conversation_pair(header) or message_columns(header):
             return Source(path, "chat", fmt)
         return Source(path, "table", fmt)
     if ext in BINARY_TABLE_EXT:
