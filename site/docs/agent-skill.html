@@ -128,11 +128,13 @@ whether callers must be able to interrupt. Read <code>recommend.json</code>. Don
 approved a plan that states: the routes per source, whether a fine-tune is on the table at
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.</p>
+<p>When the plan has to go to someone who will not read JSON, <code>vakforge report inspect.json recommend.json -o report.html</code> writes both reports as one page that opens offline and
+prints to PDF.</p>
 <p><code>recommend.json</code> answers <strong>every goal separately</strong> in <code>goal_decisions[]</code>. Each entry carries
 its own <code>eligibility</code>, <code>have</code>/<code>floor</code>/<code>need</code>/<code>unit</code>, <code>evidence</code>, <code>confidence</code>, <code>recipe</code>,
-<code>recipe_method</code> and <code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions with different data
-behind them. Walk the list and give the user a line per goal. The top-level <code>fine_tune</code> is
-only the roll-up — the best state any goal reached — and is not the answer for any
+<code>recipe_method</code> and <code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions
+with different data behind them. Walk the list and give the user a line per goal. The
+top-level <code>fine_tune</code> is only the roll-up — the best state any goal reached — and is not the answer for any
 particular goal.</p>
 <p>Each <code>eligibility</code> means a different plan:</p>
 <ul>

@@ -432,6 +432,56 @@ def recommend(
 
 
 @app.command()
+def report(
+    inspect_json: Annotated[
+        Path, typer.Argument(exists=True, dir_okay=False, help="inspect.json from `inspect`.")
+    ] = Path("inspect.json"),
+    recommend_json: Annotated[
+        Path | None,
+        typer.Argument(exists=True, dir_okay=False, help="recommend.json, to add the decision."),
+    ] = None,
+    out: Annotated[Path, typer.Option("--out", "-o", help="Where to write the page.")] = Path(
+        "report.html"
+    ),
+) -> None:
+    """Write one HTML page from inspect.json (and recommend.json) to share or save as PDF."""
+    from vakforge.html_report import render
+
+    data = _read_json_object(inspect_json, "an inspect.json")
+    if not isinstance(data.get("summary"), dict) or not isinstance(data.get("files"), list):
+        err_console.print(
+            f"[red]{inspect_json} has no summary and files[/]; is it an inspect.json?"
+        )
+        raise typer.Exit(2)
+    rec = None
+    if recommend_json:
+        rec = _read_json_object(recommend_json, "a recommend.json")
+        if "goal_decisions" not in rec:
+            err_console.print(
+                f"[red]{recommend_json} has no goal_decisions[/]; is it a recommend.json?"
+            )
+            raise typer.Exit(2)
+        if rec.get("locale") != data.get("locale"):
+            err_console.print(
+                f"[yellow]warning:[/] {recommend_json} is for locale {rec.get('locale')}, "
+                f"{inspect_json} for {data.get('locale')}; are they from the same folder?"
+            )
+    try:
+        page = render(data, rec)
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        # Only a hand-edited or foreign file gets here: inspect and recommend write the
+        # shape the page reads.
+        err_console.print(
+            f"[red]cannot build the page[/]: {type(exc).__name__}: {exc}; were both files "
+            "written by vakforge?"
+        )
+        raise typer.Exit(2) from None
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(page, encoding="utf-8")
+    console.print(f"[green]wrote[/] {out}  (open it in a browser; print it to save a PDF)")
+
+
+@app.command()
 def locales(
     pack_id: Annotated[
         str | None, typer.Argument(help="Show one pack in detail, e.g. hi-Latn-IN.")

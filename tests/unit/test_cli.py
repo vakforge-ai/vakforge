@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -211,6 +212,63 @@ def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "--gpu", "12"]).exit_code == 2
+
+
+EXPECTED = Path(__file__).parents[2] / "examples" / "hinglish-shop" / "expected"
+
+
+def test_report_writes_one_page_from_both_reports(tmp_path):
+    out = tmp_path / "report.html"
+    args = ["report", str(EXPECTED / "inspect.json"), str(EXPECTED / "recommend.json")]
+    r = runner.invoke(app, [*args, "-o", str(out)])
+    assert r.exit_code == 0, r.output
+    page = out.read_text(encoding="utf-8")
+    assert "<h2>Recommendation</h2>" in page
+    assert "<h2>Files</h2>" in page
+
+
+def test_report_works_from_inspect_alone(tmp_path):
+    out = tmp_path / "report.html"
+    r = runner.invoke(app, ["report", str(EXPECTED / "inspect.json"), "-o", str(out)])
+    assert r.exit_code == 0, r.output
+    assert "<h2>Recommendation</h2>" not in out.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("inspect_body", "recommend_body", "needle"),
+    [
+        ("[]", None, "holds JSON array, not an object"),
+        ('{"locale": "en-US"}', None, "no summary and files"),
+        (None, '{"locale": "hi-Latn-IN"}', "no goal_decisions"),
+        # A hand-edited summary: the page names the missing field instead of a traceback.
+        ('{"locale": "en-US", "summary": {}, "files": []}', None, "cannot build the page"),
+    ],
+)
+def test_report_rejects_a_malformed_file_without_a_traceback(
+    tmp_path, inspect_body, recommend_body, needle
+):
+    inspect = EXPECTED / "inspect.json"
+    if inspect_body is not None:
+        inspect = tmp_path / "i.json"
+        inspect.write_text(inspect_body, encoding="utf-8")
+    args = ["report", str(inspect)]
+    if recommend_body is not None:
+        (tmp_path / "r.json").write_text(recommend_body, encoding="utf-8")
+        args.append(str(tmp_path / "r.json"))
+    r = runner.invoke(app, [*args, "-o", str(tmp_path / "o.html")])
+    assert r.exit_code == 2, r.output
+    assert needle in flat(r)
+    assert not (tmp_path / "o.html").exists()
+
+
+def test_report_warns_when_the_two_files_disagree_on_locale(tmp_path):
+    rec = json.loads((EXPECTED / "recommend.json").read_text(encoding="utf-8"))
+    rec["locale"] = "en-US"
+    (tmp_path / "r.json").write_text(json.dumps(rec), encoding="utf-8")
+    args = ["report", str(EXPECTED / "inspect.json"), str(tmp_path / "r.json")]
+    r = runner.invoke(app, [*args, "-o", str(tmp_path / "o.html")])
+    assert r.exit_code == 0, r.output
+    assert "same folder" in flat(r)
 
 
 def test_locales_lists_launch_packs():

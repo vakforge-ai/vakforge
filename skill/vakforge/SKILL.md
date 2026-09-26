@@ -78,11 +78,15 @@ approved a plan that states: the routes per source, whether a fine-tune is on th
 all, the recipe and its locale support level, the data gap, the consent checklist, and the
 hardware and cost.
 
+When the plan has to go to someone who will not read JSON, `vakforge report inspect.json
+recommend.json -o report.html` writes both reports as one page that opens offline and
+prints to PDF.
+
 `recommend.json` answers **every goal separately** in `goal_decisions[]`. Each entry carries
 its own `eligibility`, `have`/`floor`/`need`/`unit`, `evidence`, `confidence`, `recipe`,
-`recipe_method` and `blockers`, because "tools" and "recognition" are different questions with different data
-behind them. Walk the list and give the user a line per goal. The top-level `fine_tune` is
-only the roll-up — the best state any goal reached — and is not the answer for any
+`recipe_method` and `blockers`, because "tools" and "recognition" are different questions
+with different data behind them. Walk the list and give the user a line per goal. The
+top-level `fine_tune` is only the roll-up — the best state any goal reached — and is not the answer for any
 particular goal.
 
 Each `eligibility` means a different plan:
