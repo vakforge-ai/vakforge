@@ -163,7 +163,7 @@ _NAME_HEADERS = {
     "full_name", "first_name", "last_name", "middle_name", "given_name", "family_name",
     "surname", "customer_name", "client_name", "contact_name", "caller_name", "patient_name",
     "member_name", "holder_name", "account_holder_name", "cardholder_name", "sender_name",
-    "recipient_name",
+    "recipient_name", "agent_name", "employee_name", "staff_name", "rep_name",
 }  # fmt: skip
 _ADDRESS_HEADER = re.compile(
     r"^(?:(?:home|billing|shipping|postal|mailing|street|residential|delivery|customer)_)?"
