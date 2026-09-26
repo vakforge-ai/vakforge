@@ -97,6 +97,23 @@ def test_table_cells_are_scanned_for_personal_data_by_column(tmp_path):
     assert facts["pii"] == {"phone": 2, "email": 2}
 
 
+def test_names_addresses_and_birth_dates_are_found_by_their_column(tmp_path):
+    # No pattern can see a name; a support-ticket export's "Customer Name" went unflagged.
+    p = tmp_path / "crm.csv"
+    p.write_text(
+        "Customer Name,Billing Address,DOB,Product Name,Name,Username\n"
+        "Asha Verma,12 MG Road,1990-01-02,Inverter X,Inverter X,asha90\n"
+        "Ravi Rao,,1985-05-06,Battery Y,Battery Y,ravi85\n",
+        encoding="utf-8",
+    )
+    t = profile_table(classify(p), HI)["tables"]["crm"]
+    assert t["pii_columns"] == {
+        "Customer Name": {"person_name": 2},
+        "Billing Address": {"address": 1},  # an empty cell holds nobody's address
+        "DOB": {"date_of_birth": 2},
+    }
+
+
 def test_a_column_name_supplies_the_cue_a_bare_number_needs(tmp_path):
     p = tmp_path / "people.csv"
     p.write_text("ssn,zip_plus_four\n536221234,536221234\n", encoding="utf-8")

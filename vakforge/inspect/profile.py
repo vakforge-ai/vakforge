@@ -142,6 +142,33 @@ def _record_cells(record: dict[str, Any], prefix: str = "") -> Iterator[tuple[st
                 yield name, str(item)
 
 
+# Personal data no pattern can see: a name or an address has no fixed shape, but a CRM
+# column says what it holds. Deliberately narrow: a bare `name` is as often a product's (the
+# example shop's catalogue has one) as a person's, and `username` is a handle, so neither
+# counts; a false alarm on every catalogue would teach people to ignore the column.
+_NAME_HEADERS = {
+    "full_name", "first_name", "last_name", "middle_name", "given_name", "family_name",
+    "surname", "customer_name", "client_name", "contact_name", "caller_name", "patient_name",
+    "member_name", "holder_name", "account_holder_name", "cardholder_name", "sender_name",
+    "recipient_name",
+}  # fmt: skip
+_ADDRESS_HEADER = re.compile(
+    r"^(?:(?:home|billing|shipping|postal|mailing|street|residential|delivery|customer)_)?"
+    r"address(?:_line)?_?\d?$"
+)
+_DOB_HEADERS = {"dob", "date_of_birth", "birth_date", "birthdate", "birthday"}
+
+
+def _header_pii(column: str) -> str | None:
+    """The kind of personal data a column holds by its name alone, if the name says."""
+    key = column_key(column)
+    if key in _NAME_HEADERS:
+        return "person_name"
+    if _ADDRESS_HEADER.match(key):
+        return "address"
+    return "date_of_birth" if key in _DOB_HEADERS else None
+
+
 def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> dict[str, Any]:
     """Personal data in a table's cells, by column, from the rows that fit TABLE_SCAN_CHARS.
 
@@ -153,6 +180,7 @@ def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> d
     """
     by_column: dict[str, Counter[str]] = {}
     cues: dict[str, str] = {}
+    by_header: dict[str, str | None] = {}
     scanned = chars = 0
     for cells in rows:
         if chars > TABLE_SCAN_CHARS:
@@ -162,6 +190,9 @@ def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> d
             chars += len(value)
             if column not in cues:
                 cues[column] = re.sub(r"[\W_]+", " ", column).strip() + ": "
+                by_header[column] = _header_pii(column)
+            if by_header[column] and value.strip():
+                by_column.setdefault(column, Counter())[by_header[column]] += 1
             cue = cues[column]
             for span in pack.find_pii(cue + value):
                 if span.start >= len(cue):  # a match inside the column name is not data
