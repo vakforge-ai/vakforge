@@ -245,6 +245,17 @@ def test_a_folder_with_nothing_usable_says_so_instead_of_guessing_knowledge():
     assert r.next_steps[0].startswith("nothing here is evidence yet")
 
 
+def test_short_of_recognition_data_the_advice_is_biasing_and_real_audio_not_synth():
+    # Half an hour of recordings was told to "generate coverage with synth": the evidence
+    # for accents says contextual biasing first, then real recordings of the callers.
+    r = recommend(summary(counts={"audio": 3}, audio_hours=0.53), US)
+    rec = r.decision("recognition")
+    assert rec.eligibility == "blocked"
+    assert "contextual biasing" in rec.reason and "synth" not in rec.reason
+    step = next(s for s in r.next_steps if s.startswith("recognition: "))
+    assert "real recordings" in step and "synth" not in step
+
+
 def test_large_counts_are_written_out_not_in_scientific_notation():
     # A million-row export was reported as "2.00265e+06 conversation turns".
     r = recommend(summary(counts={"chat": 1}, chat_messages=2002646), HI)

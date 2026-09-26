@@ -443,6 +443,39 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
     )
 
 
+# What to do when a goal is short of data, in terms of that goal. It was one sentence for
+# every goal, "generate coverage with synth", which is the opposite of the evidence for
+# recognition (biasing first, then real accented speech) and for language (synthetic
+# code-switching alone did not move accuracy).
+_SHORTFALL: dict[Goal, str] = {
+    "recognition": (
+        "try contextual biasing towards your names first; if it still misses, collect real "
+        "recordings of your callers, transcribed and with consent"
+    ),
+    "voice": (
+        "try a zero-shot voice prompt first; a fine-tune needs clean audio of one speaker "
+        "who consented to their voice being used"
+    ),
+    "language": (
+        "collect real code-switched conversations; synth adds coverage but alone did not "
+        "move accuracy, and the evaluation set has to be real"
+    ),
+}
+
+
+def _short_of(goal: Goal, step: bool = False) -> str:
+    """The shortfall advice for `goal`: in the verdict's reason, or as a next step."""
+    if goal in _SHORTFALL:
+        return _SHORTFALL[goal]
+    if step:
+        return (
+            "run synth over your documents and tools for coverage, and keep the evaluation set real"
+        )
+    return (
+        "generate coverage with synth, ship on retrieval and tools, and collect real conversations"
+    )
+
+
 def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
     """Which of the three states this goal is in, and why, in the user's own numbers."""
     if primary == "knowledge":
@@ -461,8 +494,7 @@ def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
         return (
             "blocked",
             f"{_amount(have, bar.unit)} is below the {_amount(bar.floor, bar.unit)} floor for "
-            f"{primary}; generate coverage with synth, ship on retrieval and tools, and "
-            "collect real conversations",
+            f"{primary}; {_short_of(primary)}",
         )
     if bar.target is not None and have < bar.target:
         return (
@@ -638,8 +670,7 @@ def recommend(
         if d.need is not None and d.have < d.need:
             steps.append(
                 f"{d.goal}: {fmt_number(d.have)} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
-                "run synth over your documents and tools for coverage, and keep the "
-                "evaluation set real"
+                f"{_short_of(d.goal, step=True)}"
             )
         for note in d.uncounted:
             steps.append(f"{d.goal}, not counted yet: {note}")
