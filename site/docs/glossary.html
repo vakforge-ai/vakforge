@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary · vakforge docs</title>
+<meta name="description" content="What the terms in inspect and recommend output mean">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7FAFF" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../assets/brand/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="docs.css">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("vakforge-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" type="button" id="menu-btn" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="../"><img src="../assets/brand/logo-mark.png" alt="" width="26" height="26">vakforge<span class="brand-docs">docs</span></a>
+  <div class="search" id="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="search-input" placeholder="Search docs" aria-label="Search docs" autocomplete="off">
+    <kbd>/</kbd>
+    <div class="search-results" id="search-results" role="listbox" hidden></div>
+  </div>
+  <nav class="top-links" aria-label="Site">
+    <a href="../">Site</a>
+    <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group"><div class="sb-title">Start</div><ul>
+<li><a href="./">Overview</a></li>
+<li><a href="decision-guide.html">Decision guide</a></li>
+<li><a href="agent-skill.html">Agent skill</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="glossary.html" aria-current="page">Glossary</a></li>
+<li><a href="data-format.html">Data format</a></li>
+<li><a href="locale-packs.html">Locale packs</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="recipes.html">Recipes</a></li>
+<li><a href="evaluation.html">Evaluation</a></li>
+</ul></div>
+<div class="sb-group"><div class="sb-title">Project</div><ul>
+<li><a href="data-ethics.html">Data ethics</a></li>
+<li><a href="research.html">Research</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+</ul></div>
+    <nav class="sb-links" aria-label="Site">
+      <a href="../">Site</a>
+      <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
+    </nav>
+    <div class="sb-foot">v0.2.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/GLOSSARY.md" target="_blank" rel="noopener">Edit this page</a></div>
+  </aside>
+  <main class="content">
+    <article class="prose" id="article">
+      <h1 id="glossary">Glossary</h1>
+<p>The words <code>vakforge inspect</code> and <code>vakforge recommend</code> use, and the fields they write to <code>inspect.json</code> and <code>recommend.json</code>. The <a href="decision-guide.html">decision guide</a> explains how the decisions are made; this page says what each term means.</p>
+<h2 id="reading-your-data-inspect">Reading your data (<code>inspect</code>)</h2>
+<p><strong>Source kinds.</strong> Every file is sorted into one of five kinds:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>What it is</th>
+<th>Read from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>document</td>
+<td>Text to look facts up in</td>
+<td>Markdown, text, HTML, reStructuredText, and FAQ files</td>
+</tr>
+<tr>
+<td>table</td>
+<td>Records with columns</td>
+<td>CSV, TSV, SQL dumps, JSON, JSONL</td>
+</tr>
+<tr>
+<td>chat</td>
+<td>Conversations</td>
+<td>WhatsApp exports, JSON/JSONL chat logs, CSV/JSON with one exchange or one message per row</td>
+</tr>
+<tr>
+<td>audio</td>
+<td>Recordings</td>
+<td>WAV, FLAC, OGG, MP3</td>
+</tr>
+<tr>
+<td>other</td>
+<td>Anything else</td>
+<td>Listed, not read</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Found and profiled.</strong> <em>Found</em> (<code>counts</code>) is every file in the folder; <em>profiled</em> (<code>profiled</code>) is the ones that were actually read. Every other total comes from profiled files only, so the two numbers together say how much of the folder the report covers.</p>
+<p><strong>Skipped.</strong> A file vakforge found but cannot read yet, listed with the reason and what to do: a PDF or Word file (&quot;text extraction not in core yet&quot;), an Excel workbook (&quot;export to CSV&quot;), an <code>.m4a</code> recording (&quot;convert to WAV or FLAC&quot;).</p>
+<p><strong>Truncated.</strong> A file read only up to a limit: 2 million characters of text, or 32 million for a JSON document, which has to be read whole. Its counts cover the part that was read. The CLI marks it <code>partial</code>.</p>
+<p><strong>Sampled.</strong> A large file is counted in full, but its personal data and languages are judged from the start of it. <code>rows_scanned</code> (tables) and <code>messages_scanned</code> (chats) say how much was scanned; the CLI adds &quot;(large files sampled)&quot;.</p>
+<p><strong>Message.</strong> One thing one person said in a chat: a WhatsApp message with any lines it runs onto, one record of a chat log, or one side of an exchange.</p>
+<p><strong>Turn.</strong> A message counted as training data. The bars for behaviour, tools and language are measured in turns. A recording is not turns until it has been transcribed and split by speaker, which <code>inspect</code> does not do.</p>
+<p><strong>Exchange.</strong> A row with a user column and a reply column, such as <code>input</code>/<code>output</code>, <code>instruction</code>/<code>response</code>, <code>customer</code>/<code>agent</code> or <code>user</code>/<code>assistant</code>. Each exchange is two messages. A file of one message per row instead has a speaker column (<code>role</code>, <code>speaker</code>, <code>from</code>, …) and a text column (<code>text</code>, <code>message</code>, <code>content</code>, …).</p>
+<p><strong>FAQ file.</strong> A CSV or JSON file with <code>question</code> and <code>answer</code> columns. It holds facts, so it is read as a document and routed to retrieval, not to a fine-tune. <code>faq_pairs</code> counts its pairs.</p>
+<p><strong>ID column.</strong> A column that identifies a record, such as <code>order_id</code>, <code>Ticket ID</code>, <code>sku</code> or <code>customer_id</code>, however the export spells it.</p>
+<p><strong>Tool candidate.</strong> A lookup the assistant could call, made from a table and one of its ID columns: <code>lookup_orders_by_order_id</code>. Tools answer questions about records (&quot;where is my order?&quot;) without training anything.</p>
+<p><strong>Personal data (PII).</strong> What <code>inspect</code> found that identifies a person. Most of it is matched by the locale pack's patterns: email, phone, payment card (checked with the Luhn sum), IBAN, and national IDs such as SSN, NI number, Aadhaar (checked with Verhoeff) and PAN. A table's column headers add what no pattern can see: <code>person_name</code>, <code>address</code> and <code>date_of_birth</code>. <code>pii_columns</code> says which column each count came from. The report never repeats the data it found.</p>
+<p><strong>Languages.</strong> A BCP-47 tag per paragraph or message: <code>en-US</code>, <code>en-IN</code>, <code>hi</code> (Hindi in Devanagari), <code>hi-Latn</code> (Hindi in Roman script, as Hinglish is usually typed). Mixed-language text is called <em>code-switched</em>.</p>
+<p><strong>Locale pack.</strong> The rules for one language and market: phone and ID formats, currency, dates, privacy law notes, which recipes can speak the language. Chosen with <code>-l</code> (<code>en-US</code>, <code>en-GB</code>, <code>en-IN</code>, <code>hi-Latn-IN</code>) or taken from the project. Pick the one your data comes from: an Indian pack does not recognise a US phone number.</p>
+<p><strong>Two-channel audio.</strong> A stereo recording with the caller on one channel and the agent on the other, which is what a full-duplex model needs to adapt on.</p>
+<p><strong>Narrowband.</strong> Telephone-quality audio, sampled at 8 kHz or less, which recognition models handle worse than wideband.</p>
+<h2 id="deciding-recommend">Deciding (<code>recommend</code>)</h2>
+<p><strong>Goal.</strong> What you want to change about the assistant. There are seven:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Means</th>
+<th>Usual fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>knowledge</td>
+<td>Know your prices, policies, FAQs</td>
+<td>Retrieval, never a fine-tune</td>
+</tr>
+<tr>
+<td>tools</td>
+<td>Look things up, book, open tickets</td>
+<td>Tools over your tables</td>
+</tr>
+<tr>
+<td>workflow</td>
+<td>Follow your call flow, tone and hand-offs</td>
+<td>Behaviour fine-tune, after the baseline</td>
+</tr>
+<tr>
+<td>recognition</td>
+<td>Hear your callers' accents, names and amounts</td>
+<td>Contextual biasing, then speech-to-text training</td>
+</tr>
+<tr>
+<td>voice</td>
+<td>Sound like a particular speaker</td>
+<td>Voice cloning, with that speaker's consent</td>
+</tr>
+<tr>
+<td>duplex</td>
+<td>Handle interruptions naturally</td>
+<td>A base model that is already full-duplex</td>
+</tr>
+<tr>
+<td>language</td>
+<td>Speak or understand another language</td>
+<td>A locale pack and a model that speaks it</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Primary problem.</strong> The goal the data points to first. &quot;none yet&quot; means nothing in the folder is evidence for any goal.</p>
+<p><strong>Route.</strong> Where each kind of source goes: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English text → locale pack. With nothing usable, the route is <em>synth</em>.</p>
+<p><strong>Retrieval.</strong> Looking facts up at answer time instead of training them into the model, so prices and policies stay current.</p>
+<p><strong>Behaviour fine-tune.</strong> Training the model on real conversations so it learns how your team handles a call: the steps, the tone, when to hand off.</p>
+<p><strong>Contextual biasing.</strong> Steering speech recognition towards your product, place and customer names while it listens, which cuts errors on them without training.</p>
+<p><strong>Bar.</strong> How much data a goal needs before fine-tuning it is worth trying, in the goal's own unit (turns, hours or seconds). Each bar has a <em>floor</em> and usually a <em>target</em>.</p>
+<p><strong>Floor.</strong> Below it there is too little to learn from, so the verdict is <em>no</em>.</p>
+<p><strong>Target.</strong> What the cited work used. Between the floor and the target, the verdict is <em>baseline first</em>.</p>
+<p><strong>Verdict.</strong> One of three answers per goal, never a bare yes (<code>eligibility</code> in <code>recommend.json</code>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Printed</th>
+<th>In the JSON</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no</td>
+<td><code>blocked</code></td>
+<td>Fine-tuning is the wrong tool for this goal, or there is too little data</td>
+</tr>
+<tr>
+<td>baseline first</td>
+<td><code>baseline_first</code></td>
+<td>Plausible, but measure the baseline first; it decides whether training is needed</td>
+</tr>
+<tr>
+<td>worth trying</td>
+<td><code>candidate</code></td>
+<td>The data clears the bar; try it after the baseline, and compare</td>
+</tr>
+</tbody>
+</table></div>
+<p>The project-level <em>fine-tune?</em> line is the best verdict any goal reached.</p>
+<p><strong>Baseline.</strong> The base model measured with a good prompt, retrieval and tools on a held-out set of real conversations. It is what a fine-tune has to beat; without it, there is no proof training helped.</p>
+<p><strong>Held-out set.</strong> Real conversations kept out of training and used only to measure. Synthetic data can fill gaps in training, but the held-out set stays real.</p>
+<p><strong>Evidence and confidence.</strong> Every bar cites where its number comes from, labelled <code>measured</code> (a paper measured it), <code>reported</code> (a model team stated it) or <code>heuristic</code> (vakforge chose it, and nothing yet supports or refutes it).</p>
+<p><strong>Not counted.</strong> Material that exists but cannot count towards a bar yet, and what it needs first: hours of audio that have not been transcribed, for example.</p>
+<p><strong>Blocked on.</strong> What stands between a goal and training besides the amount of data: for example, a duplex recipe that needs the caller and the agent on separate channels when the recordings cannot show that. The GPU you need is shown on the recipe line instead.</p>
+<p><strong>Recipe.</strong> A researched path from an open base model to a trained assistant (<code>lfm25-audio</code>, <code>moshi-lora</code>, <code>qwen-omni</code>, <code>cascade</code>). None has been built yet; see <a href="recipes.html">recipes</a>.</p>
+<p><strong>Synth.</strong> Generating example conversations in your language to cover the cases your data does not. It buys coverage for a first version; it does not replace real data.</p>
+<p><strong>Full-duplex.</strong> A model that can listen while it speaks, so a caller can interrupt it. It comes from the base model, not from fine-tuning on a company's calls.</p>
+<h2 id="privacy-prepare-validate">Privacy (<code>prepare</code>, <code>validate</code>)</h2>
+<p><strong>Redaction.</strong> Replacing personal data with a placeholder such as <code>&lt;PHONE_1&gt;</code> before any training row is written. The prepare step does it; <a href="data-format.html">data format</a> describes the redaction log.</p>
+<p><strong>Consent basis.</strong> Why a recording may be used for training, recorded on every row. A recording with no consent basis is not a training row.</p>
+<p><strong>Placeholder.</strong> The token that replaces a piece of personal data, kept the same within a conversation so the dialogue still makes sense.</p>
+
+    </article>
+    <div class="prev-next"><a class="pn prev" href="agent-skill.html"><small>Previous</small><b>Agent skill</b></a><a class="pn next" href="data-format.html"><small>Next</small><b>Data format</b></a></div>
+    <footer class="page-foot">
+      <span>Apache-2.0 · vakforge · built by <a href="https://github.com/Achal13jain" target="_blank" rel="noopener">Achal Jain</a></span>
+      <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/GLOSSARY.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+    </footer>
+  </main>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#reading-your-data-inspect">Reading your data (inspect)</a></li><li class="lvl2"><a href="#deciding-recommend">Deciding (recommend)</a></li><li class="lvl2"><a href="#privacy-prepare-validate">Privacy (prepare, validate)</a></li></ul></nav></aside>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>

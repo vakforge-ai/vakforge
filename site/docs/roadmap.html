@@ -51,6 +51,7 @@
 <li><a href="agent-skill.html">Agent skill</a></li>
 </ul></div>
 <div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="glossary.html">Glossary</a></li>
 <li><a href="data-format.html">Data format</a></li>
 <li><a href="locale-packs.html">Locale packs</a></li>
 <li><a href="architecture.html">Architecture</a></li>
@@ -106,7 +107,7 @@
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code>: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> scans table cells for PII, per column, with the column name as context (<code>order_id</code> digits are a reference, an <code>ssn</code> column is the cue); a sample of each table, with <code>rows_scanned</code> saying how much; names, postal addresses and birth dates flagged by their column header, which no pattern can see</li>
-<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> reads CSV/TSV/JSON files with one exchange per row (<code>input</code>/<code>output</code>, <code>question</code>/<code>answer</code>, <code>instruction</code>/<code>response</code>, …) as conversations: every message counted, languages and PII from a sample (<code>messages_scanned</code>)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> reads CSV/TSV/JSON files with one exchange per row (<code>input</code>/<code>output</code>, <code>instruction</code>/<code>response</code>, <code>customer</code>/<code>agent</code>, …) as conversations, and question/answer files as FAQ documents for retrieval, and CSVs with one message per row (a speaker column and a text column): every message counted, languages and PII from a sample (<code>messages_scanned</code>), and the other columns scanned like table cells</li>
 <li class="task done"><input type="checkbox" checked disabled> Tested on public exports (support tickets, a support Q&amp;A set, Hinglish conversations and comments): id columns recognised however an export spells them, JSON read whole up to 32M characters, card numbers after order/purchase words no longer flagged</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect.json</code> report for <code>recommend</code> and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover</li>
