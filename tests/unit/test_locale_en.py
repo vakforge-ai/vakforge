@@ -54,6 +54,39 @@ def test_valid_cards_detected(card):
 @pytest.mark.parametrize(
     "text",
     [
+        # A public support dataset: the same Luhn-valid order number, glued to the word.
+        "modify order113542617735902",
+        "cancel purchase113542617735902",
+        "invoice no. 4111111111111111",
+        "transaction 4111 1111 1111 1111",
+    ],
+)
+def test_a_number_introduced_as_a_reference_is_not_a_card(text):
+    assert [t for t, _ in types(text)] == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # MySQL writes map points as hex blobs; the Sakila dump gave thirteen "cards".
+        "'280578750435',/*!50705 0x0000000001010000006B8F2",
+        "ref ORD4111111111111111X",
+    ],
+)
+def test_digits_inside_a_longer_token_are_not_a_card(text):
+    assert [t for t, _ in types(text)] == []
+
+
+@pytest.mark.parametrize(
+    "text", ["card number 4111111111111111", "account 4111111111111111", "a/c 4111111111111111"]
+)
+def test_card_and_account_still_introduce_cards(text):
+    assert [t for t, _ in types(text)] == ["card_number"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
         "pay into gb82 west 1234 5698 7654 32 please",  # ASR output is lowercase
         "iban de89370400440532013000 ok",  # lowercase and contiguous
         "IBAN GB82 WEST 1234 5698 7654 32 thanks",

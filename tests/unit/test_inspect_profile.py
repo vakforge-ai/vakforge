@@ -31,6 +31,26 @@ def test_document_words_languages_and_pii(tmp_path):
     assert facts["pii"] == {"phone": 1, "email": 1}
 
 
+def test_an_html_page_is_read_as_a_reader_sees_it(tmp_path):
+    # A saved company page counted its CSS and JavaScript as prose: 15,616 "words" for 854
+    # visible ones, and a CSS line height (1.4285714286) as a phone number.
+    p = tmp_path / "page.html"
+    p.write_text(
+        "<html><head><title>Acme</title><style>p{line-height:1.4285714286}</style>"
+        "<script>var config = {tracking: 'abc', retries: 3};</script></head><body>"
+        "<!-- hidden note: call 415-555-0134 -->"
+        "<h1>Returns &amp; refunds</h1><p>Refunds take five days.</p>"
+        "<p>Call us on 415-555-0199.</p><svg><text>logo text</text></svg></body></html>",
+        encoding="utf-8",
+    )
+    facts = profile_document(classify(p), get_pack("en-US"))
+    assert (
+        facts["words"] == 12
+    )  # Returns refunds / Refunds take five days / Call us on 415 555 0199
+    assert facts["pii"] == {"phone": 1}  # the visible one; not the comment, not the CSS
+    assert facts["languages"] == {"en-US": 3}  # three paragraphs, not one
+
+
 def test_csv_columns_rows_and_tool_candidates(tmp_path):
     p = tmp_path / "orders.csv"
     p.write_text("order_id,customer_id,status\nA1,C1,open\nA2,C2,closed\n", encoding="utf-8")
@@ -38,6 +58,20 @@ def test_csv_columns_rows_and_tool_candidates(tmp_path):
     assert t["rows"] == 2
     assert t["id_columns"] == ["order_id", "customer_id"]
     assert t["tool_candidates"][0] == "lookup_orders_by_order_id"
+
+
+def test_id_columns_are_found_however_the_export_spells_them(tmp_path):
+    # A real CRM export: title case and spaces. Read literally this matched nothing, and an
+    # 8,469-ticket table offered no tools at all.
+    p = tmp_path / "Support Tickets.csv"
+    p.write_text("Ticket ID,Customer-ID,Order No,Status\n1,C1,A9,open\n", encoding="utf-8")
+    t = profile_table(classify(p), HI)["tables"]["Support Tickets"]
+    assert t["id_columns"] == ["Ticket ID", "Customer-ID", "Order No"]
+    assert t["tool_candidates"] == [
+        "lookup_support_tickets_by_ticket_id",
+        "lookup_support_tickets_by_customer_id",
+        "lookup_support_tickets_by_order_no",
+    ]
 
 
 def test_sql_schema_tables(tmp_path):
@@ -81,6 +115,23 @@ def test_table_cells_are_scanned_for_personal_data_by_column(tmp_path):
     assert t["rows_scanned"] == 2
     # Ten digits under order_id are a reference, as "order id 9876543210" is in a sentence.
     assert facts["pii"] == {"phone": 2, "email": 2}
+
+
+def test_names_addresses_and_birth_dates_are_found_by_their_column(tmp_path):
+    # No pattern can see a name; a support-ticket export's "Customer Name" went unflagged.
+    p = tmp_path / "crm.csv"
+    p.write_text(
+        "Customer Name,Billing Address,DOB,Product Name,Name,Username\n"
+        "Asha Verma,12 MG Road,1990-01-02,Inverter X,Inverter X,asha90\n"
+        "Ravi Rao,,1985-05-06,Battery Y,Battery Y,ravi85\n",
+        encoding="utf-8",
+    )
+    t = profile_table(classify(p), HI)["tables"]["crm"]
+    assert t["pii_columns"] == {
+        "Customer Name": {"person_name": 2},
+        "Billing Address": {"address": 1},  # an empty cell holds nobody's address
+        "DOB": {"date_of_birth": 2},
+    }
 
 
 def test_a_column_name_supplies_the_cue_a_bare_number_needs(tmp_path):
@@ -138,8 +189,16 @@ def test_jsonl_chat(tmp_path):
     assert facts["speakers"] == {"user": 1, "assistant": 1}
 
 
-def test_oversized_json_is_skipped_with_its_real_reason(tmp_path, monkeypatch):
+def test_a_json_file_over_the_text_limit_is_still_read_whole(tmp_path, monkeypatch):
+    # A 2.1 MB export used to be turned away at the 2,000,000-character text limit.
     monkeypatch.setattr(profile, "MAX_CHARS", 200)
+    p = tmp_path / "catalog.json"
+    p.write_text(json.dumps([{"sku": f"X{i}"} for i in range(200)]), encoding="utf-8")
+    assert profile_table(classify(p), HI)["tables"]["catalog"]["rows"] == 200
+
+
+def test_oversized_json_is_skipped_with_its_real_reason(tmp_path, monkeypatch):
+    monkeypatch.setattr(profile, "MAX_WHOLE_CHARS", 200)
     p = tmp_path / "catalog.json"
     p.write_text(json.dumps([{"sku": f"X{i}"} for i in range(200)]), encoding="utf-8")
     with pytest.raises(profile.FileTooLarge, match="must be parsed whole"):
@@ -153,6 +212,91 @@ def test_oversized_jsonl_keeps_whole_lines_and_says_it_was_cut(tmp_path, monkeyp
     facts = profile_table(classify(p), HI)
     assert facts["truncated"] is True
     assert 0 < facts["tables"]["rows"]["rows"] < 50
+
+
+def test_a_csv_of_exchanges_is_read_as_messages(tmp_path):
+    p = tmp_path / "pairs.csv"
+    p.write_text(
+        "input,output\n"
+        "Mera order kab aayega?,Kal tak aa jayega.\n"
+        "Refund kab milega?,Paanch din mein aa jayega.\n"
+        "Theek hai thanks,\n",  # an empty reply is not a message
+        encoding="utf-8",
+    )
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 5
+    assert facts["speakers"] == {"input": 3, "output": 2}
+    assert facts["pair"] == ["input", "output"]
+    assert "hi-Latn" in facts["languages"]
+    assert "messages_scanned" not in facts  # all of it was read
+
+
+def test_every_exchange_is_counted_but_only_a_sample_is_read(tmp_path, monkeypatch):
+    # A million-row export is counted in full; its text is sampled like any large file.
+    monkeypatch.setattr(profile, "MAX_CHARS", 40)
+    p = tmp_path / "pairs.csv"
+    p.write_text("input,output\n" + "Where is my order?,On its way.\n" * 20, encoding="utf-8")
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 40
+    assert 0 < facts["messages_scanned"] < 40
+
+
+def test_a_csv_with_one_message_per_row_is_read_as_messages(tmp_path):
+    # The layout of a public support-conversations export (976,271 rows), which was read
+    # as a table and offered "lookup by conv_id" as its only use.
+    p = tmp_path / "conversations.csv"
+    p.write_text(
+        "conv_id,turn_index,Role,Text,customer_name,agent_name\n"
+        "c1,0,customer,Mera order kab aayega?,Asha,Meena\n"
+        "c1,1,agent,Kal tak aa jayega.,Asha,Meena\n"
+        "c1,2,customer,,Asha,Meena\n"  # an empty message is not one
+        "c2,0,customer,Refund kab milega?,Ravi,Meena\n",
+        encoding="utf-8",
+    )
+    src = classify(p)
+    assert src.kind == "chat"
+    facts = profile_chat(src, HI)
+    assert facts["messages"] == 3
+    assert facts["speakers"] == {"customer": 2, "agent": 1}
+    assert facts["message_columns"] == ["Role", "Text"]
+    assert "hi-Latn" in facts["languages"]
+    # The name columns beside the messages are still personal data; an agent is a person.
+    assert facts["pii_columns"] == {
+        "customer_name": {"person_name": 4},
+        "agent_name": {"person_name": 4},
+    }
+    assert facts["pii"]["person_name"] == 8
+
+
+def test_json_records_of_exchanges_are_read_as_messages(tmp_path):
+    p = tmp_path / "train.json"
+    rows = [{"instruction": "cancel my order", "response": "Done.", "intent": "cancel"}] * 3
+    p.write_text(json.dumps(rows), encoding="utf-8")
+    facts = profile_chat(classify(p), HI)
+    assert facts["messages"] == 6
+    assert facts["pair"] == ["instruction", "response"]
+
+
+@pytest.mark.parametrize(
+    ("name", "body"),
+    [
+        ("faq.csv", "Question,Answer\nRefund kab milega?,Paanch din mein.\nCOD?,Haan ji.\n"),
+        (
+            "faq.json",  # JSON Lines under a .json name, as a public FAQ dataset ships it
+            '{"question": "Refund kab milega?", "answer": "Paanch din mein."}\n'
+            '{"question": "COD?", "answer": "Haan ji."}\n',
+        ),
+    ],
+)
+def test_an_faq_is_read_as_the_text_it_is(tmp_path, name, body):
+    p = tmp_path / name
+    p.write_text(body, encoding="utf-8")
+    src = classify(p)
+    assert src.kind == "document"
+    facts = profile_document(src, HI)
+    assert facts["faq_pairs"] == 2
+    assert facts["words"] > 5
+    assert "hi-Latn" in facts["languages"]
 
 
 def test_whatsapp_chat(tmp_path):
@@ -169,6 +313,25 @@ def test_whatsapp_chat(tmp_path):
     assert "hi-Latn" in facts["languages"]
 
 
+def test_a_whatsapp_export_with_long_messages_is_still_a_chat(tmp_path):
+    # A real export: a system notice first, with no sender, and messages that run over many
+    # lines, so only one of the first 20 lines carried a timestamp. It was read as a document.
+    long_message = "".join(f"line {i} of a long message\n" for i in range(25))
+    p = tmp_path / "WhatsApp Chat with Priya.txt"
+    p.write_text(
+        "26/09/2026, 9:18 am - Messages and calls are end-to-end encrypted.\n"
+        f"26/09/2026, 9:19 am - Priya: {long_message}"
+        f"26/09/2026, 9:20 am - Asha: {long_message}"
+        "26/09/2026, 9:21 am - Priya: ok\n",
+        encoding="utf-8",
+    )
+    src = classify(p)
+    assert (src.kind, src.format) == ("chat", "whatsapp")
+    facts = profile_chat(src, HI)
+    assert facts["messages"] == 3
+    assert facts["speakers"] == {"Priya": 2, "Asha": 1}
+
+
 def test_bracketed_whatsapp_export_names_the_speaker(tmp_path):
     # iOS exports use "[date, time] Name:" with no dash. Recovering the name by splitting
     # on " - " gave speakers called "[12/03/24, 10:15] Priya".
@@ -181,6 +344,27 @@ def test_bracketed_whatsapp_export_names_the_speaker(tmp_path):
     )
     facts = profile_chat(classify(p), HI)
     assert facts["speakers"] == {"Priya": 2, "Acme Support": 1}
+
+
+def test_sql_constraint_lines_are_not_columns(tmp_path):
+    # Shaped like the public Sakila schema, which listed PRIMARY, KEY and CONSTRAINT as
+    # columns of every table.
+    p = tmp_path / "schema.sql"
+    p.write_text(
+        "CREATE TABLE customer (\n"
+        "  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,\n"
+        "  email VARCHAR(50) DEFAULT NULL,\n"
+        "  PRIMARY KEY  (customer_id),\n"
+        "  KEY idx_email (email),\n"
+        "  UNIQUE KEY uq (email),\n"
+        "  CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES x (id)\n"
+        ");",
+        encoding="utf-8",
+    )
+    assert profile_table(classify(p), HI)["tables"]["customer"]["columns"] == [
+        "customer_id",
+        "email",
+    ]
 
 
 def test_schema_qualified_sql_table_keeps_its_own_name(tmp_path):
@@ -277,6 +461,23 @@ def test_audio_facts_are_measurements_not_verdicts(tmp_path):
     facts = profile_audio(classify(p), HI)
     assert "stereo_split_possible" not in facts
     assert "condition_guess" not in facts
+
+
+@pytest.mark.parametrize(
+    ("name", "subtype"),
+    [
+        ("voice-note.opus", "OPUS"),  # a WhatsApp voice note: Ogg Opus
+        ("article.oga", "VORBIS"),  # Wikimedia's name for Ogg audio
+    ],
+)
+def test_opus_and_oga_are_read_as_audio(tmp_path, name, subtype):
+    # Both were turned away, .opus with advice to convert a file that needed no converting.
+    p = tmp_path / name
+    t = np.linspace(0, 1, 48000, endpoint=False, dtype=np.float32)
+    sf.write(str(p), 0.3 * np.sin(2 * np.pi * 300 * t), 48000, format="OGG", subtype=subtype)
+    src = classify(p)
+    assert (src.kind, src.readable) == ("audio", True)
+    assert profile_audio(src, HI)["duration_s"] == pytest.approx(1.0, abs=0.05)
 
 
 def test_phone_band_audio_marked_narrowband(tmp_path):

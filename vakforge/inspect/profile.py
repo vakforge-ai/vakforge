@@ -13,6 +13,7 @@ skill, which say what evidence they used.
 from __future__ import annotations
 
 import csv
+import html
 import json
 import re
 from collections import Counter
@@ -22,10 +23,42 @@ from typing import Any
 
 import numpy as np
 
-from vakforge.inspect.sources import _WHATSAPP_LINE, Source
+from vakforge.inspect.sources import (
+    _WHATSAPP_LINE,
+    _WHATSAPP_STAMP,
+    SPEAKER_KEYS,
+    TEXT_KEYS,
+    Source,
+    column_key,
+    conversation_pair,
+    faq_pair,
+    json_records,
+    message_columns,
+)
 from vakforge.locales.base import LocalePack
 
 _TAG = re.compile(r"<[^>]+>")
+# What a browser does not show: scripts, styles, comments, the <head>. Stripping only the
+# tags counted their contents as prose, so a saved company page gave 15,616 "words" where
+# a reader sees 854, and CSS line heights (1.4285714286) read as phone numbers.
+_HIDDEN = re.compile(
+    r"<(script|style|noscript|template|svg|head)\b.*?</\1\s*>|<!--.*?-->", re.I | re.S
+)
+# Block elements end a paragraph; without the breaks a page was one paragraph long, and the
+# per-paragraph language count saw a single sample.
+_BLOCK = re.compile(
+    r"</?(?:p|div|li|h[1-6]|br|tr|td|th|section|article|header|footer|nav|main|aside|"
+    r"blockquote|pre|dt|dd|figcaption|table|ul|ol|form|label|button)\b[^>]*>",
+    re.I,
+)
+
+
+def _html_text(markup: str) -> str:
+    """The text of an HTML page as a reader sees it, paragraph by paragraph."""
+    text = _BLOCK.sub("\n\n", _HIDDEN.sub(" ", markup))
+    return html.unescape(_TAG.sub(" ", text))
+
+
 _WORD = re.compile(r"\w+", re.UNICODE)
 # A schema or database prefix ("public.orders", "`shop`.`orders`") is matched and thrown
 # away so the table keeps its own name. This stays a regex rather than a SQL parser: core
@@ -37,16 +70,23 @@ _CREATE_TABLE = re.compile(
     r"[`\"\[]?(\w+)",
     re.I,
 )
+_SQL_CONSTRAINT_WORDS = {
+    "PRIMARY", "KEY", "UNIQUE", "CONSTRAINT", "FOREIGN", "INDEX", "FULLTEXT", "SPATIAL", "CHECK",
+}  # fmt: skip
 _ID_COLUMN = re.compile(r"(^id$|_id$|^id_|number$|_no$|^sku$|^email$|^phone$)", re.I)
 MAX_CHARS = 2_000_000  # read at most this much text per file
-# Table cells are scanned one at a time, with the column name as context, which costs about
-# 5 s per million characters. A few thousand rows are plenty to show which columns hold
-# personal data, and `rows_scanned` says how much of the table the counts cover.
-TABLE_SCAN_CHARS = 200_000
+# A JSON document cannot be read in part, so it gets its own, larger limit. It used to be
+# MAX_CHARS, which turned away a 2 MB export; parsing 32 million characters takes a couple
+# of seconds and roughly 150 MB, and anything bigger is better as JSONL anyway.
+MAX_WHOLE_CHARS = 32_000_000
+# Table cells are scanned one at a time, with the column name as context: about a second per
+# million characters on real exports. At 200,000 a text-heavy table was judged on 163 of
+# 26,872 rows, too few for "none found" to mean much; `rows_scanned` says what was covered.
+TABLE_SCAN_CHARS = 1_000_000
 
 
 class FileTooLarge(ValueError):
-    """Raised for a file that only parses as a whole and is over `MAX_CHARS`.
+    """Raised for a file that only parses as a whole and is over `MAX_WHOLE_CHARS`.
 
     Truncating such a file and parsing the fragment produces a syntax error that blames the
     file's contents for a limit we imposed, so `inspect` says what really happened instead.
@@ -62,10 +102,11 @@ def _read_text(path: Path) -> tuple[str, bool]:
 
 def _whole_text(path: Path) -> str:
     """Text of a file that has to be parsed in one piece, or `FileTooLarge`."""
-    text, truncated = _read_text(path)
-    if truncated:
+    with path.open(encoding="utf-8-sig", errors="replace") as fh:
+        text = fh.read(MAX_WHOLE_CHARS + 1)
+    if len(text) > MAX_WHOLE_CHARS:
         raise FileTooLarge(
-            f"over {MAX_CHARS:,} characters and must be parsed whole; "
+            f"over {MAX_WHOLE_CHARS:,} characters and must be parsed whole; "
             "split it or convert it to JSONL"
         )
     return text
@@ -82,10 +123,47 @@ def _text_facts(text: str, pack: LocalePack) -> dict[str, Any]:
     }
 
 
+def _records(src: Source) -> Iterator[Any]:
+    """The records of a CSV/TSV (streamed), JSON or JSONL file."""
+    if src.format in {"csv", "tsv"}:
+        with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+            yield from csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
+    elif src.format == "json":
+        yield from json_records(json.loads(_whole_text(src.path)))
+    else:  # jsonl / ndjson
+        yield from _jsonl_rows(*_read_text(src.path))[0]
+
+
+def _faq_text(src: Source) -> tuple[str, int, bool]:
+    """An FAQ file's questions and answers as text, the number of pairs, and whether the
+    text stopped short of the file. Every pair is counted; the text stops at MAX_CHARS."""
+    parts: list[str] = []
+    pairs = chars = 0
+    for rec in _records(src):
+        if not isinstance(rec, dict) or not (cols := faq_pair(rec)):
+            continue
+        pair = "\n\n".join(str(rec.get(c) or "") for c in cols).strip()
+        if not pair:
+            continue
+        pairs += 1
+        if chars < MAX_CHARS:
+            parts.append(pair)
+            chars += len(pair)
+    return "\n\n".join(parts), pairs, chars >= MAX_CHARS
+
+
 def profile_document(src: Source, pack: LocalePack) -> dict[str, Any]:
+    if src.format in {"csv", "tsv", "json", "jsonl", "ndjson"}:
+        # A question/answer file: an FAQ, read as the text it is.
+        text, pairs, truncated = _faq_text(src)
+        facts = _text_facts(text, pack)
+        facts["faq_pairs"] = pairs
+        if truncated:
+            facts["truncated"] = True
+        return facts
     text, truncated = _read_text(src.path)
     if src.format in {"html", "htm"}:
-        text = _TAG.sub(" ", text)
+        text = _html_text(text)
     facts = _text_facts(text, pack)
     if truncated:
         # Word and PII counts describe the part we read, so say so rather than let a
@@ -137,6 +215,33 @@ def _record_cells(record: dict[str, Any], prefix: str = "") -> Iterator[tuple[st
                 yield name, str(item)
 
 
+# Personal data no pattern can see: a name or an address has no fixed shape, but a CRM
+# column says what it holds. Deliberately narrow: a bare `name` is as often a product's (the
+# example shop's catalogue has one) as a person's, and `username` is a handle, so neither
+# counts; a false alarm on every catalogue would teach people to ignore the column.
+_NAME_HEADERS = {
+    "full_name", "first_name", "last_name", "middle_name", "given_name", "family_name",
+    "surname", "customer_name", "client_name", "contact_name", "caller_name", "patient_name",
+    "member_name", "holder_name", "account_holder_name", "cardholder_name", "sender_name",
+    "recipient_name", "agent_name", "employee_name", "staff_name", "rep_name",
+}  # fmt: skip
+_ADDRESS_HEADER = re.compile(
+    r"^(?:(?:home|billing|shipping|postal|mailing|street|residential|delivery|customer)_)?"
+    r"address(?:_line)?_?\d?$"
+)
+_DOB_HEADERS = {"dob", "date_of_birth", "birth_date", "birthdate", "birthday"}
+
+
+def _header_pii(column: str) -> str | None:
+    """The kind of personal data a column holds by its name alone, if the name says."""
+    key = column_key(column)
+    if key in _NAME_HEADERS:
+        return "person_name"
+    if _ADDRESS_HEADER.match(key):
+        return "address"
+    return "date_of_birth" if key in _DOB_HEADERS else None
+
+
 def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> dict[str, Any]:
     """Personal data in a table's cells, by column, from the rows that fit TABLE_SCAN_CHARS.
 
@@ -148,6 +253,7 @@ def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> d
     """
     by_column: dict[str, Counter[str]] = {}
     cues: dict[str, str] = {}
+    by_header: dict[str, str | None] = {}
     scanned = chars = 0
     for cells in rows:
         if chars > TABLE_SCAN_CHARS:
@@ -157,6 +263,9 @@ def _table_pii(rows: Iterable[Iterable[tuple[str, str]]], pack: LocalePack) -> d
             chars += len(value)
             if column not in cues:
                 cues[column] = re.sub(r"[\W_]+", " ", column).strip() + ": "
+                by_header[column] = _header_pii(column)
+            if by_header[column] and value.strip():
+                by_column.setdefault(column, Counter())[by_header[column]] += 1
             cue = cues[column]
             for span in pack.find_pii(cue + value):
                 if span.start >= len(cue):  # a match inside the column name is not data
@@ -196,17 +305,15 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         for match in _CREATE_TABLE.finditer(sql):
             body = sql[match.end() : sql.find(";", match.end())]
             cols = re.findall(r"^\s*[`\"\[]?(\w+)[`\"\]]?\s+\w+", body, re.M)
+            # "PRIMARY KEY (...)" and "KEY idx_x (...)" have the shape of a column line; the
+            # Sakila schema listed PRIMARY, KEY and CONSTRAINT as columns of every table.
+            cols = [c for c in cols if c.upper() not in _SQL_CONSTRAINT_WORDS]
             tables[match.group(1)] = {"columns": cols, "rows": None}
         # A dump's INSERT statements carry the data; it is scanned as text, like a document.
         pii.update(span.type for span in pack.find_pii(sql))
     else:
         if src.format == "json":
-            data = json.loads(_whole_text(src.path))
-            rows = (
-                data
-                if isinstance(data, list)
-                else next((v for v in data.values() if isinstance(v, list)), [data])
-            )
+            rows = json_records(json.loads(_whole_text(src.path)))
         else:  # jsonl / ndjson records
             text, truncated = _read_text(src.path)
             rows, parse_errors = _jsonl_rows(text, truncated)
@@ -214,8 +321,12 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         scan = _table_pii((_record_cells(r) for r in rows), pack)
         tables[src.path.stem] = {"columns": _columns_from_rows(rows), "rows": len(rows), **scan}
     for name, t in tables.items():
-        t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(c)]
-        t["tool_candidates"] = [f"lookup_{name}_by_{c}" for c in t["id_columns"][:3]]
+        # Matched on the key, not the header: a real export says "Ticket ID", and read
+        # literally that matched nothing, so an 8,000-ticket table offered no tools.
+        t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(column_key(c))]
+        t["tool_candidates"] = [
+            f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
+        ]
         pii.update(t.pop("pii", {}))
     facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:
@@ -225,18 +336,79 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
     return facts
 
 
+def _csv_messages(
+    src: Source, pack: LocalePack, speakers: Counter[str], messages: list[str]
+) -> tuple[int, dict[str, Any]]:
+    """Messages from a CSV in either chat layout: every one counted, their text sampled.
+
+    One exchange per row (a user column and a reply column), or one message per row (a
+    speaker column and a text column). Counting streams the whole file, so a million-row
+    export is counted in full; the text kept for languages and personal data stops at
+    MAX_CHARS, as it does for any file.
+
+    The other columns of the sampled rows are scanned as table cells are: a conversation
+    export often carries `customer_name` beside the messages, and reading only the message
+    text lost it. Returns the count and the facts about which columns were read.
+    """
+    total = chars = 0
+    others: list[list[tuple[str, str]]] = []
+
+    def keep(who: str, body: str) -> None:
+        nonlocal total, chars
+        if not body.strip():
+            return
+        total += 1
+        speakers[who] += 1
+        if chars < MAX_CHARS:
+            messages.append(body)
+            chars += len(body)
+
+    def rest(row: dict[str, Any], used: tuple[str, ...]) -> None:
+        if chars < MAX_CHARS:
+            others.append(
+                [(c, v) for c, v in row.items() if c and c not in used and isinstance(v, str) and v]
+            )
+
+    with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+        reader = csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
+        fields = reader.fieldnames or []
+        if pair := conversation_pair(fields):
+            read_as: dict[str, Any] = {"pair": list(pair)}
+            for row in reader:
+                rest(row, pair)
+                for col in pair:
+                    keep(col, row.get(col) or "")
+        else:
+            speaker, text = message_columns(fields) or ("", "")
+            read_as = {"message_columns": [speaker, text]}
+            for row in reader:
+                rest(row, (speaker, text))
+                keep((row.get(speaker) or "?").strip() or "?", row.get(text) or "")
+    scan = _table_pii(others, pack)
+    if scan["pii_columns"]:
+        read_as["pii_columns"] = scan["pii_columns"]
+        read_as["column_pii"] = scan["pii"]  # merged into the file's pii by the caller
+    return total, read_as
+
+
 def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     speakers: Counter[str] = Counter()
     messages: list[str] = []
     truncated = False
     parse_errors: list[str] = []
-    if src.format == "whatsapp":
+    counted: int | None = None  # set when every message is counted but not every one read
+    read_as: dict[str, Any] = {}  # which columns held the conversation
+    if src.format in {"csv", "tsv"}:
+        counted, read_as = _csv_messages(src, pack, speakers, messages)
+    elif src.format == "whatsapp":
         text, truncated = _read_text(src.path)
         for line in text.splitlines():
             if m := _WHATSAPP_LINE.match(line):
                 speaker = m.group("speaker").strip()
                 speakers[speaker] += 1
                 messages.append(line[m.end() :])
+            elif _WHATSAPP_STAMP.match(line):
+                continue  # a system notice, not anyone's message and not a continuation
             elif messages:
                 # A message that wrapped onto its own line carries no timestamp header; it
                 # belongs to the message above, and dropping it loses most long messages.
@@ -244,26 +416,36 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     else:
         records: list[Any] = []
         if src.format == "json":
-            data = json.loads(_whole_text(src.path))
-            records += data if isinstance(data, list) else [data]
+            records += json_records(json.loads(_whole_text(src.path)))
         else:
             text, truncated = _read_text(src.path)
             rows, parse_errors = _jsonl_rows(text, truncated)
             for row in rows:
                 records += row if isinstance(row, list) else [row]
         for rec in records:
+            if isinstance(rec, dict) and "messages" not in rec and (cols := conversation_pair(rec)):
+                read_as = {"pair": list(cols)}
+                for col in cols:
+                    if rec.get(col):
+                        speakers[col] += 1
+                        messages.append(str(rec[col]))
+                continue
             turns = rec.get("messages", [rec]) if isinstance(rec, dict) else []
             for turn in turns:
-                who = next(
-                    (turn[k] for k in ("role", "speaker", "author", "from") if k in turn), "?"
-                )
-                body = next(
-                    (turn[k] for k in ("content", "text", "message", "body") if k in turn), ""
-                )
+                who = next((turn[k] for k in SPEAKER_KEYS if k in turn), "?")
+                body = next((turn[k] for k in TEXT_KEYS if k in turn), "")
                 speakers[str(who)] += 1
                 messages.append(str(body))
     facts = _text_facts("\n\n".join(messages), pack)
-    facts.update(messages=len(messages), speakers=dict(speakers.most_common(10)))
+    facts.update(
+        messages=len(messages) if counted is None else counted,
+        speakers=dict(speakers.most_common(10)),
+    )
+    if column_pii := read_as.pop("column_pii", None):
+        facts["pii"] = dict((Counter(facts["pii"]) + Counter(column_pii)).most_common())
+    facts.update(read_as)  # "pair" or "message_columns": which columns were read
+    if counted is not None and len(messages) < counted:
+        facts["messages_scanned"] = len(messages)  # languages and PII cover these only
     if truncated:
         facts["truncated"] = True  # message count covers the part we read
     if parse_errors:

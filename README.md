@@ -118,7 +118,7 @@ read `SKILL.md`-style instructions work the same way; point them at the folder.
 
 ## Bring the data you have
 
-`inspect` reads Markdown, text and HTML documents; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports and JSON chat logs; and WAV, FLAC, OGG and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.
+`inspect` reads Markdown, text and HTML documents, and question/answer files (CSV or JSON) as FAQs; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports, JSON chat logs, CSV or JSON files with one exchange per row (`input`/`output`, `instruction`/`response`, `customer`/`agent` and similar), and CSV files with one message per row (a `role` or `speaker` column and a `text` or `message` column); and WAV, FLAC, OGG, Opus (including WhatsApp voice notes) and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.
 
 | You have | Where it goes |
 |---|---|
@@ -186,6 +186,7 @@ No data of your own yet? [`examples/hinglish-shop`](https://github.com/vakforge-
 ## Documentation
 
 - [`docs/DECISION_GUIDE.md`](https://vakforge.pages.dev/docs/decision-guide.html): what needs customizing, and when not to fine-tune
+- [`docs/GLOSSARY.md`](https://vakforge.pages.dev/docs/glossary.html): what the terms in `inspect` and `recommend` output mean (turns, bars, verdicts, routes)
 - [`docs/LOCALE_PACKS.md`](https://vakforge.pages.dev/docs/locale-packs.html): what a locale pack contains, and how to add one
 - [`docs/DATA_FORMAT.md`](https://vakforge.pages.dev/docs/data-format.html): the dataset format
 - [`docs/ARCHITECTURE.md`](https://vakforge.pages.dev/docs/architecture.html): how the code fits together, with diagrams

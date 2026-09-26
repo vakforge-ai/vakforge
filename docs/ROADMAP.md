@@ -32,7 +32,9 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `vakforge locales` to list packs and show resolved settings
 - [x] `inspect`: classify a data folder into documents, tables, chats, audio; per-file errors recorded, never fatal
 - [x] `inspect` for text and tables: words, languages and PII via the locale pack; CSV/TSV/JSON/SQL columns, id columns, tool candidates; JSONL and WhatsApp chat exports
-- [x] `inspect` scans table cells for PII, per column, with the column name as context (`order_id` digits are a reference, an `ssn` column is the cue); a sample of each table, with `rows_scanned` saying how much
+- [x] `inspect` scans table cells for PII, per column, with the column name as context (`order_id` digits are a reference, an `ssn` column is the cue); a sample of each table, with `rows_scanned` saying how much; names, postal addresses and birth dates flagged by their column header, which no pattern can see
+- [x] `inspect` reads CSV/TSV/JSON files with one exchange per row (`input`/`output`, `instruction`/`response`, `customer`/`agent`, …) as conversations, and question/answer files as FAQ documents for retrieval, and CSVs with one message per row (a speaker column and a text column): every message counted, languages and PII from a sample (`messages_scanned`), and the other columns scanned like table cells
+- [x] Tested on public exports (support tickets, a support Q&A set, Hinglish conversations and comments): id columns recognised however an export spells them, JSON read whole up to 32M characters, card numbers after order/purchase words no longer flagged
 - [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
 - [x] `inspect.json` report for `recommend` and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover
 - [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals

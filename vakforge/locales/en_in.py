@@ -18,7 +18,7 @@ from vakforge.locales.en import EnglishPack
 # 12 digits, first digit 2-9, usually grouped 4-4-4; last digit is a Verhoeff check digit.
 AADHAAR = PIIPattern(
     "aadhaar",
-    re.compile(r"(?<![\d-])[2-9]\d{3}[ -]?\d{4}[ -]?\d{4}(?![\d-])"),
+    re.compile(r"(?<![\w-])[2-9]\d{3}[ -]?\d{4}[ -]?\d{4}(?![\w-])"),
     validate=verhoeff_valid,
 )
 # AAAPA9999A; the 4th letter encodes the holder type (P person, C company, ...).
@@ -27,7 +27,7 @@ PAN = PIIPattern("pan", re.compile(r"\b[A-Z]{3}[ABCFGHJLPT][A-Z]\d{4}[A-Z]\b", r
 # invoice or AWB number are a reference, not a phone number.
 PHONE_IN = PIIPattern(
     "phone",
-    re.compile(r"(?<![\d+])(?:\+91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)"),
+    re.compile(r"(?<![\w+])(?:\+91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\w)"),
     context_deny=reference_cue(*REFERENCE_WORDS),
 )
 

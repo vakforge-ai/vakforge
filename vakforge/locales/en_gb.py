@@ -21,7 +21,7 @@ NI_NUMBER = PIIPattern(
 PHONE_GB = PIIPattern(
     "phone",
     re.compile(
-        r"(?<![\d+])(?:(?:\+44\s?|0)7\d{3}\s?\d{3}\s?\d{3}"
+        r"(?<![\w+])(?:(?:\+44\s?|0)7\d{3}\s?\d{3}\s?\d{3}"
         r"|(?:\+44\s?|0)[12]\d{1,3}\s?\d{3,4}\s?\d{3,4})\b"
     ),
 )

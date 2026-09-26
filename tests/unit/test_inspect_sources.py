@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from tests.conftest import write_wav
 from vakforge.inspect.sources import discover
 
@@ -51,8 +53,76 @@ def test_discover_classifies_every_kind(tmp_path):
     }
 
 
+def test_a_saved_pages_asset_folder_is_not_data(tmp_path):
+    # "Save as Webpage, Complete" writes page.html plus page_files/ with its scripts,
+    # styles and images, which were each listed as a skipped source.
+    (tmp_path / "Help Centre.html").write_text("<p>Refunds take 5 days.</p>", "utf-8")
+    assets = tmp_path / "Help Centre_files"
+    assets.mkdir()
+    (assets / "app.js.download").write_text("var x = 1;", "utf-8")
+    (assets / "logo.webp").write_bytes(b"RIFF")
+    (assets / "saved_resource.html").write_text("<p></p>", "utf-8")
+    # A folder that merely ends in _files, with no page beside it, is still read.
+    (tmp_path / "exports_files").mkdir()
+    (tmp_path / "exports_files" / "orders.csv").write_text("order_id\nA1\n", "utf-8")
+    got = {s.path.relative_to(tmp_path).as_posix() for s in discover(tmp_path)}
+    assert got == {"Help Centre.html", "exports_files/orders.csv"}
+
+
 def test_unreadable_sources_explain_what_to_do(tmp_path):
     _make_tree(tmp_path)
     notes = {s.path.name: s.note for s in discover(tmp_path) if not s.readable and s.note}
     assert notes["call2.m4a"] == "convert to WAV or FLAC first"
     assert notes["prices.xlsx"] == "export to CSV to profile"
+
+
+@pytest.mark.parametrize(
+    ("name", "body", "kind"),
+    [
+        # One exchange per row: conversations, not a lookup table. Read as a table, a
+        # million-row export of them was reported as "nothing yet".
+        ("pairs.csv", "input,output\nOrder kab aayega?,Kal tak.\n", "chat"),
+        # Question and answer is an FAQ: knowledge, read as a document.
+        ("faq.csv", "Question,Answer\nRefund?,5 days.\n", "document"),
+        ("train.tsv", "instruction\tcategory\tresponse\nhi\tX\thello\n", "chat"),
+        ("orders.csv", "order_id,status\nA1,open\n", "table"),
+        ("labels.csv", "text,category\nwhere is my card,card_arrival\n", "table"),
+    ],
+)
+def test_a_csv_of_exchanges_is_a_chat(tmp_path, name, body, kind):
+    (tmp_path / name).write_text(body, encoding="utf-8")
+    [src] = discover(tmp_path)
+    assert src.kind == kind
+
+
+def test_json_lines_saved_as_json_are_read_as_json_lines(tmp_path):
+    # A public FAQ dataset ships train.json with one record per line; parsed as a single
+    # document it failed on its second line.
+    rows = [{"question": "How do I pay?", "answer": "By card or UPI."}] * 3
+    (tmp_path / "train.json").write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    [src] = discover(tmp_path)
+    assert (src.kind, src.format) == ("document", "jsonl")  # question/answer: an FAQ
+
+
+def test_records_nested_under_a_key_are_found(tmp_path):
+    body = {"questions": [{"question": "Refund?", "answer": "5 days."}]}
+    (tmp_path / "faq.json").write_text(json.dumps(body), encoding="utf-8")
+    [src] = discover(tmp_path)
+    assert src.kind == "document"
+
+
+def test_a_large_json_chat_is_not_taken_for_a_table(tmp_path):
+    # Only the first 20,000 characters are read to classify; that head is not valid JSON
+    # on its own, so every JSON chat export larger than that used to become a table.
+    turns = [{"role": "user", "content": "Order kab aayega? " * 20}] * 400
+    (tmp_path / "support.json").write_text(json.dumps(turns), encoding="utf-8")
+    assert (tmp_path / "support.json").stat().st_size > 20_000
+    [src] = discover(tmp_path)
+    assert src.kind == "chat"
+
+
+def test_json_records_of_exchanges_are_a_chat(tmp_path):
+    rows = [{"instruction": "cancel my order", "response": "Done.", "intent": "cancel"}]
+    (tmp_path / "train.json").write_text(json.dumps(rows), encoding="utf-8")
+    [src] = discover(tmp_path)
+    assert (src.kind, src.format) == ("chat", "json")

@@ -51,6 +51,7 @@
 <li><a href="agent-skill.html">Agent skill</a></li>
 </ul></div>
 <div class="sb-group"><div class="sb-title">Reference</div><ul>
+<li><a href="glossary.html">Glossary</a></li>
 <li><a href="data-format.html">Data format</a></li>
 <li><a href="locale-packs.html">Locale packs</a></li>
 <li><a href="architecture.html">Architecture</a></li>
@@ -232,7 +233,7 @@ cp<span class="w"> </span>-r<span class="w"> </span>path/to/vakforge/skill/vakfo
 <p>Then ask: <em>&quot;Build a Hinglish support assistant from the data in data/raw.&quot;</em> Other agents that
 read <code>SKILL.md</code>-style instructions work the same way; point them at the folder.</p>
 <h2 id="bring-the-data-you-have">Bring the data you have</h2>
-<p><code>inspect</code> reads Markdown, text and HTML documents; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports and JSON chat logs; and WAV, FLAC, OGG and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.</p>
+<p><code>inspect</code> reads Markdown, text and HTML documents, and question/answer files (CSV or JSON) as FAQs; CSV, TSV, SQL dumps and JSON/JSONL tables; WhatsApp exports, JSON chat logs, CSV or JSON files with one exchange per row (<code>input</code>/<code>output</code>, <code>instruction</code>/<code>response</code>, <code>customer</code>/<code>agent</code> and similar), and CSV files with one message per row (a <code>role</code> or <code>speaker</code> column and a <code>text</code> or <code>message</code> column); and WAV, FLAC, OGG, Opus (including WhatsApp voice notes) and MP3 audio. Anything else is listed with the reason it was skipped. The table below is where each kind of source ends up on the full path.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -402,6 +403,7 @@ vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data
 <h2 id="documentation">Documentation</h2>
 <ul>
 <li><a href="decision-guide.html"><code>docs/DECISION_GUIDE.md</code></a>: what needs customizing, and when not to fine-tune</li>
+<li><a href="glossary.html"><code>docs/GLOSSARY.md</code></a>: what the terms in <code>inspect</code> and <code>recommend</code> output mean (turns, bars, verdicts, routes)</li>
 <li><a href="locale-packs.html"><code>docs/LOCALE_PACKS.md</code></a>: what a locale pack contains, and how to add one</li>
 <li><a href="data-format.html"><code>docs/DATA_FORMAT.md</code></a>: the dataset format</li>
 <li><a href="architecture.html"><code>docs/ARCHITECTURE.md</code></a>: how the code fits together, with diagrams</li>

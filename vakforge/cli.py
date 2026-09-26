@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, TextIO
+from typing import Annotated, Any, TextIO
 
 import typer
 from rich.console import Console
@@ -35,6 +35,7 @@ app = typer.Typer(
 )
 console = Console()
 err_console = Console(stderr=True)
+GLOSSARY_URL = "https://vakforge.pages.dev/docs/glossary.html"
 
 PROJECT_GITIGNORE = """# written by `vakforge init`
 data/raw/
@@ -160,6 +161,43 @@ def _project_locale(start: Path) -> str | None:
     return None
 
 
+def _inspect_with_progress(path: Path, pack: Any) -> dict[str, Any]:
+    """`inspect_dir`, with a progress bar on an interactive terminal.
+
+    A 600 MB export takes around 20 s, and a folder of them longer; with nothing on screen
+    that reads as a hang. The bar goes to stderr, only on a terminal, and clears when done,
+    so piped output and CI logs are unchanged.
+    """
+    from vakforge.inspect.report import inspect_dir
+
+    if not err_console.is_terminal:
+        return inspect_dir(path, pack)
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    columns = (
+        SpinnerColumn(),
+        TextColumn("[dim]inspecting[/]"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        TextColumn("{task.description}"),
+    )
+    with Progress(*columns, console=err_console, transient=True) as progress:
+        task = progress.add_task("", total=None)
+
+        def on_file(done: int, total: int, name: str) -> None:
+            progress.update(task, total=total, completed=done, description=name)
+
+        return inspect_dir(path, pack, on_file=on_file)
+
+
 @app.command()
 def inspect(
     path: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Data folder.")],
@@ -174,8 +212,9 @@ def inspect(
     """Report what is in a folder of documents, tables, chats and audio."""
     from rich.table import Table
 
-    from vakforge.inspect.report import inspect_dir, write_report
+    from vakforge.inspect.report import write_report
     from vakforge.locales import get_pack, list_packs
+    from vakforge.recommend.rules import fmt_kinds
 
     pack_id = locale or _project_locale(path.resolve())
     if pack_id is None:
@@ -190,16 +229,12 @@ def inspect(
         err_console.print(f"[red]{exc.args[0]}[/]")
         raise typer.Exit(2) from None
 
-    report = inspect_dir(path, pack)
+    report = _inspect_with_progress(path, pack)
     s = report["summary"]
     table = Table(title=f"{path} · locale {pack.id}", title_justify="left", show_header=False)
     table.add_column(style="dim")
     table.add_column()
-    counts = ", ".join(
-        f"{n} {k}" + ("s" if n > 1 and k not in {"audio", "other"} else "")
-        for k, n in s["counts"].items()
-        if n
-    )
+    counts = fmt_kinds(s["counts"])
     found = sum(s["counts"].values())
     profiled = sum(s["profiled"].values())
     table.add_row("files", counts or "none")
@@ -211,15 +246,16 @@ def inspect(
     length = f"{hours} h" if hours >= 1 else f"{round(hours * 60, 1)} min"
     table.add_row("audio", f"{length}, {s['two_channel_audio_files']} two-channel file(s)")
     table.add_row("languages", ", ".join(f"{k} {v}" for k, v in s["languages"].items()) or "-")
-    # A large table is scanned from a sample, so its counts are not totals; say so.
+    # A large table or conversation export is scanned from a sample, so its counts are not
+    # totals; say so.
     sampled = any(
         t["rows_scanned"] < t["rows"]
         for f in report["files"]
         for t in f.get("facts", {}).get("tables", {}).values()
         if "rows_scanned" in t
-    )
+    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
     pii = ", ".join(f"{k} {v}" for k, v in s["pii"].items()) or "none found"
-    table.add_row("personal data", pii + (" (large tables sampled)" if sampled else ""))
+    table.add_row("personal data", pii + (" (large files sampled)" if sampled else ""))
     table.add_row("tool candidates", ", ".join(s["tool_candidates"][:6]) or "-")
     console.print(table)
     for f in report["files"]:
@@ -269,7 +305,7 @@ def recommend(
     from vakforge.locales import get_pack, list_packs
     from vakforge.recommend import Constraints
     from vakforge.recommend import recommend as decide
-    from vakforge.recommend.rules import GOALS, GPU_GB
+    from vakforge.recommend.rules import GOALS, GPU_GB, fmt_number
 
     bad = [g for g in goal or [] if g not in GOALS]
     if bad:
@@ -295,13 +331,11 @@ def recommend(
             raise typer.Exit(2) from None
 
     if source.is_dir():
-        from vakforge.inspect.report import inspect_dir
-
         pack = resolve_pack(
             locale or _project_locale(source.resolve()),
             "pass --locale or run inside a `vakforge init` project",
         )
-        summary = inspect_dir(source, pack)["summary"]
+        summary = _inspect_with_progress(source, pack)["summary"]
     else:
         try:
             report = json.loads(source.read_text(encoding="utf-8-sig"))
@@ -347,8 +381,8 @@ def recommend(
     )
     table.add_column(style="dim")
     table.add_column()
-    table.add_row("primary problem", rec.primary_problem)
-    table.add_row("goals", ", ".join(rec.goals))
+    table.add_row("primary problem", rec.primary_problem or "none yet: no usable evidence")
+    table.add_row("goals", ", ".join(rec.goals) or "-")
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
     verdicts = {
@@ -367,7 +401,10 @@ def recommend(
         goal.add_column()
         goal.add_row("fine-tune?", f"{verdicts[d.eligibility]}  {d.reason}")
         if d.need is not None:
-            goal.add_row(f"data ({d.unit})", f"{d.have:g} of ~{d.need:g}  from {d.have_from}")
+            goal.add_row(
+                f"data ({d.unit})",
+                f"{fmt_number(d.have)} of ~{fmt_number(d.need)}  from {d.have_from}",
+            )
         for note in d.uncounted:
             goal.add_row("[yellow]not counted[/]", note)
         for blocker in d.blockers:
@@ -384,6 +421,8 @@ def recommend(
     console.print("[bold]next steps[/]")
     for i, step in enumerate(rec.next_steps, 1):
         console.print(f"  {i}. {step}")
+    # The output uses its own vocabulary (turns, floor, baseline first); say where it's defined.
+    console.print(f"[dim]what these terms mean: {GLOSSARY_URL}[/]")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps({"locale": pack.id, **rec.to_dict()}, indent=2, ensure_ascii=False) + "\n",

@@ -47,6 +47,16 @@ def test_bad_file_is_recorded_not_fatal(tmp_path):
     assert files["orders.csv"]["facts"]["tables"]["orders"]["rows"] == 1
 
 
+def test_a_limit_we_set_is_reported_in_plain_words(tmp_path, monkeypatch):
+    # "FileTooLarge: over ..." named an internal class to a user who could do nothing with it.
+    from vakforge.inspect import profile
+
+    monkeypatch.setattr(profile, "MAX_WHOLE_CHARS", 10)
+    (tmp_path / "big.json").write_text(json.dumps([{"id": i} for i in range(50)]), "utf-8")
+    [f] = inspect_dir(tmp_path, get_pack("en-US"))["files"]
+    assert f["error"].startswith("over 10 characters and must be parsed whole")
+
+
 def test_report_round_trips_as_utf8_json(tmp_path):
     (tmp_path / "hi.md").write_text("मेरा ऑर्डर कहाँ है", encoding="utf-8")
     report = inspect_dir(tmp_path, get_pack("hi-Latn-IN"))
@@ -76,3 +86,24 @@ def test_utf8_bom_from_windows_tools_is_ignored(tmp_path):
     assert s["counts"]["chat"] == 1
     assert s["chat_messages"] == 3
     assert s["tool_candidates"] == ["lookup_orders_by_order_id"]
+
+
+def test_progress_is_reported_before_each_file(tmp_path):
+    (tmp_path / "a.md").write_text("Refunds take 5 days.", encoding="utf-8")
+    (tmp_path / "b.md").write_text("COD is available.", encoding="utf-8")
+    seen = []
+    inspect_dir(tmp_path, get_pack("en-US"), on_file=lambda *a: seen.append(a))
+    assert seen == [(0, 2, "a.md"), (1, 2, "b.md")]
+
+
+def test_an_faq_is_routed_to_retrieval(tmp_path):
+    # Question/answer pairs are facts. Read as a chat, a public FAQ was sent to a behaviour
+    # fine-tune; as a document it goes where facts belong.
+    from vakforge.recommend import recommend
+
+    (tmp_path / "faq.csv").write_text(
+        "question,answer\nHow do I pay?,By card or UPI.\nRefund?,Within 5 days.\n", "utf-8"
+    )
+    s = inspect_dir(tmp_path, get_pack("en-US"))["summary"]
+    assert s["counts"]["document"] == 1 and s["document_words"] > 0
+    assert [r.route for r in recommend(s, get_pack("en-US")).routes] == ["retrieval"]

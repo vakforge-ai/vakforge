@@ -188,7 +188,7 @@ class Recommendation:
     thing you actually care about.
     """
 
-    primary_problem: Goal
+    primary_problem: Goal | None  # None: nothing in the folder is evidence for any goal yet
     goals: list[Goal]
     routes: list[Route]
     goal_decisions: list[GoalDecision]
@@ -211,6 +211,10 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
 
     Reads `profiled`, not `counts`: a file that was found but could not be read proves
     nothing about what the user wants to build.
+
+    An empty list means nothing here is evidence for any goal. It used to fall back to
+    "knowledge", which then explained that "facts belong in retrieval" about a folder with
+    no documents in it.
     """
     goals: list[Goal] = []
     profiled = summary.get("profiled") or summary.get("counts", {})
@@ -225,13 +229,16 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
     non_native = [lang for lang in summary.get("languages", {}) if not lang.startswith("en")]
     if non_native and any(v != "native" for v in pack.resolved("recipe_support").values()):
         goals.append("language")
-    return goals or ["knowledge"]
+    return goals
 
 
 def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
     counts = summary.get("counts", {})
+    # Routes follow what was read, as goals do: two unreadable PDFs used to get "documents
+    # -> retrieval" beside a verdict that nothing in the folder was usable.
+    profiled = summary.get("profiled") or counts
     routes: list[Route] = []
-    if counts.get("document", 0):
+    if profiled.get("document", 0):
         routes.append(
             Route(
                 "documents",
@@ -251,7 +258,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
                 "measure the prompt-only baseline first",
             )
         )
-    if counts.get("audio", 0):
+    if profiled.get("audio", 0):
         routes.append(
             Route(
                 "audio",
@@ -280,11 +287,30 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
             )
         )
     if not routes:
-        routes.append(
-            Route(
-                "nothing yet", "synth", "generate scenario dialogues, ship a v0, collect real data"
+        start = "generate scenario dialogues, ship a v0, collect real data"
+        found = fmt_kinds(counts)
+        if found:
+            # Say what was there and why it did not count, so a folder of unusable files
+            # does not read as empty, and an unread file is not blamed on its columns.
+            why = []
+            unread = sum(counts.values()) - sum(profiled.values())
+            if unread:
+                why.append(
+                    f"{unread} file{'s' if unread > 1 else ''} could not be read (the inspect "
+                    "report says why)"
+                )
+            if profiled.get("table", 0):
+                why.append("a table needs an id column to look records up by")
+            routes.append(
+                Route(
+                    "nothing usable yet",
+                    "synth",
+                    f"found {found}, but none of it is evidence for a goal: "
+                    f"{'; '.join(why) or 'nothing in it answers a goal'}. Meanwhile, {start}",
+                )
             )
-        )
+        else:
+            routes.append(Route("nothing yet", "synth", start))
     return routes
 
 
@@ -350,8 +376,24 @@ _UNIT_NAME = {
 }
 
 
+def fmt_number(value: float) -> str:
+    """A count as people write it. `:g` prints 2002646 as 2.00265e+06 past six digits,
+    which is how a million-message export was reported."""
+    return f"{value:.15g}"
+
+
+def fmt_kinds(counts: dict[str, int]) -> str:
+    """File counts in words: "1 document, 2 tables, 3 audio". Shared by inspect and
+    recommend, so neither writes "2 document" again."""
+    return ", ".join(
+        f"{n} {kind}{'s' if n > 1 and kind not in {'audio', 'other'} else ''}"
+        for kind, n in counts.items()
+        if n
+    )
+
+
 def _amount(value: float, unit: str) -> str:
-    return f"{value:g} {_UNIT_NAME[unit]}"
+    return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
 
 
 def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
@@ -373,15 +415,15 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
         uncounted = []
         if audio_hours:
             uncounted.append(
-                f"{audio_hours:g} h of audio contributes no turns until it is transcribed "
-                "and diarized; inspect does neither"
+                f"{fmt_number(audio_hours)} h of audio contributes no turns until it is "
+                "transcribed and diarized; inspect does neither"
             )
         return float(messages), f"{messages} parsed chat messages", uncounted, True
 
     if bar.unit == "hours":
         return (
             audio_hours,
-            f"{audio_hours:g} h of recordings",
+            f"{fmt_number(audio_hours)} h of recordings",
             [
                 "duration only: no transcripts, no speaker labels and no consent record, "
                 "all of which recognition training needs"
@@ -392,12 +434,45 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
     seconds = audio_hours * 3600
     return (
         seconds,
-        f"{seconds:g} s of recordings",
+        f"{fmt_number(seconds)} s of recordings",
         [
             "not verified as one consented speaker recorded under consistent conditions, "
             "which is what a voice fine-tune actually needs"
         ],
         False,
+    )
+
+
+# What to do when a goal is short of data, in terms of that goal. It was one sentence for
+# every goal, "generate coverage with synth", which is the opposite of the evidence for
+# recognition (biasing first, then real accented speech) and for language (synthetic
+# code-switching alone did not move accuracy).
+_SHORTFALL: dict[Goal, str] = {
+    "recognition": (
+        "try contextual biasing towards your names first; if it still misses, collect real "
+        "recordings of your callers, transcribed and with consent"
+    ),
+    "voice": (
+        "try a zero-shot voice prompt first; a fine-tune needs clean audio of one speaker "
+        "who consented to their voice being used"
+    ),
+    "language": (
+        "collect real code-switched conversations; synth adds coverage but alone did not "
+        "move accuracy, and the evaluation set has to be real"
+    ),
+}
+
+
+def _short_of(goal: Goal, step: bool = False) -> str:
+    """The shortfall advice for `goal`: in the verdict's reason, or as a next step."""
+    if goal in _SHORTFALL:
+        return _SHORTFALL[goal]
+    if step:
+        return (
+            "run synth over your documents and tools for coverage, and keep the evaluation set real"
+        )
+    return (
+        "generate coverage with synth, ship on retrieval and tools, and collect real conversations"
     )
 
 
@@ -419,8 +494,7 @@ def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
         return (
             "blocked",
             f"{_amount(have, bar.unit)} is below the {_amount(bar.floor, bar.unit)} floor for "
-            f"{primary}; generate coverage with synth, ship on retrieval and tools, and "
-            "collect real conversations",
+            f"{primary}; {_short_of(primary)}",
         )
     if bar.target is not None and have < bar.target:
         return (
@@ -489,6 +563,12 @@ _RANK: dict[Eligibility, int] = {"blocked": 0, "baseline_first": 1, "candidate":
 
 def _project_verdict(decisions: list[GoalDecision]) -> tuple[Eligibility, str]:
     """Roll the matrix up: is any training worth attempting on this project at all?"""
+    if not decisions:
+        return "blocked", (
+            "nothing here is evidence for any goal yet, so there is nothing to train. Add "
+            "documents, a table with an id column, conversations or call audio, and run "
+            "recommend again"
+        )
     best = max(_RANK[d.eligibility] for d in decisions)
     named = {
         state: [d.goal for d in decisions if d.eligibility == state]
@@ -547,7 +627,7 @@ def recommend(
     goals = list(c.goals) or infer_goals(summary, pack)
     if c.duplex and "duplex" not in goals:
         goals.insert(0, "duplex")
-    primary: Goal = "duplex" if c.duplex else goals[0]
+    primary: Goal | None = "duplex" if c.duplex else (goals[0] if goals else None)
     routes = _routes(summary, goals)
     audio_hours = float(summary.get("audio_hours", 0.0))
 
@@ -589,9 +669,8 @@ def recommend(
     for d in decisions:
         if d.need is not None and d.have < d.need:
             steps.append(
-                f"{d.goal}: {d.have:g} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
-                "run synth over your documents and tools for coverage, and keep the "
-                "evaluation set real"
+                f"{d.goal}: {fmt_number(d.have)} of ~{_amount(d.need, d.unit)} ({d.confidence}); "
+                f"{_short_of(d.goal, step=True)}"
             )
         for note in d.uncounted:
             steps.append(f"{d.goal}, not counted yet: {note}")
@@ -603,6 +682,14 @@ def recommend(
             steps.append(f"{d.goal}: fine-tune with {d.recipe} and compare base vs tuned")
     else:
         steps.append("ship the retrieval + tools version and collect real conversations")
+    if not goals:
+        # With no evidence there is no baseline to measure and nothing to ship yet.
+        steps = [
+            "nothing here is evidence yet: add documents, a table with an id column, "
+            "conversations or call audio, then run recommend again",
+            "or start without data: generate scenario dialogues with synth, ship a v0 and "
+            "collect real conversations",
+        ]
 
     return Recommendation(
         primary_problem=primary,

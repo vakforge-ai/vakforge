@@ -5,10 +5,11 @@ from __future__ import annotations
 import csv
 import json
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from vakforge.inspect.profile import PROFILERS
+from vakforge.inspect.profile import PROFILERS, FileTooLarge
 from vakforge.inspect.sources import discover
 from vakforge.locales.base import LocalePack
 
@@ -17,10 +18,19 @@ REPORT_VERSION = "0.1"
 FILE_ERRORS = (OSError, ValueError, UnicodeError, RuntimeError, csv.Error, KeyError, TypeError)
 
 
-def inspect_dir(root: Path, pack: LocalePack) -> dict[str, Any]:
-    """Profile every file under `root` with `pack` and summarise the whole folder."""
+def inspect_dir(
+    root: Path, pack: LocalePack, on_file: Callable[[int, int, str], None] | None = None
+) -> dict[str, Any]:
+    """Profile every file under `root` with `pack` and summarise the whole folder.
+
+    `on_file(done, total, path)` is called before each file is read, so a caller can show
+    progress; a large export can take a while, and silence reads as a hang.
+    """
     files: list[dict[str, Any]] = []
-    for src in discover(root):
+    sources = discover(root)
+    for done, src in enumerate(sources):
+        if on_file:
+            on_file(done, len(sources), src.path.relative_to(root).as_posix())
         entry: dict[str, Any] = {
             "path": src.path.relative_to(root).as_posix(),
             "kind": src.kind,
@@ -34,7 +44,11 @@ def inspect_dir(root: Path, pack: LocalePack) -> dict[str, Any]:
                 entry["facts"] = PROFILERS[src.kind](src, pack)
             except FILE_ERRORS as exc:
                 entry["readable"] = False
-                entry["error"] = f"{type(exc).__name__}: {exc}"
+                # Our own limits explain themselves; any other error keeps its type, which is
+                # the useful half of, say, "UnicodeDecodeError: ...".
+                entry["error"] = (
+                    str(exc) if isinstance(exc, FileTooLarge) else f"{type(exc).__name__}: {exc}"
+                )
         files.append(entry)
     return {
         "report_version": REPORT_VERSION,
