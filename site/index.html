@@ -413,8 +413,14 @@
   .step code { font-family: var(--mono); font-size: .78rem; color: var(--cyan); }
   .step-state { align-self: flex-start; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--chip); color: var(--dim); font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; }
   .step-state.now { border-color: color-mix(in srgb, var(--cyan) 45%, transparent); color: var(--tint); }
-  .path-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; color: var(--dim); font-size: .82rem; line-height: 1.5; }
-  .path-legend b { color: var(--tint); font-weight: 500; }
+  /* the key to the step labels, in the space beside the heading */
+  .heading-row.split { max-width: none; grid-template-columns: minmax(0, 760px) minmax(280px, 380px); justify-content: space-between; align-items: center; column-gap: 48px; }
+  .path-key { display: grid; gap: 12px; padding: 14px 22px; border: 1px solid var(--line); border-radius: var(--r-lg); background: linear-gradient(180deg, var(--card-strong-a), var(--card-strong-b)); box-shadow: 0 24px 48px -30px var(--shadow); }
+  .path-key-title { font-family: var(--mono); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+  .key-row { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .key-row .step-state { justify-self: start; font-size: .68rem; }
+  .key-row p { color: var(--muted); font-size: .84rem; line-height: 1.5; }
+  .key-row code { font-family: var(--mono); font-size: .85em; color: var(--cyan); }
   .step p { color: var(--muted); font-size: .93rem; line-height: 1.55; }
 
   .step.gate { border-color: color-mix(in srgb, var(--coral) 55%, transparent); background: linear-gradient(180deg, var(--gate-a), var(--gate-b)); }
@@ -786,6 +792,7 @@
   @media (max-width: 960px) {
     .section { padding-block: clamp(56px, 10vw, 88px); }
     .heading-row { margin-bottom: 28px; }
+    .heading-row.split { grid-template-columns: minmax(0, 1fr); row-gap: 24px; }
 
     .path { grid-template-columns: minmax(0, 1fr); row-gap: 36px; }
     .turn { display: none; }
@@ -1014,10 +1021,16 @@
 
 <section class="section" id="how">
   <div class="wrap">
-    <div class="heading-row">
-      <div class="stack"><span class="kicker">One opinionated path</span><h2>Seven steps, two decision gates, no menu of four hundred models.</h2></div>
-      <p class="lede">Open speech-to-speech models exist. Fine-tuning scripts exist. Eval tools and serving frameworks exist. What was missing is one path from &ldquo;here is what my company knows&rdquo; to a served assistant you can prove beats the base model.</p>
-      <p class="path-legend"><span><b>In the CLI</b> &mdash; ships today in the <code>vakforge</code> package, installable now.</span><span><b>Skill generates</b> &mdash; the agent skill writes this step into your project, against your data and your models. vakforge does not ship a training or serving stack.</span></p>
+    <div class="heading-row split">
+      <div class="stack">
+        <div class="stack"><span class="kicker">One opinionated path</span><h2>Seven steps, two decision gates, no menu of four hundred models.</h2></div>
+        <p class="lede">Open speech-to-speech models exist. Fine-tuning scripts exist. Eval tools and serving frameworks exist. What was missing is one path from &ldquo;here is what my company knows&rdquo; to a served assistant you can prove beats the base model.</p>
+      </div>
+      <aside class="path-key" aria-label="What the label on each step means">
+        <p class="path-key-title">Two kinds of step</p>
+        <div class="key-row"><span class="step-state now">in the CLI</span><p>Ships today in the <code>vakforge</code> package, installable now.</p></div>
+        <div class="key-row"><span class="step-state">skill generates</span><p>The agent skill writes this step into your project, against your data and your models. vakforge does not ship a training or serving stack.</p></div>
+      </aside>
     </div>
     <div class="path" id="path" role="list">
       <article class="step" role="listitem"><div class="step-head"><span class="step-num">01</span><span class="step-ring" aria-hidden="true"></span></div><h3>Inspect</h3><code>vakforge inspect ./data</code><span class="step-state now">in the CLI</span><p>Inventories every document, table, chat export and recording: formats, languages, personal data it can detect, tables that could become tools. Says what it skipped and why.</p><span class="link" aria-hidden="true"><i></i></span></article>
