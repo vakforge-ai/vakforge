@@ -182,6 +182,16 @@ def test_recommend_reads_a_report_saved_with_a_byte_order_mark(tmp_path):
     assert r.exit_code == 0, r.output
 
 
+def test_recommend_says_when_nothing_is_usable(tmp_path):
+    report = {"locale": "en-US", "summary": {"counts": {"table": 1}, "profiled": {"table": 1}}}
+    (tmp_path / "r.json").write_text(json.dumps(report), encoding="utf-8")
+    r = runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-o", str(tmp_path / "o.json")])
+    assert r.exit_code == 0, r.output
+    assert "none yet: no usable evidence" in flat(r)
+    assert "nothing usable yet" in flat(r)
+    assert "facts belong in retrieval" not in flat(r)
+
+
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2

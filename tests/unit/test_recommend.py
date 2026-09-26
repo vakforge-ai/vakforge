@@ -233,6 +233,24 @@ def test_chat_messages_are_real_turns_and_do_reach_candidate():
     assert d(r).eligibility == "candidate"
 
 
+def test_a_folder_with_nothing_usable_says_so_instead_of_guessing_knowledge():
+    # One table with no id column: the old fallback named "knowledge" as the problem and
+    # explained that facts belong in retrieval, for a folder with no documents in it.
+    r = recommend(summary(counts={"table": 1}), US)
+    assert r.primary_problem is None
+    assert r.goals == [] and r.goal_decisions == []
+    assert r.fine_tune == "blocked" and "nothing here is evidence" in r.fine_tune_reason
+    [route] = r.routes
+    assert route.source == "nothing usable yet" and "found 1 table" in route.why
+    assert r.next_steps[0].startswith("nothing here is evidence yet")
+
+
+def test_an_empty_folder_is_nothing_yet():
+    r = recommend(summary(), US)
+    assert r.primary_problem is None
+    assert [x.source for x in r.routes] == ["nothing yet"]
+
+
 def test_unprofiled_files_do_not_infer_goals():
     # Audio that was discovered but never read proves nothing about the user's intent.
     found_only = summary(counts={"audio": 10}, profiled={"audio": 0})

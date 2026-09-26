@@ -348,8 +348,8 @@ def recommend(
     )
     table.add_column(style="dim")
     table.add_column()
-    table.add_row("primary problem", rec.primary_problem)
-    table.add_row("goals", ", ".join(rec.goals))
+    table.add_row("primary problem", rec.primary_problem or "none yet: no usable evidence")
+    table.add_row("goals", ", ".join(rec.goals) or "-")
     for r in rec.routes:
         table.add_row(r.source, f"[bold]{r.route}[/]  {r.why}")
     verdicts = {

@@ -63,7 +63,7 @@ vakforge recommend inspect.json --duplex --gpu 80
 
 The command prints, and writes to `recommend.json`:
 
-- **primary problem** and the full list of goals (inferred from the data, or set with `--goal`)
+- **primary problem** and the full list of goals (inferred from the data, or set with `--goal`). When nothing in the folder is evidence for any goal, it says so, with an empty goal list and what was found, rather than guessing one
 - **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack
 - **a decision per goal.** Most real requests are two or three goals at once, and they do not share an answer: `--goal tools --goal recognition` returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up — the best state any goal reached.
 - **fine-tune?** per goal, one of three answers, never a bare yes:

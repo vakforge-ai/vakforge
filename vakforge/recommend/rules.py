@@ -188,7 +188,7 @@ class Recommendation:
     thing you actually care about.
     """
 
-    primary_problem: Goal
+    primary_problem: Goal | None  # None: nothing in the folder is evidence for any goal yet
     goals: list[Goal]
     routes: list[Route]
     goal_decisions: list[GoalDecision]
@@ -211,6 +211,10 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
 
     Reads `profiled`, not `counts`: a file that was found but could not be read proves
     nothing about what the user wants to build.
+
+    An empty list means nothing here is evidence for any goal. It used to fall back to
+    "knowledge", which then explained that "facts belong in retrieval" about a folder with
+    no documents in it.
     """
     goals: list[Goal] = []
     profiled = summary.get("profiled") or summary.get("counts", {})
@@ -225,7 +229,7 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
     non_native = [lang for lang in summary.get("languages", {}) if not lang.startswith("en")]
     if non_native and any(v != "native" for v in pack.resolved("recipe_support").values()):
         goals.append("language")
-    return goals or ["knowledge"]
+    return goals
 
 
 def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
@@ -280,11 +284,21 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
             )
         )
     if not routes:
-        routes.append(
-            Route(
-                "nothing yet", "synth", "generate scenario dialogues, ship a v0, collect real data"
+        start = "generate scenario dialogues, ship a v0, collect real data"
+        found = ", ".join(f"{n} {k}" for k, n in counts.items() if n)
+        if found:
+            # Say what was there, so a folder of unusable files does not read as empty.
+            routes.append(
+                Route(
+                    "nothing usable yet",
+                    "synth",
+                    f"found {found}, but none of it is evidence for a goal: a table needs an "
+                    "id column to look records up by, and skipped files say why in the "
+                    f"inspect report. Meanwhile, {start}",
+                )
             )
-        )
+        else:
+            routes.append(Route("nothing yet", "synth", start))
     return routes
 
 
@@ -489,6 +503,12 @@ _RANK: dict[Eligibility, int] = {"blocked": 0, "baseline_first": 1, "candidate":
 
 def _project_verdict(decisions: list[GoalDecision]) -> tuple[Eligibility, str]:
     """Roll the matrix up: is any training worth attempting on this project at all?"""
+    if not decisions:
+        return "blocked", (
+            "nothing here is evidence for any goal yet, so there is nothing to train. Add "
+            "documents, a table with an id column, conversations or call audio, and run "
+            "recommend again"
+        )
     best = max(_RANK[d.eligibility] for d in decisions)
     named = {
         state: [d.goal for d in decisions if d.eligibility == state]
@@ -547,7 +567,7 @@ def recommend(
     goals = list(c.goals) or infer_goals(summary, pack)
     if c.duplex and "duplex" not in goals:
         goals.insert(0, "duplex")
-    primary: Goal = "duplex" if c.duplex else goals[0]
+    primary: Goal | None = "duplex" if c.duplex else (goals[0] if goals else None)
     routes = _routes(summary, goals)
     audio_hours = float(summary.get("audio_hours", 0.0))
 
@@ -603,6 +623,14 @@ def recommend(
             steps.append(f"{d.goal}: fine-tune with {d.recipe} and compare base vs tuned")
     else:
         steps.append("ship the retrieval + tools version and collect real conversations")
+    if not goals:
+        # With no evidence there is no baseline to measure and nothing to ship yet.
+        steps = [
+            "nothing here is evidence yet: add documents, a table with an id column, "
+            "conversations or call audio, then run recommend again",
+            "or start without data: generate scenario dialogues with synth, ship a v0 and "
+            "collect real conversations",
+        ]
 
     return Recommendation(
         primary_problem=primary,
