@@ -70,9 +70,9 @@ The words `vakforge inspect` and `vakforge recommend` use, and the fields they w
 
 **Bar.** How much data a goal needs before fine-tuning it is worth trying, in the goal's own unit (turns, hours or seconds). Each bar has a *floor* and usually a *target*.
 
-**Floor.** Below it there is too little to learn from, so the verdict is *no*.
+**Floor.** Below it there is too little to learn from, so the verdict is *no* (`floor` in `recommend.json`).
 
-**Target.** What the cited work used. Between the floor and the target, the verdict is *baseline first*.
+**Target.** What the cited work used. Between the floor and the target, the verdict is *baseline first* (`need` in `recommend.json`).
 
 **Verdict.** One of three answers per goal, never a bare yes (`eligibility` in `recommend.json`):
 
@@ -95,6 +95,8 @@ The project-level *fine-tune?* line is the best verdict any goal reached.
 **Blocked on.** What stands between a goal and training besides the amount of data: for example, a duplex recipe that needs the caller and the agent on separate channels when the recordings cannot show that. The GPU you need is shown on the recipe line instead.
 
 **Recipe.** A researched path from an open base model to a trained assistant (`lfm25-audio`, `moshi-lora`, `qwen-omni`, `cascade`). None has been built yet; see [recipes](RECIPES.md).
+
+**Method.** How a recipe plans to train (`recipe_method` in `recommend.json`). *LoRA* trains small added weights beside a frozen model; a *full fine-tune* updates every weight and needs more memory. The method is each upstream trainer's documented approach, marked *planned* because no recipe has run end to end yet. QLoRA (LoRA over a 4-bit model) is not suggested: nothing has verified it for these audio models.
 
 **Synth.** Generating example conversations in your language to cover the cases your data does not. It buys coverage for a first version; it does not replace real data.
 

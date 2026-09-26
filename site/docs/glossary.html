@@ -182,8 +182,8 @@
 <p><strong>Behaviour fine-tune.</strong> Training the model on real conversations so it learns how your team handles a call: the steps, the tone, when to hand off.</p>
 <p><strong>Contextual biasing.</strong> Steering speech recognition towards your product, place and customer names while it listens, which cuts errors on them without training.</p>
 <p><strong>Bar.</strong> How much data a goal needs before fine-tuning it is worth trying, in the goal's own unit (turns, hours or seconds). Each bar has a <em>floor</em> and usually a <em>target</em>.</p>
-<p><strong>Floor.</strong> Below it there is too little to learn from, so the verdict is <em>no</em>.</p>
-<p><strong>Target.</strong> What the cited work used. Between the floor and the target, the verdict is <em>baseline first</em>.</p>
+<p><strong>Floor.</strong> Below it there is too little to learn from, so the verdict is <em>no</em> (<code>floor</code> in <code>recommend.json</code>).</p>
+<p><strong>Target.</strong> What the cited work used. Between the floor and the target, the verdict is <em>baseline first</em> (<code>need</code> in <code>recommend.json</code>).</p>
 <p><strong>Verdict.</strong> One of three answers per goal, never a bare yes (<code>eligibility</code> in <code>recommend.json</code>):</p>
 <div class="table-wrap"><table>
 <thead>
@@ -218,6 +218,7 @@
 <p><strong>Not counted.</strong> Material that exists but cannot count towards a bar yet, and what it needs first: hours of audio that have not been transcribed, for example.</p>
 <p><strong>Blocked on.</strong> What stands between a goal and training besides the amount of data: for example, a duplex recipe that needs the caller and the agent on separate channels when the recordings cannot show that. The GPU you need is shown on the recipe line instead.</p>
 <p><strong>Recipe.</strong> A researched path from an open base model to a trained assistant (<code>lfm25-audio</code>, <code>moshi-lora</code>, <code>qwen-omni</code>, <code>cascade</code>). None has been built yet; see <a href="recipes.html">recipes</a>.</p>
+<p><strong>Method.</strong> How a recipe plans to train (<code>recipe_method</code> in <code>recommend.json</code>). <em>LoRA</em> trains small added weights beside a frozen model; a <em>full fine-tune</em> updates every weight and needs more memory. The method is each upstream trainer's documented approach, marked <em>planned</em> because no recipe has run end to end yet. QLoRA (LoRA over a 4-bit model) is not suggested: nothing has verified it for these audio models.</p>
 <p><strong>Synth.</strong> Generating example conversations in your language to cover the cases your data does not. It buys coverage for a first version; it does not replace real data.</p>
 <p><strong>Full-duplex.</strong> A model that can listen while it speaks, so a caller can interrupt it. It comes from the base model, not from fine-tuning on a company's calls.</p>
 <h2 id="privacy-prepare-validate">Privacy (<code>prepare</code>, <code>validate</code>)</h2>

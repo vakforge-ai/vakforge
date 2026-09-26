@@ -37,6 +37,7 @@
       "have": 16.0,
       "have_from": "16 parsed chat messages",
       "uncounted": [],
+      "floor": 200,
       "need": 8000,
       "unit": "turns",
       "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of broad general-purpose corpora, not a measured minimum for adapting one company's fixed set of tools, so treat 8k as the scale of the published work rather than a requirement: your tool count, argument branches and negative cases matter more. The schema and the prompt come first either way",
@@ -44,6 +45,7 @@
       "recipe": null,
       "recipe_support": null,
       "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "recipe_method": null,
       "blockers": []
     },
     {
@@ -53,6 +55,7 @@
       "have": 16.0,
       "have_from": "16 parsed chat messages",
       "uncounted": [],
+      "floor": 200,
       "need": 600,
       "unit": "turns",
       "evidence": "LIMA (arXiv 2305.11206) got style and format from 1,000 curated examples and Spec-TOD (arXiv 2507.04841) was competitive on ~840 dialogues, but neither validates 600 or 200. Branch coverage and quality matter more than the count",
@@ -60,6 +63,7 @@
       "recipe": null,
       "recipe_support": null,
       "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "recipe_method": null,
       "blockers": []
     },
     {
@@ -69,6 +73,7 @@
       "have": 16.0,
       "have_from": "16 parsed chat messages",
       "uncounted": [],
+      "floor": 0,
       "need": null,
       "unit": "turns",
       "evidence": "Ovadia et al. 2024 (arXiv 2312.05934): retrieval beat unsupervised fine-tuning for both existing and new facts. Gekhman et al. 2024 (arXiv 2405.05904): training on new-knowledge examples raises hallucination roughly linearly",
@@ -76,6 +81,7 @@
       "recipe": null,
       "recipe_support": null,
       "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "recipe_method": null,
       "blockers": []
     },
     {
@@ -85,6 +91,7 @@
       "have": 16.0,
       "have_from": "16 parsed chat messages",
       "uncounted": [],
+      "floor": 200,
       "need": null,
       "unit": "turns",
       "evidence": "CS-YODAS moved Hindi-English accuracy from 0% to 19.9% with natural code-switched training where synthetic alone failed. Synthetic data buys coverage; natural code-switching and the evaluation set have to be real",
@@ -92,6 +99,7 @@
       "recipe": null,
       "recipe_support": null,
       "recipe_reason": "no recipe needed: retrieval and tools carry this one",
+      "recipe_method": null,
       "blockers": []
     }
   ],

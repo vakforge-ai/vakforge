@@ -198,6 +198,15 @@ def test_recommend_points_to_the_glossary(tmp_path):
     assert "docs/glossary.html" in flat(r)
 
 
+def test_recommend_marks_the_recipe_method_as_planned(tmp_path):
+    report = {"locale": "en-US", "summary": {"counts": {"chat": 1}, "chat_messages": 900}}
+    (tmp_path / "r.json").write_text(json.dumps(report), encoding="utf-8")
+    args = ["recommend", str(tmp_path / "r.json"), "--gpu", "24"]
+    r = runner.invoke(app, [*args, "-o", str(tmp_path / "o.json")])
+    assert r.exit_code == 0, r.output
+    assert "full fine-tune" in flat(r) and "(planned, not yet run)" in flat(r)
+
+
 def test_recommend_rejects_bad_goal_and_gpu(tmp_path):
     (tmp_path / "r.json").write_text('{"locale": "en-US", "summary": {}}', encoding="utf-8")
     assert runner.invoke(app, ["recommend", str(tmp_path / "r.json"), "-g", "magic"]).exit_code == 2

@@ -407,6 +407,9 @@ def recommend(
         for blocker in d.blockers:
             goal.add_row("[yellow]blocked on[/]", blocker)
         goal.add_row("recipe", f"{d.recipe or 'none'}  {d.recipe_reason}")
+        if d.recipe_method:
+            # The recipes are researched, not built; the method is their plan, not a result.
+            goal.add_row("method", f"{d.recipe_method}  [dim](planned, not yet run)[/]")
         # The confidence label matters as much as the verdict: a threshold we invented and
         # one a paper measured should not read the same way.
         goal.add_row(f"evidence ({d.confidence})", d.evidence)

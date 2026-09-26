@@ -343,3 +343,19 @@ def test_explicit_goals_override_inference():
     assert r.primary_problem == "workflow"
     assert d(r).eligibility == "blocked"  # no conversations yet
     assert r.to_dict()["goals"] == ["workflow"]
+
+
+def test_a_named_recipe_carries_its_planned_method_and_a_blocked_goal_none():
+    # The method comes from the recipe research; a goal with no recipe has no method.
+    trainable = recommend(summary(counts={"chat": 1}, chat_messages=900), US, Constraints(gpu="24"))
+    assert d(trainable).recipe == "lfm25-audio"
+    assert "full fine-tune" in d(trainable).recipe_method
+    docs = recommend(summary(counts={"document": 1}, document_words=500), US)
+    assert d(docs).recipe is None and d(docs).recipe_method is None
+
+
+def test_each_goal_reports_its_floor_beside_its_target():
+    r = recommend(
+        summary(counts={"chat": 1}, chat_messages=50), US, Constraints(goals=("workflow",))
+    )
+    assert (d(r).floor, d(r).need) == (200, 600)
