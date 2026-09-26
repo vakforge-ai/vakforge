@@ -140,11 +140,23 @@ def schema(
 
 def _project_locale(start: Path) -> str | None:
     """First locale in the nearest `vakforge.yaml` at or above `start`."""
+    import yaml
+    from pydantic import ValidationError
+
     from vakforge.config import CONFIG_NAME, ProjectConfig
 
     for folder in [start, *start.parents]:
         if (folder / CONFIG_NAME).exists():
-            return ProjectConfig.load(folder).locales[0]
+            # A hand-edited project file used to end in a pydantic traceback.
+            try:
+                return ProjectConfig.load(folder).locales[0]
+            except ValidationError as exc:
+                first = exc.errors()[0]
+                why = f"{'.'.join(str(p) for p in first['loc']) or '<file>'}: {first['msg']}"
+            except (yaml.YAMLError, OSError) as exc:
+                why = str(exc).splitlines()[0]
+            err_console.print(f"[red]{folder / CONFIG_NAME} is not a valid project file[/]: {why}")
+            raise typer.Exit(2)
     return None
 
 
