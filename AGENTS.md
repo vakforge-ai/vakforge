@@ -1,12 +1,12 @@
-# CLAUDE.md — vakforge
+# AGENTS.md — vakforge
 
-Claude Code reads this file automatically at the start of every session in this repo. Keep it short and current. (Reference: https://docs.claude.com/en/docs/claude-code/overview)
+The working rules for this repo, for contributors and for any coding agent they use. Keep it short and current.
 
 ## What this repo is
 
 `vakforge` — turns the data a company already has (documents, database tables, chat logs, CRM records, recorded calls) into a self-hosted, evaluated, real-time voice assistant served from open models on the user's hardware, behind standard protocols (OpenAI Realtime WebSocket format first; WebRTC and SIP next). "Realtime compatible" means the wire format only; nothing calls a hosted API. Any language via locale packs; launch locales English (en-US/en-GB/en-IN) and Hinglish (hi-Latn-IN). Ships as: zero-ML-dep core library + CLI, an agent skill under `skill/`, a landing page under `site/`, and GPU recipes as optional extras. Full spec lives in `docs/`.
 
-## Read first, every session
+## Read first
 
 1. `docs/ROADMAP.md` — current phase and what is done/stubbed.
 2. `docs/ARCHITECTURE.md` — package layout and boundaries.
@@ -16,7 +16,7 @@ Claude Code reads this file automatically at the start of every session in this 
 
 ## Hard rules
 
-- Verify every upstream API against installed source (`python -c "import x; print(x.__file__)"` then read it) or the pinned GitHub commit. Never guess signatures. Unverifiable → `# TODO(verify)` + skipped test, then tell the user.
+- Verify every upstream API against installed source (`python -c "import x; print(x.__file__)"` then read it) or the pinned GitHub commit. Never guess signatures. Unverifiable → `# TODO(verify)` + skipped test, and say so in the pull request.
 - `pytest` passes on CPU with no downloads. GPU/model tests are marked `@pytest.mark.gpu` / `@pytest.mark.model` and excluded by default.
 - Ask before: downloading models > 500 MB, GPU jobs > a few minutes, any paid API call.
 - Recipes are optional extras with lazy imports. Core (`schema`, `inspect`, `validate`, `recommend`, `locales`) must import with zero ML deps.
