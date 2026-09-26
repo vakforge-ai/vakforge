@@ -234,8 +234,11 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
 
 def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
     counts = summary.get("counts", {})
+    # Routes follow what was read, as goals do: two unreadable PDFs used to get "documents
+    # -> retrieval" beside a verdict that nothing in the folder was usable.
+    profiled = summary.get("profiled") or counts
     routes: list[Route] = []
-    if counts.get("document", 0):
+    if profiled.get("document", 0):
         routes.append(
             Route(
                 "documents",
@@ -255,7 +258,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
                 "measure the prompt-only baseline first",
             )
         )
-    if counts.get("audio", 0):
+    if profiled.get("audio", 0):
         routes.append(
             Route(
                 "audio",
@@ -287,14 +290,23 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
         start = "generate scenario dialogues, ship a v0, collect real data"
         found = ", ".join(f"{n} {k}" for k, n in counts.items() if n)
         if found:
-            # Say what was there, so a folder of unusable files does not read as empty.
+            # Say what was there and why it did not count, so a folder of unusable files
+            # does not read as empty, and an unread file is not blamed on its columns.
+            why = []
+            unread = sum(counts.values()) - sum(profiled.values())
+            if unread:
+                why.append(
+                    f"{unread} file{'s' if unread > 1 else ''} could not be read (the inspect "
+                    "report says why)"
+                )
+            if profiled.get("table", 0):
+                why.append("a table needs an id column to look records up by")
             routes.append(
                 Route(
                     "nothing usable yet",
                     "synth",
-                    f"found {found}, but none of it is evidence for a goal: a table needs an "
-                    "id column to look records up by, and skipped files say why in the "
-                    f"inspect report. Meanwhile, {start}",
+                    f"found {found}, but none of it is evidence for a goal: "
+                    f"{'; '.join(why) or 'nothing in it answers a goal'}. Meanwhile, {start}",
                 )
             )
         else:

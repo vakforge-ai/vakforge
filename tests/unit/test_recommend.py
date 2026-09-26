@@ -252,6 +252,16 @@ def test_large_counts_are_written_out_not_in_scientific_notation():
     assert "2002646" in text and "e+06" not in text
 
 
+def test_files_that_could_not_be_read_get_no_route():
+    # Two PDFs, skipped: the verdict said "no usable evidence" while a route still said
+    # "documents -> retrieval".
+    r = recommend(summary(counts={"document": 2}, profiled={"document": 0}), US)
+    [route] = r.routes
+    assert route.source == "nothing usable yet"
+    assert "2 files could not be read" in route.why
+    assert "id column" not in route.why  # nothing was read, so no column is to blame
+
+
 def test_an_empty_folder_is_nothing_yet():
     r = recommend(summary(), US)
     assert r.primary_problem is None
