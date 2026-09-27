@@ -112,14 +112,21 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def is_sampled(report: dict[str, Any]) -> bool:
-    """True when a large table or conversation export was scanned from a sample, so its
-    personal-data and language counts are not totals and should not be read as such."""
+    """True when a large file was checked only from its start: a table or conversation
+    export scanned from a sample, or any file too large to read whole. Its personal-data
+    and language counts are then not totals and should not be read as such.
+
+    Truncated files were left out, so a document read only in part got no such warning.
+    """
     return any(
         t["rows_scanned"] < t["rows"]
         for f in report["files"]
         for t in f.get("facts", {}).get("tables", {}).values()
         if "rows_scanned" in t
-    ) or any("messages_scanned" in f.get("facts", {}) for f in report["files"])
+    ) or any(
+        "messages_scanned" in f.get("facts", {}) or f.get("facts", {}).get("truncated")
+        for f in report["files"]
+    )
 
 
 def write_report(report: dict[str, Any], out: Path) -> Path:
