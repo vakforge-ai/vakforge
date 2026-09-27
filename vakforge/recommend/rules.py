@@ -50,7 +50,7 @@ class Bar:
     anyone measured this or we picked it.
     """
 
-    unit: Literal["turns", "hours", "seconds"]
+    unit: Literal["turns", "examples", "hours", "seconds"]
     floor: float
     target: float | None
     confidence: Confidence
@@ -78,7 +78,7 @@ BARS: dict[Goal, Bar] = {
         "validates 600 or 200. Branch coverage and quality matter more than the count",
     ),
     "tools": Bar(
-        "turns",
+        "examples",
         200,
         8000,
         "reported",
@@ -426,6 +426,7 @@ _UNIT_NAME = {
     "turns": "conversation turns",
     "hours": "hours of audio",
     "seconds": "seconds of audio",
+    "examples": "tool-call examples",
 }
 
 
@@ -508,17 +509,21 @@ def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str
             )
         if goal == "language":
             return _language_evidence(summary, messages, uncounted)
-        if goal == "tools":
-            # A conversation is not a tool-call example, and 8,000 of them with no tool in
-            # sight used to make tool training "worth trying".
-            note = (
-                "conversations are not tool-call examples: nothing in them marks which turn "
-                "calls a tool, with what arguments and what came back"
-            )
-            if not summary.get("tool_candidates"):
-                note += ", and no table here offers a lookup to call"
-            return float(messages), f"{messages} parsed chat messages", [note, *uncounted], False
         return float(messages), f"{messages} parsed chat messages", uncounted, True
+
+    if bar.unit == "examples":
+        # Tool training learns from tool calls: the turn that calls, its arguments and what
+        # came back. inspect cannot see those in a conversation, so none are counted. Chats
+        # used to be counted instead, and 8,000 of them read as 8,000 of an 8,000 target.
+        notes = []
+        if messages:
+            notes.append(
+                f"{messages} parsed chat messages are not tool-call examples yet: nothing in "
+                "them marks which turn calls a tool, with what arguments and what came back"
+            )
+        if not summary.get("tool_candidates"):
+            notes.append("no table here offers a lookup to call")
+        return 0.0, "tool-call examples that inspect can see (none in conversations)", notes, True
 
     if bar.unit == "hours":
         return (

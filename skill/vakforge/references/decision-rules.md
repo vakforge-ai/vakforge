@@ -35,7 +35,7 @@ their evidence, and labels the ones we chose ourselves as `heuristic`:
 |---|---|---|---|
 | knowledge | — | never fine-tune; retrieval instead | measured |
 | workflow / behaviour | 200 turns | ~600 turns | heuristic — ours, nothing validates it |
-| tools | 200 turns | 8,000+ turns (published corpora run 8k–60k) | measured |
+| tools | 200 tool-call examples | 8,000+ examples (published corpora run 8k–60k) | reported |
 | recognition | 10 h | 20 h, after trying contextual biasing for free | measured |
 | voice | 3 s | ~60 s | measured |
 | duplex | — | not a training budget: pick an already-duplex base model | measured |
