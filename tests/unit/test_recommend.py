@@ -26,7 +26,7 @@ def summary(**over):
 
 
 def d(rec):
-    """The decision for the report's primary goal — what the old flat fields used to hold."""
+    """The decision for the report's primary goal: what the old flat fields used to hold."""
     return rec.decision(rec.primary_problem)
 
 
@@ -54,7 +54,7 @@ def test_every_goal_gets_its_own_decision():
     assert [x.goal for x in r.goal_decisions] == ["tools", "recognition"]
 
     tools, recognition = r.goal_decisions
-    # Different units, different bars, different evidence — and separately reached verdicts.
+    # Different units, different bars, different evidence, and separately reached verdicts.
     assert (tools.unit, recognition.unit) == ("examples", "hours")
     assert (tools.have, recognition.have) == (0, 25)
     assert tools.need != recognition.need
@@ -290,7 +290,7 @@ def test_unprofiled_files_do_not_infer_goals():
 
 
 def test_voice_is_measured_in_seconds_not_hours():
-    # Seconds, not hours — but the bar still does not reach `candidate` on half an hour of
+    # Seconds, not hours, but the bar still does not reach `candidate` on half an hour of
     # audio, because total duration says nothing about whether it is one speaker, recorded
     # consistently, who agreed to their voice being used.
     r = recommend(

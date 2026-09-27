@@ -35,7 +35,7 @@ def dataset_relative(value: str, field: str) -> str:
     machine that the validating process can read.
 
     Shared by every path field rather than written per field. It was written once, inline,
-    for `audio.path`, and `meta.redaction_log` was added later without it — which is exactly
+    for `audio.path`, and `meta.redaction_log` was added later without it, which is exactly
     the failure this function exists to stop repeating.
 
     Any drive is rejected, not only an absolute path: `D:recording.wav` is drive-relative,
@@ -125,7 +125,7 @@ class Turn(_Strict):
     text: str | None = None
     lang: str | None = None
     # Every language in this turn, primary first. A Hinglish turn is genuinely two
-    # languages, and code-switch WER — which docs/EVALUATION.md reports — can only be
+    # languages, and code-switch WER (which docs/EVALUATION.md reports) can only be
     # scored on turns that say so. `lang` alone cannot express it.
     lang_mix: list[str] = Field(default_factory=list)
     entities: list[Entity] = Field(default_factory=list)
@@ -172,7 +172,7 @@ class Turn(_Strict):
         offset that is stale or off by a character silently corrupts the record.
 
         No message here repeats the text it is complaining about. The declared entity types
-        are `phone`, `person_name`, `address`, `customer_id` — personal data by definition —
+        are `phone`, `person_name`, `address`, `customer_id`, personal data by definition,
         and these errors are printed to a terminal and copied into CI logs and bug reports.
         `vakforge.validate` holds the same line when it reports a redaction leak.
         """
@@ -247,8 +247,8 @@ class RedactionLog(_Strict):
     `conversation_id` is required: without it a log copied from another conversation
     reads as evidence about this one, and nothing can tell the difference.
 
-    An empty `spans` list is legitimate — a conversation may genuinely contain no personal
-    data — and is not treated as a failed claim. The substantive check is the rescan in
+    An empty `spans` list is legitimate (a conversation may genuinely contain no personal
+    data) and is not treated as a failed claim. The substantive check is the rescan in
     `vakforge.validate`, which reads the text itself; this model checks that the log is
     internally coherent and actually describes the record it is attached to.
     """
@@ -356,8 +356,8 @@ class Conversation(_Strict):
             if t.start < prev_start:
                 raise ValueError(f"turns[{i}]: turns must be sorted by start")
             prev_start = t.start
-            # `overlap` has one definition — this turn starts before the previous one ends
-            # — so it is checked against the timestamps rather than believed. Duplex eval
+            # `overlap` has one definition: this turn starts before the previous one ends
+            # so it is checked against the timestamps rather than believed. Duplex eval
             # counts these turns, and a hand-set flag that disagrees with the clock would
             # quietly skew the interruption metrics.
             if i:
@@ -420,7 +420,7 @@ class Conversation(_Strict):
         # Whether a recording needs the speaker's own voice consent depends on what it is
         # for, which `meta.allowed_uses` says and this level cannot infer. The rule lives
         # there. It used to sit here and demanded voice_consent_ref for every real
-        # recording, including audio only ever used to train recognition — a rule broad
+        # recording, including audio only ever used to train recognition: a rule broad
         # enough that the easiest way past it is a dummy value, which is worse than none.
         return self
 

@@ -186,7 +186,7 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
     re-run the locale pack over the text that is actually in the record: if anything the
     pack recognises survives, the claim is false and the row must not be trained on.
 
-    Matched text is never repeated in the issue — reporting a leak should not copy the
+    Matched text is never repeated in the issue: reporting a leak should not copy the
     personal data into a terminal, a CI log or a bug report.
     """
     if not conv.meta.pii_redacted:
@@ -214,7 +214,7 @@ def _check_redaction(conv: Conversation, pack: LocalePack, root: Path, line: int
 def in_dataset(root: Path, relative: str) -> Path | None:
     """The file a manifest path names, or None if it resolves outside the dataset.
 
-    Every file a manifest points at is opened through this — audio and redaction logs
+    Every file a manifest points at is opened through this: audio and redaction logs
     today, anything added later. The schema has already rejected absolute paths, drives
     and `..` in the string; this is the second layer, and it sees what a string check
     cannot: a symlink inside the dataset pointing anywhere on the machine. A symlink that
@@ -238,7 +238,7 @@ def _check_redaction_log(conv: Conversation, root: Path, line: int) -> list[Issu
 
     An empty `spans` list is accepted: a conversation may genuinely contain no personal
     data. The substantive proof is the rescan in `_check_redaction`, which reads the text
-    itself — this only establishes that the log is coherent and belongs to this row, so a
+    itself; this only establishes that the log is coherent and belongs to this row, so a
     log copied from another conversation cannot stand in as evidence.
     """
     issue = partial(Issue, conv.id, "meta.redaction_log", line=line)
@@ -330,7 +330,7 @@ def _check_splits(convs: list[Conversation], root: Path) -> list[Issue]:
     """`splits.json`, when present, must agree with meta.split and cover every id.
 
     The file is user-controlled, so its shape is checked before anything is read from it.
-    Valid JSON of the wrong shape used to crash validate — `[]` and `{"train": 42}` raised,
+    Valid JSON of the wrong shape used to crash validate: `[]` and `{"train": 42}` raised,
     and `{"train": "conv_0001"}` was iterated character by character as a list of ids.
     """
     path = root / "splits.json"

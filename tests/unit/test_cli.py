@@ -17,7 +17,7 @@ def flat(result) -> str:
     """CLI output with newlines and runs of spaces collapsed.
 
     Rich wraps to the console width, so a phrase can be split across lines when a long
-    path pushes it past the margin — which happens on CI's `/tmp/pytest-of-runner/...`
+    path pushes it past the margin, which happens on CI's `/tmp/pytest-of-runner/...`
     paths and not on a short Windows temp dir. Assert against this, not `result.output`.
     """
     return " ".join(result.output.split())

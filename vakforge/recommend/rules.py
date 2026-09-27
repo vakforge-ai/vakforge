@@ -105,7 +105,7 @@ BARS: dict[Goal, Bar] = {
         "heuristic",
         "Two different things get quoted together here, so this bar covers only one of "
         "them. VALL-E's 3 seconds (arXiv 2301.02111) is an inference-time prompt to a model "
-        "already pretrained on 60k hours — it needs no training data from you at all, and if "
+        "already pretrained on 60k hours: it needs no training data from you at all, and if "
         "a zero-shot prompt is enough, the answer is not to fine-tune. YourTTS fine-tunes a "
         "speaker in under a minute, which is real adaptation evidence but for one model. "
         "The floor here is ours: no published work establishes a minimum for adapting an "
@@ -211,7 +211,7 @@ class GoalDecision:
 class Recommendation:
     """What to change across the whole project, and the per-goal matrix it rests on.
 
-    `fine_tune` is the project-level roll-up — the best state any goal reached — and is
+    `fine_tune` is the project-level roll-up (the best state any goal reached) and is
     deliberately not a boolean. Read `goal_decisions` for the answer that applies to the
     thing you actually care about.
     """
@@ -638,7 +638,7 @@ def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraint
         eligibility = "baseline_first"
         reason = (
             f"{_amount(have, bar.unit)} clears the bar for {goal}, but nothing has "
-            f"verified it is usable — {uncounted[0]}. Measure the baseline while you "
+            f"verified it is usable: {uncounted[0]}. Measure the baseline while you "
             "establish that, and revisit"
         )
     elif eligibility == "candidate" and blockers:
