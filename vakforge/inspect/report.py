@@ -72,6 +72,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
     kinds = Counter(f["kind"] for f in files)
     profiled_kinds = Counter(f["kind"] for f in files if "facts" in f)
     languages: Counter[str] = Counter()
+    chat_languages: Counter[str] = Counter()
     pii: Counter[str] = Counter()
     tool_candidates: list[str] = []
     words = messages = two_channel = truncated = labelled = 0
@@ -85,6 +86,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
             words += facts.get("words", 0)
         if f["kind"] == "chat":
             messages += facts.get("messages", 0)
+            chat_languages.update(facts.get("message_languages", {}))
         if f["kind"] == "audio":
             audio_seconds += facts.get("duration_s", 0.0)
             two_channel += facts.get("channels", 0) == 2
@@ -101,6 +103,8 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
         "audio_hours": round(audio_seconds / 3600, 4),
         "two_channel_audio_files": two_channel,
         "languages": dict(languages.most_common()),
+        # Per chat message read, which is what the language goal counts as evidence.
+        "chat_languages": dict(chat_languages.most_common()),
         "pii": dict(pii.most_common()),
         "tool_candidates": list(dict.fromkeys(tool_candidates)),
         "labelled_text_tables": labelled,

@@ -364,19 +364,34 @@ def test_each_goal_reports_its_floor_beside_its_target():
     assert (d(r).floor, d(r).need) == (200, 600)
 
 
-def test_the_language_goal_counts_only_turns_that_are_not_english():
+def test_the_language_goal_counts_chat_messages_checked_and_not_in_english():
+    # 200 Hinglish messages, then 1,000 English ones: an estimate from the first 200 said
+    # all 1,200 were Hinglish.
+    head_heavy = summary(
+        counts={"chat": 1},
+        chat_messages=1200,
+        languages={"hi-Latn": 200},
+        chat_languages={"hi-Latn": 200, "en-IN": 1000},
+    )
+    lang = recommend(head_heavy, HI).decision("language")
+    assert lang.have == 200
+    assert "200 of the 1200 chat messages checked" in lang.have_from
     # 600 English messages and one Hinglish one used to be 601 turns of language evidence.
     lopsided = summary(
-        counts={"chat": 1}, chat_messages=601, languages={"en-IN": 199, "hi-Latn": 1}
+        counts={"chat": 1},
+        chat_messages=601,
+        languages={"en-IN": 199, "hi-Latn": 1},
+        chat_languages={"en-IN": 600, "hi-Latn": 1},
     )
-    lang = recommend(lopsided, HI).decision("language")
-    assert lang.have == 3 and lang.eligibility == "blocked"
-    assert "not English" in lang.have_from
-    mostly = summary(
-        counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12}
-    )
-    lang = recommend(mostly, HI).decision("language")
-    assert lang.have == 1880 and lang.eligibility == "candidate"
+    assert recommend(lopsided, HI).decision("language").eligibility == "blocked"
+
+
+def test_a_report_without_per_message_languages_gives_an_estimate_not_a_count():
+    # An inspect.json from 0.3.0 has no chat_languages: estimate, never "worth trying".
+    old = summary(counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12})
+    lang = recommend(old, HI).decision("language")
+    assert lang.have == 1880 and lang.eligibility == "baseline_first"
+    assert "run inspect again" in lang.uncounted[0]
 
 
 def test_plain_conversations_cannot_make_tool_training_a_candidate():

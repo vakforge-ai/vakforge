@@ -89,9 +89,9 @@
     {
       "goal": "language",
       "eligibility": "blocked",
-      "reason": "10 conversation turns is below the 200 conversation turns floor for language; collect real code-switched conversations; synth adds coverage but alone did not move accuracy, and the evaluation set has to be real",
-      "have": 10.0,
-      "have_from": "~10 of 16 parsed chat messages, from the 65.6% of sampled text that is not English",
+      "reason": "12 conversation turns is below the 200 conversation turns floor for language; collect real code-switched conversations; synth adds coverage but alone did not move accuracy, and the evaluation set has to be real",
+      "have": 12.0,
+      "have_from": "12 of the 16 chat messages checked are not in English",
       "uncounted": [],
       "floor": 200,
       "need": null,

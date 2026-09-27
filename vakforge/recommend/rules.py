@@ -449,6 +449,41 @@ def _amount(value: float, unit: str) -> str:
     return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
 
 
+def _language_evidence(
+    summary: dict[str, Any], messages: int, uncounted: list[str]
+) -> tuple[float, str, list[str], bool]:
+    """Chat messages actually checked and found not to be English.
+
+    Only counted turns are evidence. An estimate from the first messages of each file (the
+    share of sampled text that is not English, times every message) turned 200 Hinglish
+    messages followed by 1,000 English ones into 1,200 turns, and mixed document
+    paragraphs in with chat messages.
+    """
+    checked = summary.get("chat_languages")
+    if checked is None:
+        # A report from vakforge 0.3.0 or earlier has no per-message counts: estimate, and
+        # keep the verdict short of `candidate` until inspect has counted them.
+        share = _non_english_share(summary)
+        turns = round(messages * share)
+        return (
+            float(turns),
+            f"~{turns} of {messages} parsed chat messages, estimated from the first "
+            "messages and paragraphs of each file",
+            [
+                "an estimate, not a count: run inspect again with vakforge 0.3.1 or later "
+                "to check the language of every chat message",
+                *uncounted,
+            ],
+            False,
+        )
+    seen = sum(n for lang, n in checked.items() if not lang.startswith("en"))
+    total = sum(checked.values())
+    have_from = f"{seen} of the {total} chat messages checked are not in English"
+    if total < messages:
+        have_from += f"; {messages - total} more were counted but not read"
+    return float(seen), have_from, uncounted, True
+
+
 def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
     """What the data can actually prove for this bar: (amount, counted, uncounted, verified).
 
@@ -472,17 +507,7 @@ def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str
                 "transcribed and diarized; inspect does neither"
             )
         if goal == "language":
-            # Only turns in the language count. Counting every message turned 600 English
-            # messages and one Hinglish one into 601 turns of language evidence.
-            share = _non_english_share(summary)
-            turns = round(messages * share)
-            return (
-                float(turns),
-                f"~{turns} of {messages} parsed chat messages, from the "
-                f"{100 * share:.3g}% of sampled text that is not English",
-                uncounted,
-                True,
-            )
+            return _language_evidence(summary, messages, uncounted)
         if goal == "tools":
             # A conversation is not a tool-call example, and 8,000 of them with no tool in
             # sight used to make tool training "worth trying".
@@ -691,6 +716,7 @@ class InspectSummary(BaseModel):
     pii: dict[str, int] = Field(default_factory=dict)
     tool_candidates: list[str] = Field(default_factory=list)
     labelled_text_tables: int = 0
+    chat_languages: dict[str, int] | None = None  # None: a report from 0.3.0 or earlier
 
 
 def recommend(

@@ -454,6 +454,12 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     facts.update(
         messages=len(messages) if counted is None else counted,
         speakers=dict(speakers.most_common(10)),
+        # Every message read, not the first 200 paragraphs `languages` samples: 200
+        # Hinglish messages followed by 1,000 English ones read as all Hinglish, and
+        # became 1,200 turns of evidence for the language goal.
+        message_languages=dict(
+            Counter(pack.detect_lang(m) for m in messages if m.strip()).most_common()
+        ),
     )
     if column_pii := read_as.pop("column_pii", None):
         facts["pii"] = dict((Counter(facts["pii"]) + Counter(column_pii)).most_common())
