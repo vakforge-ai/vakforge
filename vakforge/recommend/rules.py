@@ -234,6 +234,18 @@ class Recommendation:
         return next((d for d in self.goal_decisions if d.goal == goal), None)
 
 
+def _non_english_share(summary: dict[str, Any]) -> float:
+    """The share of sampled paragraphs and messages that are not English.
+
+    The language goal exists because the recipes' base models are English, so English is
+    the line it draws, whatever the locale.
+    """
+    langs = summary.get("languages", {})
+    sampled = sum(langs.values())
+    other = sum(n for lang, n in langs.items() if not lang.startswith("en"))
+    return other / sampled if sampled else 0.0
+
+
 def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
     """What the data suggests the user wants, most likely first.
 
@@ -254,8 +266,9 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
         goals.append("recognition")
     if profiled.get("document", 0) or summary.get("document_words", 0):
         goals.append("knowledge")
-    non_native = [lang for lang in summary.get("languages", {}) if not lang.startswith("en")]
-    if non_native and any(v != "native" for v in pack.resolved("recipe_support").values()):
+    if _non_english_share(summary) and any(
+        v != "native" for v in pack.resolved("recipe_support").values()
+    ):
         goals.append("language")
     return goals
 
@@ -423,7 +436,7 @@ def _amount(value: float, unit: str) -> str:
     return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
 
 
-def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
+def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
     """What the data can actually prove for this bar: (amount, counted, uncounted, verified).
 
     Raw audio is never converted into conversation turns. An hour of recording is not 300
@@ -444,6 +457,18 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
             uncounted.append(
                 f"{fmt_number(audio_hours)} h of audio contributes no turns until it is "
                 "transcribed and diarized; inspect does neither"
+            )
+        if goal == "language":
+            # Only turns in the language count. Counting every message turned 600 English
+            # messages and one Hinglish one into 601 turns of language evidence.
+            share = _non_english_share(summary)
+            turns = round(messages * share)
+            return (
+                float(turns),
+                f"~{turns} of {messages} parsed chat messages, from the "
+                f"{100 * share:.3g}% of sampled text that is not English",
+                uncounted,
+                True,
             )
         return float(messages), f"{messages} parsed chat messages", uncounted, True
 
@@ -540,7 +565,7 @@ def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
 def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraints) -> GoalDecision:
     """Answer one goal on its own evidence, bar and recipe."""
     bar = BARS[goal]
-    have, have_from, uncounted, verified = _evidence(bar, summary)
+    have, have_from, uncounted, verified = _evidence(goal, bar, summary)
     eligibility, reason = _verdict(goal, bar, have)
 
     two_channel = bool(summary.get("two_channel_audio_files", 0))

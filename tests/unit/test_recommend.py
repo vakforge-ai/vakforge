@@ -362,3 +362,18 @@ def test_each_goal_reports_its_floor_beside_its_target():
         summary(counts={"chat": 1}, chat_messages=50), US, Constraints(goals=("workflow",))
     )
     assert (d(r).floor, d(r).need) == (200, 600)
+
+
+def test_the_language_goal_counts_only_turns_that_are_not_english():
+    # 600 English messages and one Hinglish one used to be 601 turns of language evidence.
+    lopsided = summary(
+        counts={"chat": 1}, chat_messages=601, languages={"en-IN": 199, "hi-Latn": 1}
+    )
+    lang = recommend(lopsided, HI).decision("language")
+    assert lang.have == 3 and lang.eligibility == "blocked"
+    assert "not English" in lang.have_from
+    mostly = summary(
+        counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12}
+    )
+    lang = recommend(mostly, HI).decision("language")
+    assert lang.have == 1880 and lang.eligibility == "candidate"
