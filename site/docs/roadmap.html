@@ -76,7 +76,7 @@
       <h1 id="roadmap">Roadmap</h1>
 <p>Single source of truth for status. Update checkboxes in the same commit as the work. &quot;Done&quot; means: tests pass on CPU, docs updated, verified against upstream source where an upstream is involved.</p>
 <p>Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowledge, and a landing page. Recipes that need a GPU come after, largely from contributors who have one.</p>
-<h2 id="phase-0-core-scaffold">Phase 0 — Core scaffold</h2>
+<h2 id="phase-0-core-scaffold">Phase 0: Core scaffold</h2>
 <ul>
 <li class="task done"><input type="checkbox" checked disabled> <code>pyproject.toml</code> with core deps; recipe extras declared but empty until each recipe pins its upstream</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>uv.lock</code>, <code>.gitignore</code>, <code>LICENSE</code> (Apache-2.0), <code>Makefile</code></li>
@@ -91,7 +91,7 @@
 <li class="task done"><input type="checkbox" checked disabled> Generated test fixtures (WAVs synthesized in <code>tests/conftest.py</code>)</li>
 <li class="task done"><input type="checkbox" checked disabled> GitHub Actions: ruff + pytest, Python 3.11/3.12</li>
 </ul>
-<h2 id="phase-1-locale-packs-inspect-recommend">Phase 1 — Locale packs · Inspect · Recommend</h2>
+<h2 id="phase-1-locale-packs-inspect-recommend">Phase 1: Locale packs · Inspect · Recommend</h2>
 <ul>
 <li class="task done"><input type="checkbox" checked disabled> Pack model: formats, PII patterns with checksum validators, consent, privacy notes, recipe support, inheritance</li>
 <li class="task done"><input type="checkbox" checked disabled> Pack <code>en</code> (parent): English WER normalizer, email / card (Luhn) / IBAN (mod-97) patterns</li>
@@ -109,7 +109,7 @@
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> scans table cells for PII, per column, with the column name as context (<code>order_id</code> digits are a reference, an <code>ssn</code> column is the cue); a sample of each table, with <code>rows_scanned</code> saying how much; names, postal addresses and birth dates flagged by their column header, which no pattern can see</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> reads CSV/TSV/JSON files with one exchange per row (<code>input</code>/<code>output</code>, <code>instruction</code>/<code>response</code>, <code>customer</code>/<code>agent</code>, …) as conversations, and question/answer files as FAQ documents for retrieval, and CSVs with one message per row (a speaker column and a text column): every message counted, languages and PII from a sample (<code>messages_scanned</code>), and the other columns scanned like table cells</li>
 <li class="task done"><input type="checkbox" checked disabled> Tested on public exports (support tickets, a support Q&amp;A set, Hinglish conversations and comments): id columns recognised however an export spells them, JSON read whole up to 32M characters, card numbers after order/purchase words no longer flagged</li>
-<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> for audio: duration, sample rate, channels, narrowband, clipping, silence: measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect.json</code> report for <code>recommend</code> and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code>: files too large to parse whole are skipped with that as the reason, and partial reads are flagged <code>truncated</code> rather than reported as totals</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>inspect</code> parsers survive real exports: bracketed (iOS) WhatsApp speakers, schema-qualified SQL tables, per-line JSONL errors instead of losing the file, CSV counted without loading every row</li>
@@ -118,12 +118,12 @@
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: rules from <code>DECISION_GUIDE.md</code> as code; reads <code>inspect.json</code> or a folder; routes per source, fine-tune verdict, recipe filtered by locale <code>recipe_support</code> and GPU, data gap, consent checklist; writes <code>recommend.json</code></li>
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: per-goal bars with their own unit, floor, target, confidence label and citation (<code>BARS</code>); three-state verdict (<code>blocked</code> / <code>baseline_first</code> / <code>candidate</code>) instead of a boolean, per <code>docs/RESEARCH.md</code></li>
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code> counts usable evidence only: raw audio is never converted into conversation turns, goals are inferred from profiled files rather than discovered ones, and evidence whose fitness is unproven cannot reach <code>candidate</code></li>
-<li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: a decision per goal (<code>goal_decisions[]</code>) — own unit, bar, evidence, recipe and blockers — with the project verdict as the roll-up; naming a duplex base model is separated from whether the data can adapt it</li>
+<li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: a decision per goal (<code>goal_decisions[]</code>), each with its own unit, bar, evidence, recipe and blockers, with the project verdict as the roll-up; naming a duplex base model is separated from whether the data can adapt it</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>recommend</code>: each goal reports its floor beside its target, and the named recipe's planned training method (LoRA, full fine-tune) from its upstream trainer's documentation, marked planned until the recipe has run</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>report</code>: <code>inspect.json</code> and <code>recommend.json</code> as one self-contained HTML page (logo embedded, nothing fetched), light and dark, printable to PDF; each goal's data on a log scale against its floor and target, and the routes drawn as a flow; chat speaker names left out</li>
 <li class="task"><input type="checkbox" disabled> <code>recommend</code>: interactive questionnaire (flags <code>--goal</code>, <code>--gpu</code>, <code>--duplex</code> cover it non-interactively today)</li>
 </ul>
-<h2 id="phase-2-agent-skill">Phase 2 — Agent skill</h2>
+<h2 id="phase-2-agent-skill">Phase 2: Agent skill</h2>
 <ul>
 <li class="task done"><input type="checkbox" checked disabled> <code>skill/vakforge/SKILL.md</code>: hard rules plus the eight-step workflow with a completion criterion per step</li>
 <li class="task done"><input type="checkbox" checked disabled> <code>skill/vakforge/references/</code>: decision rules, data format, data safety, recipes with verify-first checklist, eval and serving, locale hooks</li>
@@ -132,7 +132,7 @@
 <li class="task done"><input type="checkbox" checked disabled> <code>examples/hinglish-shop</code>: synthetic documents + tables + chat project with <code>inspect.json</code> and <code>recommend.json</code> committed and diffed by a test on every run</li>
 <li class="task"><input type="checkbox" disabled> Tested on one real project end to end (documents + tables, no audio) and one with call recordings</li>
 </ul>
-<h2 id="phase-3-landing-page">Phase 3 — Landing page</h2>
+<h2 id="phase-3-landing-page">Phase 3: Landing page</h2>
 <ul>
 <li class="task done"><input type="checkbox" checked disabled> <code>site/</code> static landing page (Cloudflare Pages): hero demo, pipeline, data router, repo parts, locale explorer, eval report, redaction console, agent skill, CTA</li>
 <li class="task done"><input type="checkbox" checked disabled> Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)</li>
@@ -141,7 +141,7 @@
 <li class="task done"><input type="checkbox" checked disabled> Light theme for the landing page: <code>prefers-color-scheme</code> default, nav toggle saved per browser and applied before first paint (the site embeds no diagrams, so none to swap)</li>
 <li class="task done"><input type="checkbox" checked disabled> Site copy audit: every step labelled <code>in the CLI</code> or <code>skill generates</code>, example report and hero run marked illustrative, routing matches <code>docs/RESEARCH.md</code>, evidence linked from the data router</li>
 </ul>
-<h2 id="phase-4-prepare-synth">Phase 4 — Prepare · Synth</h2>
+<h2 id="phase-4-prepare-synth">Phase 4: Prepare · Synth</h2>
 <ul>
 <li class="task"><input type="checkbox" disabled> <code>prepare</code>: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations</li>
 <li class="task"><input type="checkbox" disabled> <code>prepare</code>: audio path: normalize (24 kHz), channels, transcription (faster-whisper; pack override), diarization (pyannote optional)</li>
@@ -150,27 +150,27 @@
 <li class="task"><input type="checkbox" disabled> <code>synth</code>: TTS rendering via pack defaults, stereo mixing, augmentation</li>
 <li class="task"><input type="checkbox" disabled> Public demo datasets: <code>en-US</code> (~200 turns), <code>hi-Latn-IN</code> (~200 turns)</li>
 </ul>
-<h2 id="phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5 — Recipe A: <code>lfm25-audio</code> · Eval · Serve</h2>
+<h2 id="phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5: Recipe A: <code>lfm25-audio</code> · Eval · Serve</h2>
 <ul>
 <li class="task"><input type="checkbox" disabled> Verify <code>liquid_audio</code> API against pinned version; <code>UPSTREAM_NOTES.md</code></li>
 <li class="task"><input type="checkbox" disabled> Adapter, <code>train</code>, eval metrics, <code>report.md</code>/<code>report.json</code> base vs tuned</li>
 <li class="task"><input type="checkbox" disabled> Colab notebook end to end on <code>en-US</code> demo; second run on <code>hi-Latn-IN</code></li>
 <li class="task"><input type="checkbox" disabled> <code>serve</code> backend/protocol split; OpenAI Realtime WebSocket front end (documented event subset), Python client, Pipecat and LiveKit examples, Dockerfile</li>
 </ul>
-<h2 id="phase-6-more-protocol-front-ends">Phase 6 — More protocol front ends</h2>
+<h2 id="phase-6-more-protocol-front-ends">Phase 6: More protocol front ends</h2>
 <ul>
 <li class="task"><input type="checkbox" disabled> WebRTC front end via LiveKit or Pipecat transports</li>
 <li class="task"><input type="checkbox" disabled> SIP / telephony front end</li>
 <li class="task"><input type="checkbox" disabled> Plain HTTP one-turn front end</li>
 <li class="task"><input type="checkbox" disabled> Gemini Live format (on request)</li>
 </ul>
-<h2 id="phase-6b-more-recipes-contributor-friendly">Phase 6b — More recipes (contributor-friendly)</h2>
+<h2 id="phase-6b-more-recipes-contributor-friendly">Phase 6b: More recipes (contributor-friendly)</h2>
 <ul>
 <li class="task"><input type="checkbox" disabled> Recipe B <code>moshi-lora</code>: adapter, train wrapper, duplex eval, serve path</li>
 <li class="task"><input type="checkbox" disabled> Recipe D <code>qwen-omni</code> + pack <code>zh-CN</code></li>
 <li class="task"><input type="checkbox" disabled> Recipe C <code>cascade</code></li>
 </ul>
-<h2 id="phase-7-benchmarks">Phase 7 — Benchmarks</h2>
+<h2 id="phase-7-benchmarks">Phase 7: Benchmarks</h2>
 <ul>
 <li class="task"><input type="checkbox" disabled> <code>vakforge-bench-en-v0</code>, <code>vakforge-bench-hi-latn-v0</code>, later <code>zh-v0</code></li>
 <li class="task"><input type="checkbox" disabled> Results per recipe per locale under <code>benchmarks/</code>; README results table; one-command reproduction</li>
@@ -190,7 +190,7 @@
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#phase-0-core-scaffold">Phase 0 — Core scaffold</a></li><li class="lvl2"><a href="#phase-1-locale-packs-inspect-recommend">Phase 1 — Locale packs · Inspect · Recommend</a></li><li class="lvl2"><a href="#phase-2-agent-skill">Phase 2 — Agent skill</a></li><li class="lvl2"><a href="#phase-3-landing-page">Phase 3 — Landing page</a></li><li class="lvl2"><a href="#phase-4-prepare-synth">Phase 4 — Prepare · Synth</a></li><li class="lvl2"><a href="#phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5 — Recipe A: lfm25-audio · Eval · Serve</a></li><li class="lvl2"><a href="#phase-6-more-protocol-front-ends">Phase 6 — More protocol front ends</a></li><li class="lvl2"><a href="#phase-6b-more-recipes-contributor-friendly">Phase 6b — More recipes (contributor-friendly)</a></li><li class="lvl2"><a href="#phase-7-benchmarks">Phase 7 — Benchmarks</a></li><li class="lvl2"><a href="#later-ideas-not-committed">Later / ideas (not committed)</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#phase-0-core-scaffold">Phase 0: Core scaffold</a></li><li class="lvl2"><a href="#phase-1-locale-packs-inspect-recommend">Phase 1: Locale packs · Inspect · Recommend</a></li><li class="lvl2"><a href="#phase-2-agent-skill">Phase 2: Agent skill</a></li><li class="lvl2"><a href="#phase-3-landing-page">Phase 3: Landing page</a></li><li class="lvl2"><a href="#phase-4-prepare-synth">Phase 4: Prepare · Synth</a></li><li class="lvl2"><a href="#phase-5-recipe-a-lfm25-audio-eval-serve">Phase 5: Recipe A: lfm25-audio · Eval · Serve</a></li><li class="lvl2"><a href="#phase-6-more-protocol-front-ends">Phase 6: More protocol front ends</a></li><li class="lvl2"><a href="#phase-6b-more-recipes-contributor-friendly">Phase 6b: More recipes (contributor-friendly)</a></li><li class="lvl2"><a href="#phase-7-benchmarks">Phase 7: Benchmarks</a></li><li class="lvl2"><a href="#later-ideas-not-committed">Later / ideas (not committed)</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>

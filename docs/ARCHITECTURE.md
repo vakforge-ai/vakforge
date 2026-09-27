@@ -99,7 +99,7 @@ Everything below exists today, runs on CPU and imports no ML dependencies.
 Outside the package: `skill/vakforge/` (the agent skill), `site/` (landing page and these docs),
 `examples/` (a synthetic project with its reports), `tests/unit/` (CPU, no downloads).
 
-The stages the skill generates — `prepare`, `synth`, `train`, `eval`, `serve` — are written into
+The stages the skill generates (`prepare`, `synth`, `train`, `eval`, `serve`) are written into
 *your* project, not shipped here. `docs/ROADMAP.md` tracks which of them vakforge may ship itself
 later; the sections below are the design they would follow.
 

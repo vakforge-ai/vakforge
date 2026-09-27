@@ -80,7 +80,7 @@
 </blockquote>
 <h2 id="test-split-rules">Test split rules</h2>
 <ul>
-<li>Held out by conversation <strong>and</strong> speaker; never seen by <code>train</code> or <code>synth</code> prompt examples. The canonical format carries no speaker identity, so <code>vakforge validate</code> checks the conversation half of that and cannot check the speaker half — keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean <code>validate</code> as proof there is no speaker leak.</li>
+<li>Held out by conversation <strong>and</strong> speaker; never seen by <code>train</code> or <code>synth</code> prompt examples. The canonical format carries no speaker identity, so <code>vakforge validate</code> checks the conversation half of that and cannot check the speaker half; keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean <code>validate</code> as proof there is no speaker leak.</li>
 <li>Stratified by <code>locale</code>, <code>audio.condition</code> (clean / phone / noisy), <code>language.primary</code>, and <code>meta.source</code> (real / synthetic). Report breaks down by each, so a multi-locale dataset cannot hide a weak language behind a strong one.</li>
 <li>Minimum 100 turns for any headline number; fewer → report shows the number with a &quot;low-n&quot; badge and a bootstrap CI.</li>
 </ul>
@@ -181,7 +181,7 @@
 </tr>
 <tr>
 <td>Hardware</td>
-<td>GPU/CPU model, quantization, batch size — all recorded.</td>
+<td>GPU/CPU model, quantization, batch size; all recorded.</td>
 </tr>
 </tbody>
 </table></div>
@@ -217,15 +217,15 @@
 <h2 id="report-format">Report format</h2>
 <p><code>runs/&lt;ts&gt;/report.md</code> (human) and <code>report.json</code> (machine). Sections, in order:</p>
 <ol>
-<li><strong>Summary table</strong> — each headline metric: base → tuned, delta, CI, n.</li>
-<li><strong>Where it got better / worse</strong> — top 5 improvements and top 5 regressions by slice.</li>
-<li><strong>Breakdowns</strong> — by locale, condition, language, source, entity type, tool class.</li>
-<li><strong>Latency</strong> — table + hardware.</li>
-<li><strong>Samples</strong> — 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.</li>
-<li><strong>Provenance</strong> — manifest hash, config, versions, judge model/prompt hashes, seed.</li>
+<li><strong>Summary table</strong>: each headline metric: base → tuned, delta, CI, n.</li>
+<li><strong>Where it got better / worse</strong>: top 5 improvements and top 5 regressions by slice.</li>
+<li><strong>Breakdowns</strong>: by locale, condition, language, source, entity type, tool class.</li>
+<li><strong>Latency</strong>: table + hardware.</li>
+<li><strong>Samples</strong>: 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.</li>
+<li><strong>Provenance</strong>: manifest hash, config, versions, judge model/prompt hashes, seed.</li>
 </ol>
-<p><code>report.json</code> should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet — it gets written with the first recipe that produces a report.</p>
-<h2 id="public-benchmarks-vakforge-bench-locale-v0">Public benchmarks — <code>vakforge-bench-&lt;locale&gt;-v0</code></h2>
+<p><code>report.json</code> should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet; it gets written with the first recipe that produces a report.</p>
+<h2 id="public-benchmarks-vakforge-bench-locale-v0">Public benchmarks: <code>vakforge-bench-&lt;locale&gt;-v0</code></h2>
 <p>One small, consented, versioned benchmark per locale pack, with the same shape so recipes and locales are comparable:</p>
 <ul>
 <li>~300–600 turns in the pack's languages (for <code>hi-Latn-IN</code>: Hinglish with Roman-Hindi transcripts plus a Devanagari subset; for <code>en</code>: a mix of US, UK, Indian English accents).</li>
@@ -243,7 +243,7 @@
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/EVALUATION.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#test-split-rules">Test split rules</a></li><li class="lvl2"><a href="#metrics">Metrics</a></li><li class="lvl3"><a href="#recognition-all-recipes-measured-on-the-models-transcript-or-its-internal-text-stream">Recognition (all recipes; measured on the model&#x27;s transcript or its internal text stream)</a></li><li class="lvl3"><a href="#behaviour-all-recipes">Behaviour (all recipes)</a></li><li class="lvl3"><a href="#speech-quality-recipes-that-emit-audio">Speech quality (recipes that emit audio)</a></li><li class="lvl3"><a href="#latency-all-recipes-measured-on-the-serving-path-not-the-training-loop">Latency (all recipes; measured on the serving path, not the training loop)</a></li><li class="lvl3"><a href="#duplex-recipe-b-only">Duplex (Recipe B only)</a></li><li class="lvl3"><a href="#robustness">Robustness</a></li><li class="lvl2"><a href="#report-format">Report format</a></li><li class="lvl2"><a href="#public-benchmarks-vakforge-bench-locale-v0">Public benchmarks — vakforge-bench-&lt;locale&gt;-v0</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#test-split-rules">Test split rules</a></li><li class="lvl2"><a href="#metrics">Metrics</a></li><li class="lvl3"><a href="#recognition-all-recipes-measured-on-the-models-transcript-or-its-internal-text-stream">Recognition (all recipes; measured on the model&#x27;s transcript or its internal text stream)</a></li><li class="lvl3"><a href="#behaviour-all-recipes">Behaviour (all recipes)</a></li><li class="lvl3"><a href="#speech-quality-recipes-that-emit-audio">Speech quality (recipes that emit audio)</a></li><li class="lvl3"><a href="#latency-all-recipes-measured-on-the-serving-path-not-the-training-loop">Latency (all recipes; measured on the serving path, not the training loop)</a></li><li class="lvl3"><a href="#duplex-recipe-b-only">Duplex (Recipe B only)</a></li><li class="lvl3"><a href="#robustness">Robustness</a></li><li class="lvl2"><a href="#report-format">Report format</a></li><li class="lvl2"><a href="#public-benchmarks-vakforge-bench-locale-v0">Public benchmarks: vakforge-bench-&lt;locale&gt;-v0</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>

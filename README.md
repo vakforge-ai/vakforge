@@ -91,7 +91,7 @@ Open speech-to-speech models exist. Fine-tuning scripts exist for some of them. 
 
 1. **A small library and command-line tool** (`pip install vakforge`). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.
 2. **An agent skill** (`skill/vakforge/`). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs. It has not been run end to end on a real project yet; that is the next milestone on the roadmap.
-3. **Recipes** ([`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html)). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.
+3. **Recipes** ([`docs/RECIPES.md`](https://vakforge.pages.dev/docs/recipes.html)). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page; a recipe is only marked tested once its report is committed.
 
 | Command | What it does | Status |
 |---|---|---|
@@ -157,7 +157,7 @@ The core works in any language. Everything that changes by language or country l
 
 Your assistant runs an open model on your own servers. Nothing calls OpenAI or any other hosted API.
 
-None of this is built yet — serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.
+None of this is built yet: serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.
 
 The intent is that the server speaks the same WebSocket messages as OpenAI's Realtime API, so an app already talking to GPT Realtime changes one URL and clients like Pipecat, LiveKit and Twilio keep working. "Realtime compatible" describes a message format, never a dependency: the model is open and runs on your hardware. More connection types can be added without touching the model:
 

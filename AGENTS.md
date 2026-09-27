@@ -1,17 +1,17 @@
-# AGENTS.md — vakforge
+# AGENTS.md: vakforge
 
 The working rules for this repo, for contributors and for any coding agent they use. Keep it short and current.
 
 ## What this repo is
 
-`vakforge` — turns the data a company already has (documents, database tables, chat logs, CRM records, recorded calls) into a self-hosted, evaluated, real-time voice assistant served from open models on the user's hardware, behind standard protocols (OpenAI Realtime WebSocket format first; WebRTC and SIP next). "Realtime compatible" means the wire format only; nothing calls a hosted API. Any language via locale packs; launch locales English (en-US/en-GB/en-IN) and Hinglish (hi-Latn-IN). Ships as: zero-ML-dep core library + CLI, an agent skill under `skill/`, a landing page under `site/`, and GPU recipes as optional extras. Full spec lives in `docs/`.
+`vakforge` turns the data a company already has (documents, database tables, chat logs, CRM records, recorded calls) into a self-hosted, evaluated, real-time voice assistant served from open models on the user's hardware, behind standard protocols (OpenAI Realtime WebSocket format first; WebRTC and SIP next). "Realtime compatible" means the wire format only; nothing calls a hosted API. Any language via locale packs; launch locales English (en-US/en-GB/en-IN) and Hinglish (hi-Latn-IN). Ships as: zero-ML-dep core library + CLI, an agent skill under `skill/`, a landing page under `site/`, and GPU recipes as optional extras. Full spec lives in `docs/`.
 
 ## Read first
 
-1. `docs/ROADMAP.md` — current phase and what is done/stubbed.
-2. `docs/ARCHITECTURE.md` — package layout and boundaries.
-3. `docs/DATA_FORMAT.md` — canonical schema; all recipes go through it.
-4. `docs/LOCALE_PACKS.md` — anything language/market-specific lives in a pack, never in core.
+1. `docs/ROADMAP.md`: current phase and what is done/stubbed.
+2. `docs/ARCHITECTURE.md`: package layout and boundaries.
+3. `docs/DATA_FORMAT.md`: canonical schema; all recipes go through it.
+4. `docs/LOCALE_PACKS.md`: anything language/market-specific lives in a pack, never in core.
 5. The recipe you are touching in `docs/RECIPES.md`.
 
 ## Hard rules

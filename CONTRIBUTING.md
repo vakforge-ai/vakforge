@@ -18,7 +18,7 @@ uv run pytest            # must pass on CPU with no downloads
 uv run ruff check . && uv run ruff format --check .
 ```
 
-Recipe work. The extras are declared but still empty — each one gets its pins when that recipe is
+Recipe work. The extras are declared but still empty: each one gets its pins when that recipe is
 actually built, so these commands work today and install nothing extra:
 
 ```bash
@@ -42,7 +42,7 @@ and `dependency-audit` (`pip-audit` over the locked runtime set). A final `requi
 passes only if every one of those did, and it is the single check `main` requires, so the
 ruleset does not change when the Python versions do.
 
-Every action is pinned to a commit SHA — a moving tag like `v7` can be repointed at any commit
+Every action is pinned to a commit SHA: a moving tag like `v7` can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing `# v7` comment so the
 release is still readable.
 

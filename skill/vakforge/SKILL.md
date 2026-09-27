@@ -86,16 +86,16 @@ prints to PDF.
 its own `eligibility`, `have`/`floor`/`need`/`unit`, `evidence`, `confidence`, `recipe`,
 `recipe_method` and `blockers`, because "tools" and "recognition" are different questions
 with different data behind them. Walk the list and give the user a line per goal. The
-top-level `fine_tune` is only the roll-up — the best state any goal reached — and is not the answer for any
+top-level `fine_tune` is only the roll-up (the best state any goal reached) and is not the answer for any
 particular goal.
 
 Each `eligibility` means a different plan:
 
-- `blocked` — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
+- `blocked`: retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
   why, quoting the `evidence` field.
-- `baseline_first` — build and ship the retrieval and tools version, measure it in step 7,
+- `baseline_first`: build and ship the retrieval and tools version, measure it in step 7,
   and only then revisit training. Do not write training code in this pass.
-- `candidate` — the data clears the bar. Still measure the baseline first; step 6 exists to
+- `candidate`: the data clears the bar. Still measure the baseline first; step 6 exists to
   beat it, and a fine-tune that does not beat it gets thrown away.
 
 Quote `evidence` and `confidence` to the user. A target marked `heuristic` is ours
@@ -109,7 +109,7 @@ before it counts, and it belongs in the plan as a task, not as data the user alr
 
 `blockers` is separate from data volume: it is what stands between a goal and training
 whatever the counts say. A named `recipe` alongside a blocker means the base model is the
-right choice and the adaptation is not yet possible — recommend the model, and put the
+right choice and the adaptation is not yet possible: recommend the model, and put the
 blocker in the plan.
 
 `recipe_method` (LoRA, full fine-tune) is the recipe's plan from its upstream trainer's

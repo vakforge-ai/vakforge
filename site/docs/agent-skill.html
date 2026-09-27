@@ -134,15 +134,15 @@ prints to PDF.</p>
 its own <code>eligibility</code>, <code>have</code>/<code>floor</code>/<code>need</code>/<code>unit</code>, <code>evidence</code>, <code>confidence</code>, <code>recipe</code>,
 <code>recipe_method</code> and <code>blockers</code>, because &quot;tools&quot; and &quot;recognition&quot; are different questions
 with different data behind them. Walk the list and give the user a line per goal. The
-top-level <code>fine_tune</code> is only the roll-up — the best state any goal reached — and is not the answer for any
+top-level <code>fine_tune</code> is only the roll-up (the best state any goal reached) and is not the answer for any
 particular goal.</p>
 <p>Each <code>eligibility</code> means a different plan:</p>
 <ul>
-<li><code>blocked</code> — retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
+<li><code>blocked</code>: retrieval plus tools plus synthetic dialogues. Skip step 6 entirely and say
 why, quoting the <code>evidence</code> field.</li>
-<li><code>baseline_first</code> — build and ship the retrieval and tools version, measure it in step 7,
+<li><code>baseline_first</code>: build and ship the retrieval and tools version, measure it in step 7,
 and only then revisit training. Do not write training code in this pass.</li>
-<li><code>candidate</code> — the data clears the bar. Still measure the baseline first; step 6 exists to
+<li><code>candidate</code>: the data clears the bar. Still measure the baseline first; step 6 exists to
 beat it, and a fine-tune that does not beat it gets thrown away.</li>
 </ul>
 <p>Quote <code>evidence</code> and <code>confidence</code> to the user. A target marked <code>heuristic</code> is ours
@@ -154,7 +154,7 @@ cannot transcribe or diarize it. Anything in <code>uncounted</code> is real mate
 before it counts, and it belongs in the plan as a task, not as data the user already has.</p>
 <p><code>blockers</code> is separate from data volume: it is what stands between a goal and training
 whatever the counts say. A named <code>recipe</code> alongside a blocker means the base model is the
-right choice and the adaptation is not yet possible — recommend the model, and put the
+right choice and the adaptation is not yet possible: recommend the model, and put the
 blocker in the plan.</p>
 <p><code>recipe_method</code> (LoRA, full fine-tune) is the recipe's plan from its upstream trainer's
 documentation, not a tested result. Confirm it against the pinned trainer before step 6,

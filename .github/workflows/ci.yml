@@ -105,7 +105,7 @@ jobs:
       - name: Metadata is valid for PyPI
         run: uv run --locked --group ci twine check dist/*
       - name: Install the wheel into a clean environment
-        # The pip that ships with the interpreter, as a user would have it — upgrading it
+        # The pip that ships with the interpreter, as a user would have it; upgrading it
         # first would make the result depend on the day the job ran.
         run: |
           python -m venv /tmp/clean

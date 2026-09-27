@@ -73,10 +73,10 @@
   </aside>
   <main class="content">
     <article class="prose" id="article">
-      <h1 id="data-ethics-consent-pii-licences">Data ethics — consent, PII, licences</h1>
+      <h1 id="data-ethics-consent-pii-licences">Data ethics: consent, PII, licences</h1>
 <p>Real customer calls are the most valuable training data for this project and the easiest way to get someone hurt or sued.</p>
 <blockquote>
-<p><strong>What is enforced today:</strong> the canonical schema (<code>vakforge validate</code>) rejects a record whose consent or redaction claim has nothing behind it — see <a href="data-format.html">the provenance rules</a>. The locale packs carry the PII patterns and each region's consent rule, and <code>vakforge locales &lt;id&gt;</code> prints them.</p>
+<p><strong>What is enforced today:</strong> the canonical schema (<code>vakforge validate</code>) rejects a record whose consent or redaction claim has nothing behind it; see <a href="data-format.html">the provenance rules</a>. The locale packs carry the PII patterns and each region's consent rule, and <code>vakforge locales &lt;id&gt;</code> prints them.</p>
 <p>Everything below describing <code>prepare</code> is a <strong>specification</strong>, not shipped code. <code>prepare</code> is generated per project by the agent skill, and this file is the contract it has to meet. Present tense means &quot;must&quot;, not &quot;does&quot;.</p>
 </blockquote>
 <h2 id="consent">Consent</h2>
@@ -84,26 +84,26 @@
 <li>Every canonical record carries <code>meta.consent</code> ∈ <code>recorded_verbal | written | synthetic | public_license | none</code>.</li>
 <li><code>prepare</code> asks for the consent basis once per source directory and a reference (<code>consent_ref</code>: policy name/version, or the notice played at call start).</li>
 <li><code>none</code> is only written with <code>--allow-unconsented</code>, is excluded from every export, benchmark, notebook, and published checkpoint, and produces a warning on every run that touches it.</li>
-<li><strong>A recording is not automatically biometric data.</strong> Under UK GDPR a voice becomes special-category biometric data when it is processed <em>to uniquely identify someone</em> — speaker recognition, voice authentication — not merely because a recording contains a voice (<a href="https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/" target="_blank" rel="noopener">ICO guidance</a>). Illinois BIPA separately treats voiceprints as biometric identifiers. Recording and processing a call still needs a lawful basis and notice either way; what changes is which regime applies.</li>
+<li><strong>A recording is not automatically biometric data.</strong> Under UK GDPR a voice becomes special-category biometric data when it is processed <em>to uniquely identify someone</em> (speaker recognition, voice authentication), not merely because a recording contains a voice (<a href="https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/" target="_blank" rel="noopener">ICO guidance</a>). Illinois BIPA separately treats voiceprints as biometric identifiers. Recording and processing a call still needs a lawful basis and notice either way; what changes is which regime applies.</li>
 <li>Each record says what it may be used for in <code>meta.allowed_uses</code>. If you clone a real person's voice, add <code>voice_clone</code> and keep a written consent record for that specific use in <code>meta.voice_consent_ref</code>; the schema will not accept the one without the other. Rows that only ever train recognition or workflow do not need that record, and should not claim it.</li>
 <li>Applicable law depends on where the data subjects are. Each locale pack ships a short <code>privacy_notes</code> block that <code>prepare</code> prints, plus a <code>call_recording_consent</code> flag. Starting points (not legal advice; confirm with counsel before training on real customer data):
 <ul>
-<li><strong>USA</strong> — no single federal privacy law; state laws apply (e.g. California CCPA/CPRA). Illinois' BIPA treats voiceprints as biometric identifiers and has driven voice-related litigation. Call-recording consent varies by state: some are one-party, several (including California) require all parties.</li>
-<li><strong>UK</strong> — UK GDPR + Data Protection Act 2018; recording and processing calls needs a lawful basis and notice; ICO guidance applies. Voice used for identification is special-category (biometric) data.</li>
-<li><strong>EU</strong> — GDPR; same biometric special-category treatment (Art. 9); DPIA likely required for voice-agent training on customer calls.</li>
-<li><strong>India</strong> — Digital Personal Data Protection Act, 2023 and its rules; notice and consent for processing.</li>
-<li><strong>China</strong> — Personal Information Protection Law (PIPL); separate consent for sensitive personal information (biometrics), data-localisation and cross-border transfer rules; generative-AI service regulations may apply to deployment.</li>
+<li><strong>USA</strong>: no single federal privacy law; state laws apply (e.g. California CCPA/CPRA). Illinois' BIPA treats voiceprints as biometric identifiers and has driven voice-related litigation. Call-recording consent varies by state: some are one-party, several (including California) require all parties.</li>
+<li><strong>UK</strong>: UK GDPR + Data Protection Act 2018; recording and processing calls needs a lawful basis and notice; ICO guidance applies. Voice used for identification is special-category (biometric) data.</li>
+<li><strong>EU</strong>: GDPR; same biometric special-category treatment (Art. 9); DPIA likely required for voice-agent training on customer calls.</li>
+<li><strong>India</strong>: Digital Personal Data Protection Act, 2023 and its rules; notice and consent for processing.</li>
+<li><strong>China</strong>: Personal Information Protection Law (PIPL); separate consent for sensitive personal information (biometrics), data-localisation and cross-border transfer rules; generative-AI service regulations may apply to deployment.</li>
 </ul>
 </li>
 </ul>
 <h2 id="pii">PII</h2>
 <p><code>prepare</code> runs a redaction pass <strong>before</strong> anything is written to <code>data/</code> or a manifest:</p>
 <ol>
-<li><strong>Pattern detection</strong> — shared patterns (email, card numbers via Luhn, IBAN) plus the locale pack's <code>pii_patterns</code>: phone formats (+1/+44/+91/+86 …), national IDs (SSN, NI number, Aadhaar, PAN, Chinese resident ID), bank tokens (routing/IFSC/sort codes), vehicle plates, postal codes when combined with a street address.</li>
-<li><strong>NER</strong> — person names, organisations, locations via a small multilingual NER model; locale name lists (e.g. Roman-Hindi names) as a fallback. Conservative default: redact anything the NER flags with confidence above a low threshold; the cost of over-redaction is much lower than under-redaction.</li>
-<li><strong>Audio redaction</strong> — for each redacted span with timestamps, replace the audio segment with a tone or silence (configurable) so training audio never contains the PII even if the transcript is fixed.</li>
-<li><strong>Redaction log</strong> — <code>redactions/&lt;id&gt;.json</code> lists each span, type, method, and replacement token (e.g., <code>&lt;PHONE_1&gt;</code>), so downstream eval can still score &quot;did the model handle a phone number here&quot; without knowing the number.</li>
-<li><strong>Keep-list</strong> — business entities you <em>want</em> the model to learn (your product names, branch names, your own support number) go in <code>configs/keep_list.yaml</code> and are never redacted.</li>
+<li><strong>Pattern detection</strong>: shared patterns (email, card numbers via Luhn, IBAN) plus the locale pack's <code>pii_patterns</code>: phone formats (+1/+44/+91/+86 …), national IDs (SSN, NI number, Aadhaar, PAN, Chinese resident ID), bank tokens (routing/IFSC/sort codes), vehicle plates, postal codes when combined with a street address.</li>
+<li><strong>NER</strong>: person names, organisations, locations via a small multilingual NER model; locale name lists (e.g. Roman-Hindi names) as a fallback. Conservative default: redact anything the NER flags with confidence above a low threshold; the cost of over-redaction is much lower than under-redaction.</li>
+<li><strong>Audio redaction</strong>: for each redacted span with timestamps, replace the audio segment with a tone or silence (configurable) so training audio never contains the PII even if the transcript is fixed.</li>
+<li><strong>Redaction log</strong>: <code>redactions/&lt;id&gt;.json</code> lists each span, type, method, and replacement token (e.g., <code>&lt;PHONE_1&gt;</code>), so downstream eval can still score &quot;did the model handle a phone number here&quot; without knowing the number.</li>
+<li><strong>Keep-list</strong>: business entities you <em>want</em> the model to learn (your product names, branch names, your own support number) go in <code>configs/keep_list.yaml</code> and are never redacted.</li>
 </ol>
 <p>Placeholders are consistent within a conversation (<code>&lt;PERSON_1&gt;</code> refers to the same person throughout) so dialogue structure survives.</p>
 <p><code>--skip-redaction</code> exists for already-redacted or synthetic data; it logs a warning on every use and sets <code>meta.pii_redacted=false</code> unless <code>--already-redacted</code> is passed with a reason.</p>

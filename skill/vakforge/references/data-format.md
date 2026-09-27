@@ -39,7 +39,7 @@ adapter; nothing reads raw user data directly. `vakforge schema` exports the JSO
 
 ## Rules the validator enforces
 
-- `audio` is optional: records built from documents, tables or chats have none until synth renders it. Stereo (`channels: 2`) needs `channel_map` assigning one channel to `user` and the other to `agent`; the convention is channel 0 user, channel 1 agent. Audio is 24 kHz. `audio.path` is relative to the manifest — absolute paths and `..` are rejected.
+- `audio` is optional: records built from documents, tables or chats have none until synth renders it. Stereo (`channels: 2`) needs `channel_map` assigning one channel to `user` and the other to `agent`; the convention is channel 0 user, channel 1 agent. Audio is 24 kHz. `audio.path` is relative to the manifest; absolute paths and `..` are rejected.
 - `locale` names a registered pack; every spoken turn has non-empty `text` and a `lang` the pack declares. `prepare` sets `lang` with the pack's `detect_lang` after transcription, because speech-to-text language IDs are unreliable on code-switched speech.
 - Turns are sorted by `start`, `end >= start`. `overlap: true` when a turn starts before the previous one ends; turn-based adapters drop or merge such turns and log how many.
 - Tool calls use the OpenAI function-calling shape so the same rows drive training and serving. A tool-call turn has zero duration, `speaker: "agent"`, a unique `id`, and a name declared in `tools`. A `speaker: "tool"` turn carries the result and references an existing call. Arguments validate against `tools[].parameters`.
@@ -49,7 +49,7 @@ adapter; nothing reads raw user data directly. `vakforge schema` exports the JSO
 - Provenance claims must carry evidence, or the record fails: `recorded_verbal`/`written` need `consent_ref`, `public_license` needs `license`, `synthetic` consent needs `synthetic` source. `source: real` needs `pii_redacted: true` **and** a `redaction_log`, and `validate` re-scans the text to prove that claim rather than trusting it.
 - `meta.allowed_uses` says what the row may be trained for (`asr`, `workflow`, `evaluation`, `voice_clone`), defaulting to the three ordinary uses. Adding `voice_clone` to real audio requires `voice_consent_ref`: consent to record a call is not consent to reproduce the caller's voice.
 - Duplicate tool names are rejected: two schemas under one name make every call to it ambiguous.
-- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed, exactly as `{"train": [ids], "val": [ids], "test": [ids], "seed": <integer>}` — no other keys, every row in the split its `meta.split` names. `validate` can only check the conversation half — the format carries no speaker identity — so keeping a speaker out of two splits is your pipeline's job, and it should record how it did it.
+- Splits: by conversation id and by speaker, recorded in `splits.json` with the seed, exactly as `{"train": [ids], "val": [ids], "test": [ids], "seed": <integer>}}`: no other keys, and every row in the split its `meta.split` names. `validate` can only check the conversation half (the format carries no speaker identity), so keeping a speaker out of two splits is your pipeline's job, and it should record how it did it.
 
 ## Adapter targets (what `train/` produces from the manifest)
 

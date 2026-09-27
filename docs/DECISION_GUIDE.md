@@ -1,8 +1,8 @@
-# Decision guide — what actually needs customizing?
+# Decision guide: what actually needs customizing?
 
 `vakforge recommend` implements this guide. It exists because "fine-tune on my data" hides six different problems, and fine-tuning is the right answer to only some of them.
 
-## Step 1 — What do you want to change?
+## Step 1: What do you want to change?
 
 | You want the agent to… | The real problem is… | Do this | Not this |
 |---|---|---|---|
@@ -15,9 +15,9 @@
 | Handle interruptions, stop talking when the user talks | Turn-taking | Full-duplex model + duplex training data (`moshi-lora`) | Turn-based model with VAD hacks |
 | Speak a non-English language natively (Hindi, Mandarin, Spanish …) | Language coverage | `qwen-omni` where it covers the language; otherwise `cascade` with the locale pack's STT/TTS | Fine-tuning an English-only S2S model to a new language on a small dataset |
 
-Most real requests are two or three rows at once. That is fine — but each row has its own recipe, data requirement, and evaluation.
+Most real requests are two or three rows at once. That is fine, but each row has its own recipe, data requirement, and evaluation.
 
-## Step 2 — What data do you have?
+## Step 2: What data do you have?
 
 | Data | Usable for |
 |---|---|
@@ -33,18 +33,18 @@ How much data each goal needs is not one number, so `recommend` carries a separa
 - **Voice cloning is measured in seconds, not hours.** VALL-E clones from a three-second prompt. The gate on voice is consent for that speaker, not volume.
 - **No amount of your calls buys full duplex.** It is a property of the base model: PersonaPlex used ~1,217 hours of real telephone audio plus 2,250+ synthetic on top of an already-duplex base. Pick a duplex model, then adapt lightly.
 
-For behaviour and workflow, a few hundred to a few thousand *turns* covering every branch of your flow is the working assumption — ours, and nothing in the literature validates it. Quality and branch coverage beat volume. See [`RESEARCH.md`](RESEARCH.md) for every bar and its source.
+For behaviour and workflow, a few hundred to a few thousand *turns* covering every branch of your flow is our working assumption, and nothing in the literature validates it. Quality and branch coverage beat volume. See [`RESEARCH.md`](RESEARCH.md) for every bar and its source.
 
-## Step 3 — Constraints
+## Step 3: Constraints
 
 - **Latency:** need sub-300 ms and interruptions → duplex (`moshi-lora`). Turn-based 500–900 ms acceptable → `lfm25-audio` or cascade.
 - **Hardware:** one 24 GB consumer GPU → `lfm25-audio`, `cascade`. 40 GB+ → `moshi-lora`. 80 GB / multi-GPU → `qwen-omni`.
 - **Deployment target:** CPU / edge / browser → `lfm25-audio` (GGUF, ONNX). Server GPU → any.
 - **Language / locale:** the locale pack declares which recipes are `native`, `understand_only`, `cascade`, or `unsupported` (see `docs/LOCALE_PACKS.md`). Today: English (US/UK/IN) → every recipe; Hinglish → `lfm25-audio`/`moshi-lora` understand Hinglish input but speak English, `cascade` for Hindi output; Mandarin → `qwen-omni` or `cascade`; other languages → `cascade` until native support lands.
 - **Market / data residency:** the pack's `privacy_notes` and `call_recording_consent` tell you what `prepare` must collect; some regions (e.g. China, EU) constrain where data and checkpoints may live.
-- **Licence:** commercial use → check `docs/RECIPES.md`; PersonaPlex weights are under NVIDIA's open model licence, Moshi under CC-BY-4.0, LFM2.5-Audio under Liquid's licence, Qwen-Omni under Apache-2.0 (confirm per checkpoint) — read them.
+- **Licence:** commercial use → check `docs/RECIPES.md`; PersonaPlex weights are under NVIDIA's open model licence, Moshi under CC-BY-4.0, LFM2.5-Audio under Liquid's licence, Qwen-Omni under Apache-2.0 (confirm per checkpoint); read them.
 
-## Step 4 — Should you fine-tune at all?
+## Step 4: Should you fine-tune at all?
 
 Do **not** fine-tune if:
 - The failure is factual (wrong price, wrong policy) → RAG.
@@ -65,15 +65,15 @@ The command prints, and writes to `recommend.json`, the following. Every term is
 
 - **primary problem** and the full list of goals (inferred from the data, or set with `--goal`). When nothing in the folder is evidence for any goal, it says so, with an empty goal list and what was found, rather than guessing one
 - **routes**: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack
-- **a decision per goal.** Most real requests are two or three goals at once, and they do not share an answer: `--goal tools --goal recognition` returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up — the best state any goal reached.
+- **a decision per goal.** Most real requests are two or three goals at once, and they do not share an answer: `--goal tools --goal recognition` returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up: the best state any goal reached.
 - **fine-tune?** per goal, one of three answers, never a bare yes:
-  - `no` — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from
-  - `baseline first` — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all
-  - `worth trying` — the data clears the bar, so try it after measuring the baseline, and compare the two
+  - `no`: fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from
+  - `baseline first`: plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all
+  - `worth trying`: the data clears the bar, so try it after measuring the baseline, and compare the two
 - **evidence**, with a confidence label: `measured` (a cited paper reports the number), `reported` (a model team stated it) or `heuristic` (we chose it and nothing supports or refutes it)
 - **recipe**, filtered by the locale pack's `recipe_support` and your `--gpu`; `understand_only` is called out so nobody expects Hindi speech from an English-output model
 - **method**: how that recipe plans to train (LoRA, or a full fine-tune), from its upstream trainer's documentation, marked planned until the recipe has run end to end
-- **data**, in the unit the goal actually uses: turns for behaviour and language, tool-call examples for tools, hours for recognition, seconds for voice cloning — with what was counted to get there, and a **not counted** line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and `inspect` does neither. Evidence whose fitness is unproven stops the verdict at `baseline first`, however much of it there is. Tools counts tool-call examples, the calls with their arguments and results, and `inspect` cannot see those in a conversation, so the count is zero and the chats are listed as not counted
+- **data**, in the unit the goal actually uses: turns for behaviour and language, tool-call examples for tools, hours for recognition, seconds for voice cloning, with what was counted to get there, and a **not counted** line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and `inspect` does neither. Evidence whose fitness is unproven stops the verdict at `baseline first`, however much of it there is. Tools counts tool-call examples, the calls with their arguments and results, and `inspect` cannot see those in a conversation, so the count is zero and the chats are listed as not counted
 - **consent and privacy**: the pack's call-recording rule, any personal data `inspect` found, the pack's privacy notes
 - **next steps**, always starting with "measure the base model with prompt + retrieval first"
 
