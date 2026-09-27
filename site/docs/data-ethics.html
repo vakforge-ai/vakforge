@@ -121,7 +121,7 @@
 </ul>
 <h2 id="security-of-local-data">Security of local data</h2>
 <ul>
-<li><code>data/raw/</code> and <code>runs/*/checkpoint/</code> are git-ignored by default; <code>vakforge init</code> writes the <code>.gitignore</code>.</li>
+<li><code>data/</code> (raw exports, recordings, prepared datasets and redaction logs), <code>runs/</code> and audio files are git-ignored by default; <code>vakforge init</code> writes the <code>.gitignore</code>.</li>
 <li>No telemetry. The CLI never sends data anywhere unless a step explicitly uses an external API (LLM for <code>synth</code>, if configured), and it says so before doing it.</li>
 <li>Checkpoints trained on real data are treated as containing that data. Do not upload them publicly without a membership-inference sanity check and the same consent basis as the data.</li>
 </ul>

@@ -48,7 +48,7 @@ Placeholders are consistent within a conversation (`<PERSON_1>` refers to the sa
 
 ## Security of local data
 
-- `data/raw/` and `runs/*/checkpoint/` are git-ignored by default; `vakforge init` writes the `.gitignore`.
+- `data/` (raw exports, recordings, prepared datasets and redaction logs), `runs/` and audio files are git-ignored by default; `vakforge init` writes the `.gitignore`.
 - No telemetry. The CLI never sends data anywhere unless a step explicitly uses an external API (LLM for `synth`, if configured), and it says so before doing it.
 - Checkpoints trained on real data are treated as containing that data. Do not upload them publicly without a membership-inference sanity check and the same consent basis as the data.
 

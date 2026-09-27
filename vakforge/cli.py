@@ -37,12 +37,19 @@ console = Console()
 err_console = Console(stderr=True)
 
 PROJECT_GITIGNORE = """# written by `vakforge init`
-data/raw/
+# Everything under data/ is your company's data: raw exports, recordings, prepared
+# datasets and redaction logs, which map placeholders back to the personal data they
+# replaced. None of it belongs in version control.
+data/
 runs/
 .venv/
 *.wav
 *.mp3
 *.flac
+*.ogg
+*.oga
+*.opus
+*.m4a
 *.safetensors
 *.bin
 *.pt
