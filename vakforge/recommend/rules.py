@@ -470,6 +470,16 @@ def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str
                 uncounted,
                 True,
             )
+        if goal == "tools":
+            # A conversation is not a tool-call example, and 8,000 of them with no tool in
+            # sight used to make tool training "worth trying".
+            note = (
+                "conversations are not tool-call examples: nothing in them marks which turn "
+                "calls a tool, with what arguments and what came back"
+            )
+            if not summary.get("tool_candidates"):
+                note += ", and no table here offers a lookup to call"
+            return float(messages), f"{messages} parsed chat messages", [note, *uncounted], False
         return float(messages), f"{messages} parsed chat messages", uncounted, True
 
     if bar.unit == "hours":
