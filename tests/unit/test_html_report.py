@@ -95,3 +95,9 @@ def test_the_page_names_the_folder_not_its_full_path():
     page = render(report)
     assert "<h1>data</h1>" in page
     assert "priya" not in page and "acme-bank" not in page
+
+
+def test_no_personal_data_found_is_not_a_clean_bill():
+    report = load("inspect.json")
+    report["summary"]["pii"] = {}
+    assert "does not show that the files hold no personal data" in render(report)

@@ -253,7 +253,12 @@ def _personal_data(report: dict[str, Any]) -> str:
     if is_sampled(report):
         note += " Large files were checked from their start, so these counts are not totals."
     if not pii:
-        return _section("Personal data", '<p class="card">None found.</p>', note)
+        return _section(
+            "Personal data",
+            '<p class="card">None found by these checks, which does not show that the files '
+            "hold no personal data.</p>",
+            note,
+        )
     chips = "".join(
         f'<span class="chip pii">{escape(k)} <b>{_n(v)}</b></span>' for k, v in pii.items()
     )
