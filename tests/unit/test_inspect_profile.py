@@ -299,6 +299,18 @@ def test_an_faq_is_read_as_the_text_it_is(tmp_path, name, body):
     assert "hi-Latn" in facts["languages"]
 
 
+def test_a_jsonl_faq_cut_short_by_the_read_limit_says_so(tmp_path, monkeypatch):
+    # Long fields beside the question and answer used up the limit, so fewer pairs were
+    # read than the file holds, and the count was reported as a total.
+    monkeypatch.setattr(profile, "MAX_CHARS", 2000)
+    rows = [{"question": f"Q{i}?", "answer": f"A{i}.", "notes": "x" * 200} for i in range(50)]
+    p = tmp_path / "faq.jsonl"
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    facts = profile_document(classify(p), HI)
+    assert facts["faq_pairs"] < 50
+    assert facts["truncated"] is True
+
+
 def test_whatsapp_chat(tmp_path):
     p = tmp_path / "export.txt"
     p.write_text(
