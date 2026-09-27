@@ -86,3 +86,12 @@ def test_the_planned_method_is_labelled_as_planned():
     rec["goal_decisions"][0]["recipe_method"] = "LoRA with the official kyutai-labs/moshi-finetune"
     page = render(load("inspect.json"), rec)
     assert '<span class="badge muted">Planned</span> LoRA with the official' in page
+
+
+def test_the_page_names_the_folder_not_its_full_path():
+    # An absolute path can carry a person's or a client's name into a shared page.
+    report = load("inspect.json")
+    report["root"] = "C:/Users/priya.sharma/clients/acme-bank/data"
+    page = render(report)
+    assert "<h1>data</h1>" in page
+    assert "priya" not in page and "acme-bank" not in page

@@ -14,6 +14,7 @@ import re
 from datetime import date
 from html import escape
 from importlib.resources import files
+from pathlib import PurePosixPath
 from typing import Any
 
 from vakforge import GLOSSARY_URL, __version__
@@ -365,8 +366,12 @@ def render(report: dict[str, Any], rec: dict[str, Any] | None = None) -> str:
 
     Every string from the reports is escaped: file and column names come from the user's
     folder, and the page is meant to be opened by other people.
+
+    The folder is shown by its name only. `root` is the path as it was typed, and an
+    absolute path can carry a person's or a client's name into a page meant to be shared.
     """
     s = report["summary"]
+    folder = PurePosixPath(report["root"]).name or report["root"]
     mark = base64.b64encode(files("vakforge").joinpath("assets/mark.png").read_bytes()).decode()
     pills = "".join(
         f'<span class="pill"><span>{k}</span><b>{escape(v)}</b></span>'
@@ -392,7 +397,7 @@ def render(report: dict[str, Any], rec: dict[str, Any] | None = None) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="vakforge {escape(__version__)}">
-<title>{escape(report["root"])} · vakforge report</title>
+<title>{escape(folder)} · vakforge report</title>
 <script>try{{var t=localStorage.getItem("vakforge-theme");if(t==="light"||t==="dark")\
 document.documentElement.dataset.theme=t}}catch(e){{}}</script>
 <style>:root{{--mark:url(data:image/png;base64,{mark})}}{CSS}</style>
@@ -413,7 +418,7 @@ aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save as PDF</b
 </header>
 <div class="hero">
 <p class="eyebrow">Data report</p>
-<h1>{escape(report["root"])}</h1>
+<h1>{escape(folder)}</h1>
 <div class="pills">{pills}</div>
 </div>
 {"".join(body)}
