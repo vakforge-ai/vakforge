@@ -510,3 +510,12 @@ def test_a_table_of_labelled_texts_is_recognised(tmp_path):
     q = tmp_path / "tickets.csv"
     q.write_text("ticket_id,text,category\n1,late,delivery\n", "utf-8")
     assert "labelled_texts" not in profile_table(classify(q), HI)["tables"]["tickets"]
+
+
+def test_labelled_texts_numbered_by_a_bare_id_offer_no_tool(tmp_path):
+    # `id,text,category` became `lookup_intents_by_id`, a lookup no caller would make.
+    p = tmp_path / "intents.csv"
+    p.write_text("id,text,category\n1,where is my order,order_status\n", "utf-8")
+    table = profile_table(classify(p), HI)["tables"]["intents"]
+    assert table["labelled_texts"] == ["text", "category"]
+    assert table["tool_candidates"] == []

@@ -101,3 +101,11 @@ def test_no_personal_data_found_is_not_a_clean_bill():
     report = load("inspect.json")
     report["summary"]["pii"] = {}
     assert "does not show that the files hold no personal data" in render(report)
+
+
+def test_a_document_read_only_in_part_warns_in_the_personal_data_section():
+    report = load("inspect.json")
+    doc = next(f for f in report["files"] if f["kind"] == "document")
+    assert "checked from their start" not in render(report)
+    doc["facts"]["truncated"] = True
+    assert "checked from their start" in render(report)

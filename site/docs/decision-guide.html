@@ -69,13 +69,13 @@
       <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
     </nav>
-    <div class="sb-foot">v0.3.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.3.1 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
-      <h1 id="decision-guide-what-actually-needs-customizing">Decision guide — what actually needs customizing?</h1>
+      <h1 id="decision-guide-what-actually-needs-customizing">Decision guide: what actually needs customizing?</h1>
 <p><code>vakforge recommend</code> implements this guide. It exists because &quot;fine-tune on my data&quot; hides six different problems, and fine-tuning is the right answer to only some of them.</p>
-<h2 id="step-1-what-do-you-want-to-change">Step 1 — What do you want to change?</h2>
+<h2 id="step-1-what-do-you-want-to-change">Step 1: What do you want to change?</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -136,8 +136,8 @@
 </tr>
 </tbody>
 </table></div>
-<p>Most real requests are two or three rows at once. That is fine — but each row has its own recipe, data requirement, and evaluation.</p>
-<h2 id="step-2-what-data-do-you-have">Step 2 — What data do you have?</h2>
+<p>Most real requests are two or three rows at once. That is fine, but each row has its own recipe, data requirement, and evaluation.</p>
+<h2 id="step-2-what-data-do-you-have">Step 2: What data do you have?</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -177,17 +177,17 @@
 <li><strong>Voice cloning is measured in seconds, not hours.</strong> VALL-E clones from a three-second prompt. The gate on voice is consent for that speaker, not volume.</li>
 <li><strong>No amount of your calls buys full duplex.</strong> It is a property of the base model: PersonaPlex used ~1,217 hours of real telephone audio plus 2,250+ synthetic on top of an already-duplex base. Pick a duplex model, then adapt lightly.</li>
 </ul>
-<p>For behaviour and workflow, a few hundred to a few thousand <em>turns</em> covering every branch of your flow is the working assumption — ours, and nothing in the literature validates it. Quality and branch coverage beat volume. See <a href="research.html"><code>RESEARCH.md</code></a> for every bar and its source.</p>
-<h2 id="step-3-constraints">Step 3 — Constraints</h2>
+<p>For behaviour and workflow, a few hundred to a few thousand <em>turns</em> covering every branch of your flow is our working assumption, and nothing in the literature validates it. Quality and branch coverage beat volume. See <a href="research.html"><code>RESEARCH.md</code></a> for every bar and its source.</p>
+<h2 id="step-3-constraints">Step 3: Constraints</h2>
 <ul>
 <li><strong>Latency:</strong> need sub-300 ms and interruptions → duplex (<code>moshi-lora</code>). Turn-based 500–900 ms acceptable → <code>lfm25-audio</code> or cascade.</li>
 <li><strong>Hardware:</strong> one 24 GB consumer GPU → <code>lfm25-audio</code>, <code>cascade</code>. 40 GB+ → <code>moshi-lora</code>. 80 GB / multi-GPU → <code>qwen-omni</code>.</li>
 <li><strong>Deployment target:</strong> CPU / edge / browser → <code>lfm25-audio</code> (GGUF, ONNX). Server GPU → any.</li>
 <li><strong>Language / locale:</strong> the locale pack declares which recipes are <code>native</code>, <code>understand_only</code>, <code>cascade</code>, or <code>unsupported</code> (see <code>docs/LOCALE_PACKS.md</code>). Today: English (US/UK/IN) → every recipe; Hinglish → <code>lfm25-audio</code>/<code>moshi-lora</code> understand Hinglish input but speak English, <code>cascade</code> for Hindi output; Mandarin → <code>qwen-omni</code> or <code>cascade</code>; other languages → <code>cascade</code> until native support lands.</li>
 <li><strong>Market / data residency:</strong> the pack's <code>privacy_notes</code> and <code>call_recording_consent</code> tell you what <code>prepare</code> must collect; some regions (e.g. China, EU) constrain where data and checkpoints may live.</li>
-<li><strong>Licence:</strong> commercial use → check <code>docs/RECIPES.md</code>; PersonaPlex weights are under NVIDIA's open model licence, Moshi under CC-BY-4.0, LFM2.5-Audio under Liquid's licence, Qwen-Omni under Apache-2.0 (confirm per checkpoint) — read them.</li>
+<li><strong>Licence:</strong> commercial use → check <code>docs/RECIPES.md</code>; PersonaPlex weights are under NVIDIA's open model licence, Moshi under CC-BY-4.0, LFM2.5-Audio under Liquid's licence, Qwen-Omni under Apache-2.0 (confirm per checkpoint); read them.</li>
 </ul>
-<h2 id="step-4-should-you-fine-tune-at-all">Step 4 — Should you fine-tune at all?</h2>
+<h2 id="step-4-should-you-fine-tune-at-all">Step 4: Should you fine-tune at all?</h2>
 <p>Do <strong>not</strong> fine-tune if:</p>
 <ul>
 <li>The failure is factual (wrong price, wrong policy) → RAG.</li>
@@ -204,18 +204,18 @@ vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<sp
 <ul>
 <li><strong>primary problem</strong> and the full list of goals (inferred from the data, or set with <code>--goal</code>). When nothing in the folder is evidence for any goal, it says so, with an empty goal list and what was found, rather than guessing one</li>
 <li><strong>routes</strong>: one line per source kind: documents → retrieval, tables → tools, chats → behaviour fine-tune, audio → contextual biasing then recognition, two-channel audio → duplex model choice, non-English turns → locale pack</li>
-<li><strong>a decision per goal.</strong> Most real requests are two or three goals at once, and they do not share an answer: <code>--goal tools --goal recognition</code> returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up — the best state any goal reached.</li>
+<li><strong>a decision per goal.</strong> Most real requests are two or three goals at once, and they do not share an answer: <code>--goal tools --goal recognition</code> returns one block for each, with its own unit, bar, evidence and recipe. The project-level verdict underneath is only the roll-up: the best state any goal reached.</li>
 <li><strong>fine-tune?</strong> per goal, one of three answers, never a bare yes:
 <ul>
-<li><code>no</code> — fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from</li>
-<li><code>baseline first</code> — plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all</li>
-<li><code>worth trying</code> — the data clears the bar, so try it after measuring the baseline, and compare the two</li>
+<li><code>no</code>: fine-tuning is the wrong tool for this goal (facts belong in retrieval; duplex comes from the base model), or there is too little data to learn anything from</li>
+<li><code>baseline first</code>: plausible, but prompt, retrieval and contextual biasing come first, and that baseline is what decides whether training is needed at all</li>
+<li><code>worth trying</code>: the data clears the bar, so try it after measuring the baseline, and compare the two</li>
 </ul>
 </li>
 <li><strong>evidence</strong>, with a confidence label: <code>measured</code> (a cited paper reports the number), <code>reported</code> (a model team stated it) or <code>heuristic</code> (we chose it and nothing supports or refutes it)</li>
 <li><strong>recipe</strong>, filtered by the locale pack's <code>recipe_support</code> and your <code>--gpu</code>; <code>understand_only</code> is called out so nobody expects Hindi speech from an English-output model</li>
 <li><strong>method</strong>: how that recipe plans to train (LoRA, or a full fine-tune), from its upstream trainer's documentation, marked planned until the recipe has run end to end</li>
-<li><strong>data</strong>, in the unit the goal actually uses: turns for behaviour and tools, hours for recognition, seconds for voice cloning — with what was counted to get there, and a <strong>not counted</strong> line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and <code>inspect</code> does neither. Evidence whose fitness is unproven stops the verdict at <code>baseline first</code>, however much of it there is. Conversations are that kind of evidence for tools: they are not tool-call examples, so the tools goal stops at <code>baseline first</code> until there are examples with the calls, their arguments and their results</li>
+<li><strong>data</strong>, in the unit the goal actually uses: turns for behaviour and language, tool-call examples for tools, hours for recognition, seconds for voice cloning, with what was counted to get there, and a <strong>not counted</strong> line for material that exists but cannot count yet. Raw recordings are never counted as conversation turns: an hour of audio is not 300 turns until something has transcribed and diarized it, and <code>inspect</code> does neither. Evidence whose fitness is unproven stops the verdict at <code>baseline first</code>, however much of it there is. Tools counts tool-call examples, the calls with their arguments and results, and <code>inspect</code> cannot see those in a conversation, so the count is zero and the chats are listed as not counted</li>
 <li><strong>consent and privacy</strong>: the pack's call-recording rule, any personal data <code>inspect</code> found, the pack's privacy notes</li>
 <li><strong>next steps</strong>, always starting with &quot;measure the base model with prompt + retrieval first&quot;</li>
 </ul>
@@ -231,7 +231,7 @@ from and which ones are ours rather than the literature's.</p>
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#step-1-what-do-you-want-to-change">Step 1 — What do you want to change?</a></li><li class="lvl2"><a href="#step-2-what-data-do-you-have">Step 2 — What data do you have?</a></li><li class="lvl2"><a href="#step-3-constraints">Step 3 — Constraints</a></li><li class="lvl2"><a href="#step-4-should-you-fine-tune-at-all">Step 4 — Should you fine-tune at all?</a></li><li class="lvl2"><a href="#output-of-vakforge-recommend">Output of vakforge recommend</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#step-1-what-do-you-want-to-change">Step 1: What do you want to change?</a></li><li class="lvl2"><a href="#step-2-what-data-do-you-have">Step 2: What data do you have?</a></li><li class="lvl2"><a href="#step-3-constraints">Step 3: Constraints</a></li><li class="lvl2"><a href="#step-4-should-you-fine-tune-at-all">Step 4: Should you fine-tune at all?</a></li><li class="lvl2"><a href="#output-of-vakforge-recommend">Output of vakforge recommend</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>

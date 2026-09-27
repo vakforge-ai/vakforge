@@ -50,7 +50,7 @@ class Bar:
     anyone measured this or we picked it.
     """
 
-    unit: Literal["turns", "hours", "seconds"]
+    unit: Literal["turns", "examples", "hours", "seconds"]
     floor: float
     target: float | None
     confidence: Confidence
@@ -78,7 +78,7 @@ BARS: dict[Goal, Bar] = {
         "validates 600 or 200. Branch coverage and quality matter more than the count",
     ),
     "tools": Bar(
-        "turns",
+        "examples",
         200,
         8000,
         "reported",
@@ -105,7 +105,7 @@ BARS: dict[Goal, Bar] = {
         "heuristic",
         "Two different things get quoted together here, so this bar covers only one of "
         "them. VALL-E's 3 seconds (arXiv 2301.02111) is an inference-time prompt to a model "
-        "already pretrained on 60k hours — it needs no training data from you at all, and if "
+        "already pretrained on 60k hours: it needs no training data from you at all, and if "
         "a zero-shot prompt is enough, the answer is not to fine-tune. YourTTS fine-tunes a "
         "speaker in under a minute, which is real adaptation evidence but for one model. "
         "The floor here is ours: no published work establishes a minimum for adapting an "
@@ -211,7 +211,7 @@ class GoalDecision:
 class Recommendation:
     """What to change across the whole project, and the per-goal matrix it rests on.
 
-    `fine_tune` is the project-level roll-up — the best state any goal reached — and is
+    `fine_tune` is the project-level roll-up (the best state any goal reached) and is
     deliberately not a boolean. Read `goal_decisions` for the answer that applies to the
     thing you actually care about.
     """
@@ -426,6 +426,7 @@ _UNIT_NAME = {
     "turns": "conversation turns",
     "hours": "hours of audio",
     "seconds": "seconds of audio",
+    "examples": "tool-call examples",
 }
 
 
@@ -447,6 +448,41 @@ def fmt_kinds(counts: dict[str, int]) -> str:
 
 def _amount(value: float, unit: str) -> str:
     return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
+
+
+def _language_evidence(
+    summary: dict[str, Any], messages: int, uncounted: list[str]
+) -> tuple[float, str, list[str], bool]:
+    """Chat messages actually checked and found not to be English.
+
+    Only counted turns are evidence. An estimate from the first messages of each file (the
+    share of sampled text that is not English, times every message) turned 200 Hinglish
+    messages followed by 1,000 English ones into 1,200 turns, and mixed document
+    paragraphs in with chat messages.
+    """
+    checked = summary.get("chat_languages")
+    if checked is None:
+        # A report from vakforge 0.3.0 or earlier has no per-message counts: estimate, and
+        # keep the verdict short of `candidate` until inspect has counted them.
+        share = _non_english_share(summary)
+        turns = round(messages * share)
+        return (
+            float(turns),
+            f"~{turns} of {messages} parsed chat messages, estimated from the first "
+            "messages and paragraphs of each file",
+            [
+                "an estimate, not a count: run inspect again with vakforge 0.3.1 or later "
+                "to check the language of every chat message",
+                *uncounted,
+            ],
+            False,
+        )
+    seen = sum(n for lang, n in checked.items() if not lang.startswith("en"))
+    total = sum(checked.values())
+    have_from = f"{seen} of the {total} chat messages checked are not in English"
+    if total < messages:
+        have_from += f"; {messages - total} more were counted but not read"
+    return float(seen), have_from, uncounted, True
 
 
 def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
@@ -472,28 +508,22 @@ def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str
                 "transcribed and diarized; inspect does neither"
             )
         if goal == "language":
-            # Only turns in the language count. Counting every message turned 600 English
-            # messages and one Hinglish one into 601 turns of language evidence.
-            share = _non_english_share(summary)
-            turns = round(messages * share)
-            return (
-                float(turns),
-                f"~{turns} of {messages} parsed chat messages, from the "
-                f"{100 * share:.3g}% of sampled text that is not English",
-                uncounted,
-                True,
-            )
-        if goal == "tools":
-            # A conversation is not a tool-call example, and 8,000 of them with no tool in
-            # sight used to make tool training "worth trying".
-            note = (
-                "conversations are not tool-call examples: nothing in them marks which turn "
-                "calls a tool, with what arguments and what came back"
-            )
-            if not summary.get("tool_candidates"):
-                note += ", and no table here offers a lookup to call"
-            return float(messages), f"{messages} parsed chat messages", [note, *uncounted], False
+            return _language_evidence(summary, messages, uncounted)
         return float(messages), f"{messages} parsed chat messages", uncounted, True
+
+    if bar.unit == "examples":
+        # Tool training learns from tool calls: the turn that calls, its arguments and what
+        # came back. inspect cannot see those in a conversation, so none are counted. Chats
+        # used to be counted instead, and 8,000 of them read as 8,000 of an 8,000 target.
+        notes = []
+        if messages:
+            notes.append(
+                f"{messages} parsed chat messages are not tool-call examples yet: nothing in "
+                "them marks which turn calls a tool, with what arguments and what came back"
+            )
+        if not summary.get("tool_candidates"):
+            notes.append("no table here offers a lookup to call")
+        return 0.0, "tool-call examples that inspect can see (none in conversations)", notes, True
 
     if bar.unit == "hours":
         return (
@@ -608,7 +638,7 @@ def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraint
         eligibility = "baseline_first"
         reason = (
             f"{_amount(have, bar.unit)} clears the bar for {goal}, but nothing has "
-            f"verified it is usable — {uncounted[0]}. Measure the baseline while you "
+            f"verified it is usable: {uncounted[0]}. Measure the baseline while you "
             "establish that, and revisit"
         )
     elif eligibility == "candidate" and blockers:
@@ -691,6 +721,7 @@ class InspectSummary(BaseModel):
     pii: dict[str, int] = Field(default_factory=dict)
     tool_candidates: list[str] = Field(default_factory=list)
     labelled_text_tables: int = 0
+    chat_languages: dict[str, int] | None = None  # None: a report from 0.3.0 or earlier
 
 
 def recommend(

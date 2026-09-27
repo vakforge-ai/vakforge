@@ -6,7 +6,7 @@ The point of vakforge is not "we fine-tuned it" but "we can show it got better o
 
 ## Test split rules
 
-- Held out by conversation **and** speaker; never seen by `train` or `synth` prompt examples. The canonical format carries no speaker identity, so `vakforge validate` checks the conversation half of that and cannot check the speaker half — keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean `validate` as proof there is no speaker leak.
+- Held out by conversation **and** speaker; never seen by `train` or `synth` prompt examples. The canonical format carries no speaker identity, so `vakforge validate` checks the conversation half of that and cannot check the speaker half; keeping a speaker out of two splits is the generated pipeline's job, and it should record how it did it. Do not read a clean `validate` as proof there is no speaker leak.
 - Stratified by `locale`, `audio.condition` (clean / phone / noisy), `language.primary`, and `meta.source` (real / synthetic). Report breaks down by each, so a multi-locale dataset cannot hide a weak language behind a strong one.
 - Minimum 100 turns for any headline number; fewer → report shows the number with a "low-n" badge and a bootstrap CI.
 
@@ -44,7 +44,7 @@ The point of vakforge is not "we fine-tuned it" but "we can show it got better o
 | TTFT / TTFA | Time from end of user speech to first text token / first audio chunk. p50 and p95. |
 | Total response time | End of user speech to end of agent audio. |
 | Real-time factor | Generated audio seconds / wall seconds. |
-| Hardware | GPU/CPU model, quantization, batch size — all recorded. |
+| Hardware | GPU/CPU model, quantization, batch size; all recorded. |
 
 ### Duplex (Recipe B only)
 
@@ -63,16 +63,16 @@ Every metric above re-run on augmented copies of the test split: phone band-pass
 
 `runs/<ts>/report.md` (human) and `report.json` (machine). Sections, in order:
 
-1. **Summary table** — each headline metric: base → tuned, delta, CI, n.
-2. **Where it got better / worse** — top 5 improvements and top 5 regressions by slice.
-3. **Breakdowns** — by locale, condition, language, source, entity type, tool class.
-4. **Latency** — table + hardware.
-5. **Samples** — 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.
-6. **Provenance** — manifest hash, config, versions, judge model/prompt hashes, seed.
+1. **Summary table**: each headline metric: base → tuned, delta, CI, n.
+2. **Where it got better / worse**: top 5 improvements and top 5 regressions by slice.
+3. **Breakdowns**: by locale, condition, language, source, entity type, tool class.
+4. **Latency**: table + hardware.
+5. **Samples**: 10 paired examples (user text, base answer, tuned answer, reference) with links to audio.
+6. **Provenance**: manifest hash, config, versions, judge model/prompt hashes, seed.
 
-`report.json` should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet — it gets written with the first recipe that produces a report.
+`report.json` should carry a versioned schema alongside it, so benchmarks across recipes are comparable. That schema does not exist yet; it gets written with the first recipe that produces a report.
 
-## Public benchmarks — `vakforge-bench-<locale>-v0`
+## Public benchmarks: `vakforge-bench-<locale>-v0`
 
 One small, consented, versioned benchmark per locale pack, with the same shape so recipes and locales are comparable:
 

@@ -1,4 +1,4 @@
-# Sharma Electronics — customer FAQ
+# Sharma Electronics: customer FAQ
 
 Sharma Electronics sells inverters, batteries, fans and small appliances from two shops in Jaipur and delivers across Rajasthan.
 

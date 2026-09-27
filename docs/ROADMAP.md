@@ -4,7 +4,7 @@ Single source of truth for status. Update checkboxes in the same commit as the w
 
 Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowledge, and a landing page. Recipes that need a GPU come after, largely from contributors who have one.
 
-## Phase 0 — Core scaffold
+## Phase 0: Core scaffold
 - [x] `pyproject.toml` with core deps; recipe extras declared but empty until each recipe pins its upstream
 - [x] `uv.lock`, `.gitignore`, `LICENSE` (Apache-2.0), `Makefile`
 - [x] Package layout (only what Phase 0 needs), `locales/` with `LocalePack` base + registry + `en`, `en-US`, `en-GB`, `en-IN` skeletons
@@ -18,7 +18,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Generated test fixtures (WAVs synthesized in `tests/conftest.py`)
 - [x] GitHub Actions: ruff + pytest, Python 3.11/3.12
 
-## Phase 1 — Locale packs · Inspect · Recommend
+## Phase 1: Locale packs · Inspect · Recommend
 - [x] Pack model: formats, PII patterns with checksum validators, consent, privacy notes, recipe support, inheritance
 - [x] Pack `en` (parent): English WER normalizer, email / card (Luhn) / IBAN (mod-97) patterns
 - [ ] Pack `en` (parent): NER for names and addresses, base scenarios
@@ -35,7 +35,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `inspect` scans table cells for PII, per column, with the column name as context (`order_id` digits are a reference, an `ssn` column is the cue); a sample of each table, with `rows_scanned` saying how much; names, postal addresses and birth dates flagged by their column header, which no pattern can see
 - [x] `inspect` reads CSV/TSV/JSON files with one exchange per row (`input`/`output`, `instruction`/`response`, `customer`/`agent`, …) as conversations, and question/answer files as FAQ documents for retrieval, and CSVs with one message per row (a speaker column and a text column): every message counted, languages and PII from a sample (`messages_scanned`), and the other columns scanned like table cells
 - [x] Tested on public exports (support tickets, a support Q&A set, Hinglish conversations and comments): id columns recognised however an export spells them, JSON read whole up to 32M characters, card numbers after order/purchase words no longer flagged
-- [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence — measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
+- [x] `inspect` for audio: duration, sample rate, channels, narrowband, clipping, silence: measurements only, no condition or spoken-language verdict (those need ASR, and continuous energy is as much dense speech as it is noise)
 - [x] `inspect.json` report for `recommend` and the agent skill, with discovered and profiled counts kept separate so totals say how much of the folder they cover
 - [x] `inspect`: files too large to parse whole are skipped with that as the reason, and partial reads are flagged `truncated` rather than reported as totals
 - [x] `inspect` parsers survive real exports: bracketed (iOS) WhatsApp speakers, schema-qualified SQL tables, per-line JSONL errors instead of losing the file, CSV counted without loading every row
@@ -44,12 +44,12 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `recommend`: rules from `DECISION_GUIDE.md` as code; reads `inspect.json` or a folder; routes per source, fine-tune verdict, recipe filtered by locale `recipe_support` and GPU, data gap, consent checklist; writes `recommend.json`
 - [x] `recommend`: per-goal bars with their own unit, floor, target, confidence label and citation (`BARS`); three-state verdict (`blocked` / `baseline_first` / `candidate`) instead of a boolean, per `docs/RESEARCH.md`
 - [x] `recommend` counts usable evidence only: raw audio is never converted into conversation turns, goals are inferred from profiled files rather than discovered ones, and evidence whose fitness is unproven cannot reach `candidate`
-- [x] `recommend`: a decision per goal (`goal_decisions[]`) — own unit, bar, evidence, recipe and blockers — with the project verdict as the roll-up; naming a duplex base model is separated from whether the data can adapt it
+- [x] `recommend`: a decision per goal (`goal_decisions[]`), each with its own unit, bar, evidence, recipe and blockers, with the project verdict as the roll-up; naming a duplex base model is separated from whether the data can adapt it
 - [x] `recommend`: each goal reports its floor beside its target, and the named recipe's planned training method (LoRA, full fine-tune) from its upstream trainer's documentation, marked planned until the recipe has run
 - [x] `report`: `inspect.json` and `recommend.json` as one self-contained HTML page (logo embedded, nothing fetched), light and dark, printable to PDF; each goal's data on a log scale against its floor and target, and the routes drawn as a flow; chat speaker names left out
 - [ ] `recommend`: interactive questionnaire (flags `--goal`, `--gpu`, `--duplex` cover it non-interactively today)
 
-## Phase 2 — Agent skill
+## Phase 2: Agent skill
 - [x] `skill/vakforge/SKILL.md`: hard rules plus the eight-step workflow with a completion criterion per step
 - [x] `skill/vakforge/references/`: decision rules, data format, data safety, recipes with verify-first checklist, eval and serving, locale hooks
 - [x] Skill calls the core CLI for init, locales, inspect, recommend, report and validate; generates recipe glue per project
@@ -57,7 +57,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] `examples/hinglish-shop`: synthetic documents + tables + chat project with `inspect.json` and `recommend.json` committed and diffed by a test on every run
 - [ ] Tested on one real project end to end (documents + tables, no audio) and one with call recordings
 
-## Phase 3 — Landing page
+## Phase 3: Landing page
 - [x] `site/` static landing page (Cloudflare Pages): hero demo, pipeline, data router, repo parts, locale explorer, eval report, redaction console, agent skill, CTA
 - [x] Mobile and tablet pass (390 / 768 / 1024 px, no horizontal overflow)
 - [x] Deploy to Cloudflare Pages: https://vakforge.pages.dev, auto-deploys from main
@@ -65,7 +65,7 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [x] Light theme for the landing page: `prefers-color-scheme` default, nav toggle saved per browser and applied before first paint (the site embeds no diagrams, so none to swap)
 - [x] Site copy audit: every step labelled `in the CLI` or `skill generates`, example report and hero run marked illustrative, routing matches `docs/RESEARCH.md`, evidence linked from the data router
 
-## Phase 4 — Prepare · Synth
+## Phase 4: Prepare · Synth
 - [ ] `prepare`: ingest documents, tables, chat logs into canonical facts / tool definitions / conversations
 - [ ] `prepare`: audio path: normalize (24 kHz), channels, transcription (faster-whisper; pack override), diarization (pyannote optional)
 - [ ] `prepare`: per-turn language tagging, PII redaction with logs and keep-list, consent metadata, leak-free splits
@@ -73,24 +73,24 @@ Shape of v0: a zero-ML-dep core library, an agent skill that carries the knowled
 - [ ] `synth`: TTS rendering via pack defaults, stereo mixing, augmentation
 - [ ] Public demo datasets: `en-US` (~200 turns), `hi-Latn-IN` (~200 turns)
 
-## Phase 5 — Recipe A: `lfm25-audio` · Eval · Serve
+## Phase 5: Recipe A: `lfm25-audio` · Eval · Serve
 - [ ] Verify `liquid_audio` API against pinned version; `UPSTREAM_NOTES.md`
 - [ ] Adapter, `train`, eval metrics, `report.md`/`report.json` base vs tuned
 - [ ] Colab notebook end to end on `en-US` demo; second run on `hi-Latn-IN`
 - [ ] `serve` backend/protocol split; OpenAI Realtime WebSocket front end (documented event subset), Python client, Pipecat and LiveKit examples, Dockerfile
 
-## Phase 6 — More protocol front ends
+## Phase 6: More protocol front ends
 - [ ] WebRTC front end via LiveKit or Pipecat transports
 - [ ] SIP / telephony front end
 - [ ] Plain HTTP one-turn front end
 - [ ] Gemini Live format (on request)
 
-## Phase 6b — More recipes (contributor-friendly)
+## Phase 6b: More recipes (contributor-friendly)
 - [ ] Recipe B `moshi-lora`: adapter, train wrapper, duplex eval, serve path
 - [ ] Recipe D `qwen-omni` + pack `zh-CN`
 - [ ] Recipe C `cascade`
 
-## Phase 7 — Benchmarks
+## Phase 7: Benchmarks
 - [ ] `vakforge-bench-en-v0`, `vakforge-bench-hi-latn-v0`, later `zh-v0`
 - [ ] Results per recipe per locale under `benchmarks/`; README results table; one-command reproduction
 

@@ -69,7 +69,7 @@
       <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
     </nav>
-    <div class="sb-foot">v0.3.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.3.1 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
@@ -89,7 +89,7 @@ uvx<span class="w"> </span>pre-commit<span class="w"> </span>install<span class=
 uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w">            </span><span class="c1"># must pass on CPU with no downloads</span>
 uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>--check<span class="w"> </span>.
 </code></pre></div>
-<p>Recipe work. The extras are declared but still empty — each one gets its pins when that recipe is
+<p>Recipe work. The extras are declared but still empty: each one gets its pins when that recipe is
 actually built, so these commands work today and install nothing extra:</p>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev<span class="w"> </span>--extra<span class="w"> </span>lfm25<span class="w">      </span><span class="c1"># or --extra moshi / --extra qwen / --extra cascade</span>
 uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>model<span class="w">                 </span><span class="c1"># opt-in, downloads models</span>
@@ -105,7 +105,7 @@ wheel into a clean environment, run the CLI from it), <code>coverage</code> (bra
 and <code>dependency-audit</code> (<code>pip-audit</code> over the locked runtime set). A final <code>required</code> job
 passes only if every one of those did, and it is the single check <code>main</code> requires, so the
 ruleset does not change when the Python versions do.</p>
-<p>Every action is pinned to a commit SHA — a moving tag like <code>v7</code> can be repointed at any commit
+<p>Every action is pinned to a commit SHA: a moving tag like <code>v7</code> can be repointed at any commit
 by whoever owns the action. Dependabot updates the SHAs; keep the trailing <code># v7</code> comment so the
 release is still readable.</p>
 <p>The rest of the toolchain is pinned the same way. <code>UV_VERSION</code> at the top of <code>ci.yml</code> and

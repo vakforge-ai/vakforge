@@ -1,8 +1,8 @@
-# Data ethics — consent, PII, licences
+# Data ethics: consent, PII, licences
 
 Real customer calls are the most valuable training data for this project and the easiest way to get someone hurt or sued.
 
-> **What is enforced today:** the canonical schema (`vakforge validate`) rejects a record whose consent or redaction claim has nothing behind it — see [the provenance rules](DATA_FORMAT.md). The locale packs carry the PII patterns and each region's consent rule, and `vakforge locales <id>` prints them.
+> **What is enforced today:** the canonical schema (`vakforge validate`) rejects a record whose consent or redaction claim has nothing behind it; see [the provenance rules](DATA_FORMAT.md). The locale packs carry the PII patterns and each region's consent rule, and `vakforge locales <id>` prints them.
 >
 > Everything below describing `prepare` is a **specification**, not shipped code. `prepare` is generated per project by the agent skill, and this file is the contract it has to meet. Present tense means "must", not "does".
 
@@ -11,24 +11,24 @@ Real customer calls are the most valuable training data for this project and the
 - Every canonical record carries `meta.consent` ∈ `recorded_verbal | written | synthetic | public_license | none`.
 - `prepare` asks for the consent basis once per source directory and a reference (`consent_ref`: policy name/version, or the notice played at call start).
 - `none` is only written with `--allow-unconsented`, is excluded from every export, benchmark, notebook, and published checkpoint, and produces a warning on every run that touches it.
-- **A recording is not automatically biometric data.** Under UK GDPR a voice becomes special-category biometric data when it is processed *to uniquely identify someone* — speaker recognition, voice authentication — not merely because a recording contains a voice ([ICO guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/)). Illinois BIPA separately treats voiceprints as biometric identifiers. Recording and processing a call still needs a lawful basis and notice either way; what changes is which regime applies.
+- **A recording is not automatically biometric data.** Under UK GDPR a voice becomes special-category biometric data when it is processed *to uniquely identify someone* (speaker recognition, voice authentication), not merely because a recording contains a voice ([ICO guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/)). Illinois BIPA separately treats voiceprints as biometric identifiers. Recording and processing a call still needs a lawful basis and notice either way; what changes is which regime applies.
 - Each record says what it may be used for in `meta.allowed_uses`. If you clone a real person's voice, add `voice_clone` and keep a written consent record for that specific use in `meta.voice_consent_ref`; the schema will not accept the one without the other. Rows that only ever train recognition or workflow do not need that record, and should not claim it.
 - Applicable law depends on where the data subjects are. Each locale pack ships a short `privacy_notes` block that `prepare` prints, plus a `call_recording_consent` flag. Starting points (not legal advice; confirm with counsel before training on real customer data):
-  - **USA** — no single federal privacy law; state laws apply (e.g. California CCPA/CPRA). Illinois' BIPA treats voiceprints as biometric identifiers and has driven voice-related litigation. Call-recording consent varies by state: some are one-party, several (including California) require all parties.
-  - **UK** — UK GDPR + Data Protection Act 2018; recording and processing calls needs a lawful basis and notice; ICO guidance applies. Voice used for identification is special-category (biometric) data.
-  - **EU** — GDPR; same biometric special-category treatment (Art. 9); DPIA likely required for voice-agent training on customer calls.
-  - **India** — Digital Personal Data Protection Act, 2023 and its rules; notice and consent for processing.
-  - **China** — Personal Information Protection Law (PIPL); separate consent for sensitive personal information (biometrics), data-localisation and cross-border transfer rules; generative-AI service regulations may apply to deployment.
+  - **USA**: no single federal privacy law; state laws apply (e.g. California CCPA/CPRA). Illinois' BIPA treats voiceprints as biometric identifiers and has driven voice-related litigation. Call-recording consent varies by state: some are one-party, several (including California) require all parties.
+  - **UK**: UK GDPR + Data Protection Act 2018; recording and processing calls needs a lawful basis and notice; ICO guidance applies. Voice used for identification is special-category (biometric) data.
+  - **EU**: GDPR; same biometric special-category treatment (Art. 9); DPIA likely required for voice-agent training on customer calls.
+  - **India**: Digital Personal Data Protection Act, 2023 and its rules; notice and consent for processing.
+  - **China**: Personal Information Protection Law (PIPL); separate consent for sensitive personal information (biometrics), data-localisation and cross-border transfer rules; generative-AI service regulations may apply to deployment.
 
 ## PII
 
 `prepare` runs a redaction pass **before** anything is written to `data/` or a manifest:
 
-1. **Pattern detection** — shared patterns (email, card numbers via Luhn, IBAN) plus the locale pack's `pii_patterns`: phone formats (+1/+44/+91/+86 …), national IDs (SSN, NI number, Aadhaar, PAN, Chinese resident ID), bank tokens (routing/IFSC/sort codes), vehicle plates, postal codes when combined with a street address.
-2. **NER** — person names, organisations, locations via a small multilingual NER model; locale name lists (e.g. Roman-Hindi names) as a fallback. Conservative default: redact anything the NER flags with confidence above a low threshold; the cost of over-redaction is much lower than under-redaction.
-3. **Audio redaction** — for each redacted span with timestamps, replace the audio segment with a tone or silence (configurable) so training audio never contains the PII even if the transcript is fixed.
-4. **Redaction log** — `redactions/<id>.json` lists each span, type, method, and replacement token (e.g., `<PHONE_1>`), so downstream eval can still score "did the model handle a phone number here" without knowing the number.
-5. **Keep-list** — business entities you *want* the model to learn (your product names, branch names, your own support number) go in `configs/keep_list.yaml` and are never redacted.
+1. **Pattern detection**: shared patterns (email, card numbers via Luhn, IBAN) plus the locale pack's `pii_patterns`: phone formats (+1/+44/+91/+86 …), national IDs (SSN, NI number, Aadhaar, PAN, Chinese resident ID), bank tokens (routing/IFSC/sort codes), vehicle plates, postal codes when combined with a street address.
+2. **NER**: person names, organisations, locations via a small multilingual NER model; locale name lists (e.g. Roman-Hindi names) as a fallback. Conservative default: redact anything the NER flags with confidence above a low threshold; the cost of over-redaction is much lower than under-redaction.
+3. **Audio redaction**: for each redacted span with timestamps, replace the audio segment with a tone or silence (configurable) so training audio never contains the PII even if the transcript is fixed.
+4. **Redaction log**: `redactions/<id>.json` lists each span, type, method, and replacement token (e.g., `<PHONE_1>`), so downstream eval can still score "did the model handle a phone number here" without knowing the number.
+5. **Keep-list**: business entities you *want* the model to learn (your product names, branch names, your own support number) go in `configs/keep_list.yaml` and are never redacted.
 
 Placeholders are consistent within a conversation (`<PERSON_1>` refers to the same person throughout) so dialogue structure survives.
 
@@ -48,7 +48,7 @@ Placeholders are consistent within a conversation (`<PERSON_1>` refers to the sa
 
 ## Security of local data
 
-- `data/` (raw exports, recordings, prepared datasets and redaction logs), `runs/` and audio files are git-ignored by default; `vakforge init` writes the `.gitignore`.
+- `data/` (raw exports, recordings, prepared datasets and redaction logs), `runs/`, audio files and the `inspect.json`, `recommend.json` and `report.html` reports are git-ignored by default; `vakforge init` writes the `.gitignore`.
 - No telemetry. The CLI never sends data anywhere unless a step explicitly uses an external API (LLM for `synth`, if configured), and it says so before doing it.
 - Checkpoints trained on real data are treated as containing that data. Do not upload them publicly without a membership-inference sanity check and the same consent basis as the data.
 

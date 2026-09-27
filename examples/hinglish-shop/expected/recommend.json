@@ -33,15 +33,15 @@
     {
       "goal": "tools",
       "eligibility": "blocked",
-      "reason": "16 conversation turns is below the 200 conversation turns floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
-      "have": 16.0,
-      "have_from": "16 parsed chat messages",
+      "reason": "0 tool-call examples is below the 200 tool-call examples floor for tools; generate coverage with synth, ship on retrieval and tools, and collect real conversations",
+      "have": 0.0,
+      "have_from": "tool-call examples that inspect can see (none in conversations)",
       "uncounted": [
-        "conversations are not tool-call examples: nothing in them marks which turn calls a tool, with what arguments and what came back"
+        "16 parsed chat messages are not tool-call examples yet: nothing in them marks which turn calls a tool, with what arguments and what came back"
       ],
       "floor": 200,
       "need": 8000,
-      "unit": "turns",
+      "unit": "examples",
       "evidence": "Published tool-learning corpora run 8k to 60k examples (BUTTONInstruct 8k, APIGen 60k over 3,673 APIs, ToolACE across 26,507 APIs). Those are the sizes of broad general-purpose corpora, not a measured minimum for adapting one company's fixed set of tools, so treat 8k as the scale of the published work rather than a requirement: your tool count, argument branches and negative cases matter more. The schema and the prompt come first either way",
       "confidence": "reported",
       "recipe": null,
@@ -89,9 +89,9 @@
     {
       "goal": "language",
       "eligibility": "blocked",
-      "reason": "10 conversation turns is below the 200 conversation turns floor for language; collect real code-switched conversations; synth adds coverage but alone did not move accuracy, and the evaluation set has to be real",
-      "have": 10.0,
-      "have_from": "~10 of 16 parsed chat messages, from the 65.6% of sampled text that is not English",
+      "reason": "12 conversation turns is below the 200 conversation turns floor for language; collect real code-switched conversations; synth adds coverage but alone did not move accuracy, and the evaluation set has to be real",
+      "have": 12.0,
+      "have_from": "12 of the 16 chat messages checked are not in English",
       "uncounted": [],
       "floor": 200,
       "need": null,
@@ -115,8 +115,8 @@
   "next_steps": [
     "measure the base model with prompt + retrieval on a held-out set of real conversations before training anything; that baseline is the only proof training was needed",
     "define the suggested tools and test the base model's tool calls",
-    "tools: 16 of ~8000 conversation turns (reported); run synth over your documents and tools for coverage, and keep the evaluation set real",
-    "tools, not counted yet: conversations are not tool-call examples: nothing in them marks which turn calls a tool, with what arguments and what came back",
+    "tools: 0 of ~8000 tool-call examples (reported); run synth over your documents and tools for coverage, and keep the evaluation set real",
+    "tools, not counted yet: 16 parsed chat messages are not tool-call examples yet: nothing in them marks which turn calls a tool, with what arguments and what came back",
     "workflow: 16 of ~600 conversation turns (heuristic); run synth over your documents and tools for coverage, and keep the evaluation set real",
     "ship the retrieval + tools version and collect real conversations"
   ]

@@ -33,16 +33,16 @@ their evidence, and labels the ones we chose ourselves as `heuristic`:
 
 | Goal | Floor | Target | Confidence |
 |---|---|---|---|
-| knowledge | — | never fine-tune; retrieval instead | measured |
-| workflow / behaviour | 200 turns | ~600 turns | heuristic — ours, nothing validates it |
-| tools | 200 turns | 8,000+ turns (published corpora run 8k–60k) | measured |
+| knowledge | none | never fine-tune; retrieval instead | measured |
+| workflow / behaviour | 200 turns | ~600 turns | heuristic (ours, nothing validates it) |
+| tools | 200 tool-call examples | 8,000+ examples (published corpora run 8k–60k) | reported |
 | recognition | 10 h | 20 h, after trying contextual biasing for free | measured |
 | voice | 3 s | ~60 s | measured |
-| duplex | — | not a training budget: pick an already-duplex base model | measured |
+| duplex | none | not a training budget: pick an already-duplex base model | measured |
 | language | 200 turns | natural code-switched data; synthetic alone is not enough | measured |
 
 Two things follow that used to be got wrong here. Ten hours of calls does not buy duplex
-behaviour — PersonaPlex used ~1,217 hours of real audio plus 2,250+ synthetic on top of an
+behaviour: PersonaPlex used ~1,217 hours of real audio plus 2,250+ synthetic on top of an
 already-duplex base. And voice cloning needs seconds, not hours; consent for that speaker's
 voice is the real gate.
 

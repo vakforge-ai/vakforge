@@ -2,7 +2,7 @@
 
 The pipeline is language-agnostic. A **locale pack** is the one place where everything language- or market-specific lives, so adding a market never touches core, recipes, eval, or serve.
 
-> **Status:** packs are built and tested — `en`, `en-US`, `en-GB`, `en-IN` and `hi-Latn-IN` ship today, with golden tests for every normalizer, language detector and PII pattern. Run `vakforge locales` to list them and `vakforge locales <id>` to see one pack's resolved settings. The sections on `synth` and benchmark composition are specification.
+> **Status:** packs are built and tested: `en`, `en-US`, `en-GB`, `en-IN` and `hi-Latn-IN` ship today, with golden tests for every normalizer, language detector and PII pattern. Run `vakforge locales` to list them and `vakforge locales <id>` to see one pack's resolved settings. The sections on `synth` and benchmark composition are specification.
 
 ## What a pack contains
 
@@ -42,7 +42,7 @@ in the class yet; `docs/ROADMAP.md` tracks them.
 
 ## Packs
 
-### `en` (parent) with `en-US`, `en-GB`, `en-IN` — launch
+### `en` (parent) with `en-US`, `en-GB`, `en-IN`: launch
 
 Shared: English normalizer, person/organisation NER, email/card/IBAN patterns, tool-call scenarios.
 
@@ -56,7 +56,7 @@ Shared: English normalizer, person/organisation NER, email/card/IBAN patterns, t
 | Call-recording consent | varies by state (some all-party) | notice / lawful basis | notice; DPDP |
 | Recipe support | all native | all native | all native (accent robustness via fine-tune) |
 
-### `hi-Latn-IN` (Hinglish) — launch, showcase
+### `hi-Latn-IN` (Hinglish): launch, showcase
 
 - Detects Roman Hindi vs English per turn using a Hindi word-list + script heuristic (ASR language IDs are unreliable here).
 - Normalizer handles ₹/lakh/crore, Indian date phrasing, mixed-script numbers; optional Devanagari↔Roman transliteration for WER against either reference.
@@ -64,14 +64,14 @@ Shared: English normalizer, person/organisation NER, email/card/IBAN patterns, t
 - Recipe support: `lfm25-audio` and `moshi-lora` = **understand_only** (English speech out; Hinglish input understood after fine-tune); `cascade` = native via IndicConformer + Indic Parler-TTS / IndicF5; `qwen-omni` = verify.
 - Benchmark: `vakforge-bench-hi-latn-v0`.
 
-### `zh-CN` — planned (first non-English)
+### `zh-CN`: planned (first non-English)
 
 - Recipe: `qwen-omni` (native Mandarin speech in/out, function calling) or `cascade` (Paraformer/Whisper + LLM + CosyVoice/Qwen3-TTS).
 - Formats: ¥/元, 万/亿 number groups, YMD dates, +86 mobiles, 6-digit postal codes, 18-digit resident ID pattern.
 - Privacy notes: PIPL, cross-border data-transfer rules, data localisation; models mirrored on ModelScope for users without Hugging Face access.
 - Benchmark: `vakforge-bench-zh-v0`.
 
-### `es` (es-ES / es-MX), `de`, `fr`, `pt-BR`, `ja`, `ar` — planned
+### `es` (es-ES / es-MX), `de`, `fr`, `pt-BR`, `ja`, `ar`: planned
 
 Added in the order native speech-output support appears in open models; until then `cascade` with locale STT/TTS defaults.
 
@@ -88,7 +88,7 @@ Added in the order native speech-output support appears in open models; until th
 
 1. `vakforge/locales/<id_with_underscores>.py` implementing `LocalePack`; inherit from a parent where sensible, and import it in `vakforge/locales/__init__.py`.
 2. Unit tests: `detect_lang`, `normalize_text` (golden cases incl. numbers, currency, dates), every `pii_pattern` (positive and negative cases), name generator sanity.
-3. Scenario templates localised (not just translated — local business norms, greetings, verification steps).
+3. Scenario templates localised (not just translated: local business norms, greetings, verification steps).
 4. `tts_defaults` / `stt_defaults` verified to run; `recipe_support` filled honestly.
 5. `privacy_notes` with sources; `call_recording_consent` set.
 6. `benchmark` spec + at least a synthetic benchmark committed.

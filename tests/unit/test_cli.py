@@ -17,7 +17,7 @@ def flat(result) -> str:
     """CLI output with newlines and runs of spaces collapsed.
 
     Rich wraps to the console width, so a phrase can be split across lines when a long
-    path pushes it past the margin — which happens on CI's `/tmp/pytest-of-runner/...`
+    path pushes it past the margin, which happens on CI's `/tmp/pytest-of-runner/...`
     paths and not on a short Windows temp dir. Assert against this, not `result.output`.
     """
     return " ".join(result.output.split())
@@ -52,6 +52,10 @@ def test_init_keeps_every_data_file_out_of_git(tmp_path):
         "data/prepared/redactions/conv_1.json",
         "runs/eval/report.json",
         "exports/call.m4a",
+        # The reports, when written beside the project file rather than in runs/.
+        "inspect.json",
+        "recommend.json",
+        "report.html",
     ]
     kept = ["vakforge.yaml", "configs/train.yaml"]
     check = ["git", "check-ignore", *private, *kept]

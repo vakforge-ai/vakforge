@@ -69,7 +69,7 @@
       <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
     </nav>
-    <div class="sb-foot">v0.3.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.3.1 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/README.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
@@ -88,12 +88,13 @@
 <h2 id="try-it">Try it</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>en-US<span class="w">       </span><span class="c1"># or en-GB, en-IN, hi-Latn-IN</span>
-<span class="c1"># copy your files into my-assistant/data/raw/, then:</span>
-vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw<span class="w"> </span>-o<span class="w"> </span>inspect.json
-vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>-o<span class="w"> </span>recommend.json
-vakforge<span class="w"> </span>report<span class="w"> </span>inspect.json<span class="w"> </span>recommend.json<span class="w"> </span>-o<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># one page to share or save as PDF</span>
+<span class="nb">cd</span><span class="w"> </span>my-assistant
+<span class="c1"># copy your files into data/raw/, then:</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>data/raw<span class="w"> </span>-o<span class="w"> </span>runs/inspect.json
+vakforge<span class="w"> </span>recommend<span class="w"> </span>runs/inspect.json<span class="w"> </span>-o<span class="w"> </span>runs/recommend.json
+vakforge<span class="w"> </span>report<span class="w"> </span>runs/inspect.json<span class="w"> </span>runs/recommend.json<span class="w"> </span>-o<span class="w"> </span>runs/report.html<span class="w">   </span><span class="c1"># to share or save as PDF</span>
 </code></pre></div>
-<p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.</p>
+<p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine. The reports go in <code>runs/</code>, which the project's <code>.gitignore</code> keeps out of git: <code>inspect.json</code> names your files and columns, and can name the people in a chat export.</p>
 <p>No data to hand? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project with both reports committed next to it.</p>
 <h2 id="why-vakforge-exists">Why vakforge exists</h2>
 <p>Open voice models are good enough today. Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni can listen and talk, and strong open speech-to-text and text-to-speech models exist too. Yet most companies still pay per minute for a closed voice API.</p>
@@ -175,7 +176,7 @@ Jensen Huang, NVIDIA, <a href="https://finance.yahoo.com/technology/ai/articles/
 <ol>
 <li><strong>A small library and command-line tool</strong> (<code>pip install vakforge</code>). No machine-learning dependencies, so it runs on any laptop. It holds the dataset format, the data checks, the data inspector, the decision rules and the locale packs.</li>
 <li><strong>An agent skill</strong> (<code>skill/vakforge/</code>). Add it to Claude Code or another coding agent. The agent reads your data, follows the decision rules, and writes the training and serving code for your project. It checks every library it uses against the installed source first, so it does not guess at APIs. It has not been run end to end on a real project yet; that is the next milestone on the roadmap.</li>
-<li><strong>Recipes</strong> (<a href="recipes.html"><code>docs/RECIPES.md</code></a>). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page — a recipe is only marked tested once its report is committed.</li>
+<li><strong>Recipes</strong> (<a href="recipes.html"><code>docs/RECIPES.md</code></a>). Researched paths from an open base model to a running assistant: which model suits which language and GPU, what it can and cannot learn, and the licence to read first. None have been run end to end yet, and the file says so on every page; a recipe is only marked tested once its report is committed.</li>
 </ol>
 <div class="table-wrap"><table>
 <thead>
@@ -358,7 +359,7 @@ read <code>SKILL.md</code>-style instructions work the same way; point them at t
 <p>&quot;Duplex&quot; means the assistant can listen while it talks, so callers can interrupt it naturally. Details in <a href="recipes.html"><code>docs/RECIPES.md</code></a>.</p>
 <h2 id="connecting-your-app">Connecting your app</h2>
 <p>Your assistant runs an open model on your own servers. Nothing calls OpenAI or any other hosted API.</p>
-<p>None of this is built yet — serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.</p>
+<p>None of this is built yet: serving is written into your project by the agent skill, and this table is the design it follows, not a list of working endpoints.</p>
 <p>The intent is that the server speaks the same WebSocket messages as OpenAI's Realtime API, so an app already talking to GPT Realtime changes one URL and clients like Pipecat, LiveKit and Twilio keep working. &quot;Realtime compatible&quot; describes a message format, never a dependency: the model is open and runs on your hardware. More connection types can be added without touching the model:</p>
 <div class="table-wrap"><table>
 <thead>
@@ -401,10 +402,11 @@ read <code>SKILL.md</code>-style instructions work the same way; point them at t
 <h2 id="quick-start">Quick start</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>hi-Latn-IN
-<span class="c1"># put your documents, tables, chat exports and call recordings in my-assistant/data/raw/</span>
-vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw
+<span class="nb">cd</span><span class="w"> </span>my-assistant
+<span class="c1"># put your documents, tables, chat exports and call recordings in data/raw/</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>data/raw<span class="w"> </span>-o<span class="w"> </span>runs/inspect.json
 </code></pre></div>
-<p><code>inspect</code> prints a summary and writes <code>inspect.json</code>. <code>vakforge recommend inspect.json</code> reads it and writes <code>recommend.json</code>.</p>
+<p><code>inspect</code> prints a summary and writes <code>runs/inspect.json</code>. <code>vakforge recommend runs/inspect.json -o runs/recommend.json</code> reads it and writes the decision.</p>
 <p>No data of your own yet? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.</p>
 <h2 id="documentation">Documentation</h2>
 <ul>

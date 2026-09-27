@@ -336,11 +336,17 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         # Matched on the key, not the header: a real export says "Ticket ID", and read
         # literally that matched nothing, so an 8,000-ticket table offered no tools.
         t["id_columns"] = [c for c in t["columns"] if _ID_COLUMN.search(column_key(c))]
-        t["tool_candidates"] = [
-            f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
-        ]
-        if not t["id_columns"] and (labelled := labelled_text_columns(t["columns"])):
+        labelled = labelled_text_columns(t["columns"])
+        # In a table of labelled texts a bare `id` numbers the examples; it is not a record a
+        # caller would look up, and `id,text,category` became `lookup_intents_by_id`. A named
+        # id (`ticket_id`) still marks a business table.
+        if labelled and all(column_key(c) == "id" for c in t["id_columns"]):
             t["labelled_texts"] = list(labelled)  # [text column, label column]
+            t["tool_candidates"] = []
+        else:
+            t["tool_candidates"] = [
+                f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
+            ]
         pii.update(t.pop("pii", {}))
     facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:
@@ -454,6 +460,12 @@ def profile_chat(src: Source, pack: LocalePack) -> dict[str, Any]:
     facts.update(
         messages=len(messages) if counted is None else counted,
         speakers=dict(speakers.most_common(10)),
+        # Every message read, not the first 200 paragraphs `languages` samples: 200
+        # Hinglish messages followed by 1,000 English ones read as all Hinglish, and
+        # became 1,200 turns of evidence for the language goal.
+        message_languages=dict(
+            Counter(pack.detect_lang(m) for m in messages if m.strip()).most_common()
+        ),
     )
     if column_pii := read_as.pop("column_pii", None):
         facts["pii"] = dict((Counter(facts["pii"]) + Counter(column_pii)).most_common())

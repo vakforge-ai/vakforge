@@ -98,7 +98,7 @@ def test_redaction_log_must_be_a_real_log(tmp_path):
     ],
 )
 def test_the_redaction_log_cannot_point_outside_the_dataset(tmp_path, escape):
-    # A manifest is data — generated, downloaded, handed over with a dataset. Every path it
+    # A manifest is data: generated, downloaded, handed over with a dataset. Every path it
     # carries is resolved against its own directory, so one that climbs out turns validate
     # into a file-existence oracle for the machine running it.
     row = _redacted_row()

@@ -42,7 +42,7 @@ generators. Voices come from open TTS under licences that allow it. `meta.source
 - Every recipe carries a `LICENSE_NOTES.md` for its base model; `train` prints it and requires `--accept-license` the first time.
 - `meta.license` per row lets a mixed dataset be filtered by licence before publishing anything derived from it.
 - Checkpoints trained on real data are treated as containing that data: no public upload without a membership-inference sanity check and the same consent basis as the data.
-- `data/` (raw exports, recordings, prepared datasets and redaction logs), `runs/` and audio files stay git-ignored; `vakforge init` writes that `.gitignore`.
+- `data/` (raw exports, recordings, prepared datasets and redaction logs), `runs/`, audio files and the `inspect.json`, `recommend.json` and `report.html` reports stay git-ignored; `vakforge init` writes that `.gitignore`.
 - No telemetry. The only network calls are the ones the user configured for synth, announced before they happen.
 
 ## Behaviour defaults

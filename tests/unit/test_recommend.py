@@ -26,7 +26,7 @@ def summary(**over):
 
 
 def d(rec):
-    """The decision for the report's primary goal — what the old flat fields used to hold."""
+    """The decision for the report's primary goal: what the old flat fields used to hold."""
     return rec.decision(rec.primary_problem)
 
 
@@ -54,9 +54,9 @@ def test_every_goal_gets_its_own_decision():
     assert [x.goal for x in r.goal_decisions] == ["tools", "recognition"]
 
     tools, recognition = r.goal_decisions
-    # Different units, different bars, different evidence — and separately reached verdicts.
-    assert (tools.unit, recognition.unit) == ("turns", "hours")
-    assert (tools.have, recognition.have) == (900, 25)
+    # Different units, different bars, different evidence, and separately reached verdicts.
+    assert (tools.unit, recognition.unit) == ("examples", "hours")
+    assert (tools.have, recognition.have) == (0, 25)
     assert tools.need != recognition.need
     assert tools.evidence != recognition.evidence
     for decision in (tools, recognition):
@@ -87,7 +87,7 @@ def test_a_lot_of_documents_does_not_unblock_knowledge():
     assert d(lots).eligibility == "blocked"
 
 
-def test_tables_and_chats_sit_below_the_tool_corpus_target():
+def test_tables_and_chats_hold_no_tool_call_examples():
     r = recommend(
         summary(
             counts={"table": 1, "chat": 1},
@@ -97,11 +97,11 @@ def test_tables_and_chats_sit_below_the_tool_corpus_target():
         US,
     )
     assert r.primary_problem == "tools"
-    # 900 turns clears the floor but is two orders of magnitude off the published corpora.
-    assert d(r).eligibility == "baseline_first"
-    assert d(r).recipe == "lfm25-audio"
-    assert "24 GB" in d(r).recipe_reason and "Colab" in d(r).recipe_reason
-    assert d(r).have == 900 and d(r).need == 8000 and d(r).unit == "turns"
+    # A lookup to call and 900 chat messages, but not one example of a call being made.
+    assert d(r).have == 0 and d(r).need == 8000 and d(r).unit == "examples"
+    assert d(r).eligibility == "blocked" and d(r).recipe is None
+    assert "900 parsed chat messages are not tool-call examples" in d(r).uncounted[0]
+    assert any("synth" in step for step in r.next_steps)
 
 
 def test_the_target_is_labelled_with_how_well_supported_it_is():
@@ -290,7 +290,7 @@ def test_unprofiled_files_do_not_infer_goals():
 
 
 def test_voice_is_measured_in_seconds_not_hours():
-    # Seconds, not hours — but the bar still does not reach `candidate` on half an hour of
+    # Seconds, not hours, but the bar still does not reach `candidate` on half an hour of
     # audio, because total duration says nothing about whether it is one speaker, recorded
     # consistently, who agreed to their voice being used.
     r = recommend(
@@ -364,33 +364,48 @@ def test_each_goal_reports_its_floor_beside_its_target():
     assert (d(r).floor, d(r).need) == (200, 600)
 
 
-def test_the_language_goal_counts_only_turns_that_are_not_english():
+def test_the_language_goal_counts_chat_messages_checked_and_not_in_english():
+    # 200 Hinglish messages, then 1,000 English ones: an estimate from the first 200 said
+    # all 1,200 were Hinglish.
+    head_heavy = summary(
+        counts={"chat": 1},
+        chat_messages=1200,
+        languages={"hi-Latn": 200},
+        chat_languages={"hi-Latn": 200, "en-IN": 1000},
+    )
+    lang = recommend(head_heavy, HI).decision("language")
+    assert lang.have == 200
+    assert "200 of the 1200 chat messages checked" in lang.have_from
     # 600 English messages and one Hinglish one used to be 601 turns of language evidence.
     lopsided = summary(
-        counts={"chat": 1}, chat_messages=601, languages={"en-IN": 199, "hi-Latn": 1}
+        counts={"chat": 1},
+        chat_messages=601,
+        languages={"en-IN": 199, "hi-Latn": 1},
+        chat_languages={"en-IN": 600, "hi-Latn": 1},
     )
-    lang = recommend(lopsided, HI).decision("language")
-    assert lang.have == 3 and lang.eligibility == "blocked"
-    assert "not English" in lang.have_from
-    mostly = summary(
-        counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12}
-    )
-    lang = recommend(mostly, HI).decision("language")
-    assert lang.have == 1880 and lang.eligibility == "candidate"
+    assert recommend(lopsided, HI).decision("language").eligibility == "blocked"
 
 
-def test_plain_conversations_cannot_make_tool_training_a_candidate():
-    # 8,000 chats and no tool in sight used to make tool training "worth trying".
+def test_a_report_without_per_message_languages_gives_an_estimate_not_a_count():
+    # An inspect.json from 0.3.0 has no chat_languages: estimate, never "worth trying".
+    old = summary(counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12})
+    lang = recommend(old, HI).decision("language")
+    assert lang.have == 1880 and lang.eligibility == "baseline_first"
+    assert "run inspect again" in lang.uncounted[0]
+
+
+def test_plain_conversations_are_not_counted_as_tool_call_examples():
+    # 8,000 chats and no tool in sight used to make tool training "worth trying", and then
+    # read as 8,000 of an 8,000 target.
     chats = summary(counts={"chat": 1}, chat_messages=8000)
     tools = recommend(chats, US, Constraints(goals=("tools",))).decision("tools")
-    assert tools.eligibility == "baseline_first"
-    assert "not tool-call examples" in tools.reason
-    assert "no table here offers a lookup" in tools.uncounted[0]
+    assert tools.have == 0 and tools.eligibility == "blocked"
+    assert "8000 parsed chat messages are not tool-call examples" in tools.uncounted[0]
+    assert tools.uncounted[1] == "no table here offers a lookup to call"
     with_tables = summary(counts={"chat": 1, "table": 1}, chat_messages=8000)
     with_tables["tool_candidates"] = ["lookup_orders_by_order_id"]
     tools = recommend(with_tables, US, Constraints(goals=("tools",))).decision("tools")
-    assert tools.eligibility == "baseline_first"
-    assert "no table" not in tools.uncounted[0]
+    assert len(tools.uncounted) == 1
 
 
 def test_a_table_of_labelled_texts_is_named_not_blamed_on_a_missing_id_column():

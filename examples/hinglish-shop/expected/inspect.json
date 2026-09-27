@@ -28,6 +28,10 @@
       "en-IN": 11,
       "hi": 2
     },
+    "chat_languages": {
+      "hi-Latn": 12,
+      "en-IN": 4
+    },
     "pii": {
       "phone": 2,
       "email": 1
@@ -141,6 +145,10 @@
           "Priya": 4,
           "Rahul": 2,
           "Amit": 2
+        },
+        "message_languages": {
+          "hi-Latn": 12,
+          "en-IN": 4
         }
       }
     }

@@ -1,4 +1,4 @@
-# Canonical data format — `vakforge.jsonl`
+# Canonical data format: `vakforge.jsonl`
 
 One JSON object per line, one **conversation** per object. Every recipe reads this format through an adapter (`vakforge/adapters/<recipe>.py`); no recipe reads raw user data directly. The pydantic models in `vakforge/schema.py` are the source of truth; this document explains intent.
 
@@ -91,31 +91,31 @@ my-agent/
 
 ## Field notes
 
-**audio** — optional. Records built from documents, tables or chat logs have no recording until `synth` renders one; audio-requiring adapters skip or reject such rows and say so.
+**audio**: optional. Records built from documents, tables or chat logs have no recording until `synth` renders one; audio-requiring adapters skip or reject such rows and say so.
 
-**audio.path** — always relative to the manifest's directory. Absolute paths and any `..` segment are rejected: a manifest is data, often generated or handed over, and must not be able to name a file outside the dataset.
+**audio.path**: always relative to the manifest's directory. Absolute paths and any `..` segment are rejected: a manifest is data, often generated or handed over, and must not be able to name a file outside the dataset.
 
-**audio.channels / channel_map** — `2` with a channel map means true dual-stream audio (required by `moshi-lora`), and the map must assign one channel to `user` and the other to `agent`; two channels of the same speaker cannot be split into a conversation. `1` means mixed mono; turns then come from diarization and `adapters/moshi.py` will refuse it unless `--allow-synthetic-stereo` reconstructs streams from cut segments (lower quality; flagged in the report).
+**audio.channels / channel_map**: `2` with a channel map means true dual-stream audio (required by `moshi-lora`), and the map must assign one channel to `user` and the other to `agent`; two channels of the same speaker cannot be split into a conversation. `1` means mixed mono; turns then come from diarization and `adapters/moshi.py` will refuse it unless `--allow-synthetic-stereo` reconstructs streams from cut segments (lower quality; flagged in the report).
 
-**audio.condition** — `studio | clean | phone | noisy`. Set by whoever prepares the data. `inspect` does not guess it: it reports sample rate, silence and clipping, because unbroken energy is what dense speech looks like as much as noise.
+**audio.condition**: `studio | clean | phone | noisy`. Set by whoever prepares the data. `inspect` does not guess it: it reports sample rate, silence and clipping, because unbroken energy is what dense speech looks like as much as noise.
 
-**locale** — id of the locale pack that governs normalization, entity types, PII rules, and benchmark assignment for this conversation (`en-US`, `en-GB`, `en-IN`, `hi-Latn-IN`, `zh-CN` …). A project may mix locales; eval always breaks down by it.
+**locale**: id of the locale pack that governs normalization, entity types, PII rules, and benchmark assignment for this conversation (`en-US`, `en-GB`, `en-IN`, `hi-Latn-IN`, `zh-CN` …). A project may mix locales; eval always breaks down by it.
 
-**language.primary** — BCP-47. Examples: `en-US`, `en-GB`, `en-IN`, `hi-Latn` (Roman Hindi), `hi` (Devanagari), `zh-CN`. `mix` lists every language present in the conversation.
+**language.primary**: BCP-47. Examples: `en-US`, `en-GB`, `en-IN`, `hi-Latn` (Roman Hindi), `hi` (Devanagari), `zh-CN`. `mix` lists every language present in the conversation.
 
-**turns[].lang** — required on every spoken turn. `prepare` sets it via the locale pack's `detect_lang` after transcription, because ASR language IDs are unreliable on code-switched speech (Hinglish, Spanglish, Chinese–English).
+**turns[].lang**: required on every spoken turn. `prepare` sets it via the locale pack's `detect_lang` after transcription, because ASR language IDs are unreliable on code-switched speech (Hinglish, Spanglish, Chinese–English).
 
-**turns[].lang_mix** — optional; every language in this one turn, primary first, so `lang_mix[0]` equals `lang`. A Hinglish turn is genuinely two languages, and the code-switch WER in `EVALUATION.md` can only be scored on turns that say so. Tags are held to the locale pack's list, exactly like `lang`. `language.mix` is the same idea for the whole conversation.
+**turns[].lang_mix**: optional; every language in this one turn, primary first, so `lang_mix[0]` equals `lang`. A Hinglish turn is genuinely two languages, and the code-switch WER in `EVALUATION.md` can only be scored on turns that say so. Tags are held to the locale pack's list, exactly like `lang`. `language.mix` is the same idea for the whole conversation.
 
-**turns[].overlap** — `true` when this turn starts before the previous one ends. That is the whole definition, so it is **checked against the timestamps** rather than believed: a flag that disagrees with the clock fails the record, because duplex eval counts these turns and a hand-set value would quietly skew the interruption metrics. Turn-based adapters drop or merge overlapping turns and log how many.
+**turns[].overlap**: `true` when this turn starts before the previous one ends. That is the whole definition, so it is **checked against the timestamps** rather than believed: a flag that disagrees with the clock fails the record, because duplex eval counts these turns and a hand-set value would quietly skew the interruption metrics. Turn-based adapters drop or merge overlapping turns and log how many.
 
-**turns[].tool_call / tool_result** — OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result. A call is issued once and answered at most once, and a call left hanging while the conversation carries on is rejected — that pattern cannot happen at serving time, so training on it teaches a turn shape the model will never need. A call in the *final* turn may go unanswered: real transcripts get cut off mid-exchange, and the alternative is inviting people to invent a result. `tool_result.content` is any JSON value, because a real tool returns a list, a string or a number as readily as an object.
+**turns[].tool_call / tool_result**: OpenAI-style function-calling shape so the same records drive training and serving. A tool call turn has zero duration; a `speaker: "tool"` turn carries the result. A call is issued once and answered at most once, and a call left hanging while the conversation carries on is rejected: that pattern cannot happen at serving time, so training on it teaches a turn shape the model will never need. A call in the *final* turn may go unanswered: real transcripts get cut off mid-exchange, and the alternative is inviting people to invent a result. `tool_result.content` is any JSON value, because a real tool returns a list, a string or a number as readily as an object.
 
-**turns[].entities** — optional but strongly recommended for business data: `customer_id`, `phone`, `amount_inr`, `date`, `person_name`, `address`, `order_id`. Entity accuracy is one of the headline eval metrics. `start_char` and `end_char` are optional, but when present they are both required and `text[start_char:end_char]` must equal the entity's own `text`: redaction and entity scoring both slice by these offsets, so a stale offset corrupts the record silently.
+**turns[].entities**: optional but strongly recommended for business data: `customer_id`, `phone`, `amount_inr`, `date`, `person_name`, `address`, `order_id`. Entity accuracy is one of the headline eval metrics. `start_char` and `end_char` are optional, but when present they are both required and `text[start_char:end_char]` must equal the entity's own `text`: redaction and entity scoring both slice by these offsets, so a stale offset corrupts the record silently.
 
-**meta.source** — `real | synthetic | public`. Never mix without this tag; eval reports break results down by source.
+**meta.source**: `real | synthetic | public`. Never mix without this tag; eval reports break results down by source.
 
-**meta.consent** — `recorded_verbal | written | synthetic | public_license | none`. `none` is allowed only with `--allow-unconsented` and is excluded from any published artifact. See `DATA_ETHICS.md`.
+**meta.consent**: `recorded_verbal | written | synthetic | public_license | none`. `none` is allowed only with `--allow-unconsented` and is excluded from any published artifact. See `DATA_ETHICS.md`.
 
 ### Provenance claims must carry their evidence
 
@@ -126,11 +126,11 @@ fails a record that claims something it cannot show:
 - `consent: public_license` requires `license`.
 - `consent: synthetic` is only valid with `source: synthetic`.
 - `source: real` requires `pii_redacted: true` **and** a `redaction_log` naming what was removed. Redaction is not optional for real data; `prepare` only skips it under `--skip-redaction`, which logs a loud warning and marks the rows.
-- `pii_redacted: true` is **re-checked, not trusted.** `vakforge validate` runs the locale pack over `system_prompt`, every `turns[].text`, and the JSON of every `tool_call.arguments` and `tool_result.content`. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only — it never repeats the matched value into a terminal or a CI log.
+- `pii_redacted: true` is **re-checked, not trusted.** `vakforge validate` runs the locale pack over `system_prompt`, every `turns[].text`, and the JSON of every `tool_call.arguments` and `tool_result.content`. Anything the pack still recognises fails the row, because a flag is a claim and the text is the evidence. The issue names the type and character range only; it never repeats the matched value into a terminal or a CI log.
 
   **This is a best-effort check, not proof.** It finds what the locale pack's patterns and checksums describe: national IDs, cards, IBANs, phones, emails. It does not find names, addresses, unusual identifier formats, or anything spoken in the audio. A clean `validate` means nothing known was left behind, not that the row is safe to publish.
 
-- `redaction_log`, when named, must be **inside the dataset** — relative to the manifest, no `..`, and a symlink that resolves out is rejected too. A manifest is data, often generated or handed over, and a path that leaves the dataset is not evidence about it. The log must be a JSON object with a `spans` list, and it must describe *this* record: a `conversation_id` that names another conversation, a span pointing at a turn that does not exist, or a span claiming a placeholder that is not in that turn all fail the row. An empty `spans` list is accepted — a conversation may genuinely contain no personal data, and the rescan above is what actually proves it.
+- `redaction_log`, when named, must be **inside the dataset**: relative to the manifest, no `..`, and a symlink that resolves out is rejected too. A manifest is data, often generated or handed over, and a path that leaves the dataset is not evidence about it. The log must be a JSON object with a `spans` list, and it must describe *this* record: a `conversation_id` that names another conversation, a span pointing at a turn that does not exist, or a span claiming a placeholder that is not in that turn all fail the row. An empty `spans` list is accepted: a conversation may genuinely contain no personal data, and the rescan above is what actually proves it.
 
 ```json
 {
@@ -143,7 +143,7 @@ fails a record that claims something it cannot show:
 ```
 
   Required, because each is what makes a span checkable against the record rather than a bare assertion: `conversation_id` (it must be this record's `id`); on every span `type` and `placeholder`, the text left behind, which must actually appear where the span says; and `turn` unless `field` is `system_prompt`. `field` is one of `text`, `system_prompt`, `tool_call.arguments`, `tool_result.content`, and defaults to `text`. `audio`, when present, needs `start_s` < `end_s` inside the recording and a `method` of `tone`, `silence` or `noise`, and is rejected on a record with no audio. `{"spans": [{"type": "phone"}]}` fails: it says something was removed without saying anything that could be checked.
-- `allowed_uses` says what the row may be trained for: `asr`, `workflow`, `evaluation`, `voice_clone`. It defaults to the three ordinary uses, because that is what a recording is normally collected for. An empty list is rejected — a row allowed for nothing does not belong in a dataset.
+- `allowed_uses` says what the row may be trained for: `asr`, `workflow`, `evaluation`, `voice_clone`. It defaults to the three ordinary uses, because that is what a recording is normally collected for. An empty list is rejected: a row allowed for nothing does not belong in a dataset.
 - `allowed_uses` containing `voice_clone` on `source: real` requires `voice_consent_ref`. Consent to record a call is not consent to reproduce the caller's voice. This is scoped to cloning deliberately: requiring voice consent for audio only ever used to train recognition is a rule broad enough that the easy way past it is a dummy value, which is worse than no rule.
 
 Synthetic rows are exempt from the redaction rules because they contain no real person's data.

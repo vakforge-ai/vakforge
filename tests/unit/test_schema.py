@@ -121,8 +121,8 @@ def test_entity_offsets_must_point_at_the_entity(entity, needle):
 
 
 def test_an_offset_mismatch_is_reported_without_printing_the_data():
-    # Entity types are phone, person_name, address, customer_id — personal data by
-    # definition — and this error reaches a terminal, a CI log and pasted bug reports.
+    # Entity types are phone, person_name, address, customer_id: personal data by
+    # definition, and this error reaches a terminal, a CI log and pasted bug reports.
     data = conversation()
     data["turns"][1]["text"] = "call me on 415-555-0134 today"
     data["turns"][1]["entities"] = [
@@ -199,7 +199,7 @@ def test_cloning_a_real_voice_needs_that_speakers_own_consent():
 
 def test_ordinary_uses_of_a_real_recording_do_not_need_voice_consent():
     # Demanding voice-cloning consent for audio only ever used to train recognition is a
-    # rule broad enough that the easy way past it is a dummy value — worse than no rule.
+    # rule broad enough that the easy way past it is a dummy value, which is worse than no rule.
     Conversation.model_validate(_real_audio_row(allowed_uses=["asr", "evaluation"]))
     Conversation.model_validate(_real_audio_row())  # the default is the ordinary uses
 

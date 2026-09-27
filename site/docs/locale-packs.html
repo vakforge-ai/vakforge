@@ -69,14 +69,14 @@
       <a href="https://github.com/vakforge-ai/vakforge" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/vakforge/" target="_blank" rel="noopener">PyPI</a>
     </nav>
-    <div class="sb-foot">v0.3.0 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/LOCALE_PACKS.md" target="_blank" rel="noopener">Edit this page</a></div>
+    <div class="sb-foot">v0.3.1 · <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/LOCALE_PACKS.md" target="_blank" rel="noopener">Edit this page</a></div>
   </aside>
   <main class="content">
     <article class="prose" id="article">
       <h1 id="locale-packs">Locale packs</h1>
 <p>The pipeline is language-agnostic. A <strong>locale pack</strong> is the one place where everything language- or market-specific lives, so adding a market never touches core, recipes, eval, or serve.</p>
 <blockquote>
-<p><strong>Status:</strong> packs are built and tested — <code>en</code>, <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code> and <code>hi-Latn-IN</code> ship today, with golden tests for every normalizer, language detector and PII pattern. Run <code>vakforge locales</code> to list them and <code>vakforge locales &lt;id&gt;</code> to see one pack's resolved settings. The sections on <code>synth</code> and benchmark composition are specification.</p>
+<p><strong>Status:</strong> packs are built and tested: <code>en</code>, <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code> and <code>hi-Latn-IN</code> ship today, with golden tests for every normalizer, language detector and PII pattern. Run <code>vakforge locales</code> to list them and <code>vakforge locales &lt;id&gt;</code> to see one pack's resolved settings. The sections on <code>synth</code> and benchmark composition are specification.</p>
 </blockquote>
 <h2 id="what-a-pack-contains">What a pack contains</h2>
 <p>This is the whole of <code>LocalePack</code> as it exists today (<code>vakforge/locales/base.py</code>):</p>
@@ -109,7 +109,7 @@ a name and address generator for <code>synth</code>, TTS and STT defaults, and a
 in the class yet; <code>docs/ROADMAP.md</code> tracks them.</p>
 <p><code>vakforge init --locale &lt;id&gt;</code> writes the pack id into the project config; every stage reads it. A project can list several locales (e.g. <code>[&quot;en-IN&quot;, &quot;hi-Latn-IN&quot;]</code>) for mixed data; turns still carry their own <code>lang</code>.</p>
 <h2 id="packs">Packs</h2>
-<h3 id="en-parent-with-en-us-en-gb-en-in-launch"><code>en</code> (parent) with <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code> — launch</h3>
+<h3 id="en-parent-with-en-us-en-gb-en-in-launch"><code>en</code> (parent) with <code>en-US</code>, <code>en-GB</code>, <code>en-IN</code>: launch</h3>
 <p>Shared: English normalizer, person/organisation NER, email/card/IBAN patterns, tool-call scenarios.</p>
 <div class="table-wrap"><table>
 <thead>
@@ -165,7 +165,7 @@ in the class yet; <code>docs/ROADMAP.md</code> tracks them.</p>
 </tr>
 </tbody>
 </table></div>
-<h3 id="hi-latn-in-hinglish-launch-showcase"><code>hi-Latn-IN</code> (Hinglish) — launch, showcase</h3>
+<h3 id="hi-latn-in-hinglish-launch-showcase"><code>hi-Latn-IN</code> (Hinglish): launch, showcase</h3>
 <ul>
 <li>Detects Roman Hindi vs English per turn using a Hindi word-list + script heuristic (ASR language IDs are unreliable here).</li>
 <li>Normalizer handles ₹/lakh/crore, Indian date phrasing, mixed-script numbers; optional Devanagari↔Roman transliteration for WER against either reference.</li>
@@ -173,14 +173,14 @@ in the class yet; <code>docs/ROADMAP.md</code> tracks them.</p>
 <li>Recipe support: <code>lfm25-audio</code> and <code>moshi-lora</code> = <strong>understand_only</strong> (English speech out; Hinglish input understood after fine-tune); <code>cascade</code> = native via IndicConformer + Indic Parler-TTS / IndicF5; <code>qwen-omni</code> = verify.</li>
 <li>Benchmark: <code>vakforge-bench-hi-latn-v0</code>.</li>
 </ul>
-<h3 id="zh-cn-planned-first-non-english"><code>zh-CN</code> — planned (first non-English)</h3>
+<h3 id="zh-cn-planned-first-non-english"><code>zh-CN</code>: planned (first non-English)</h3>
 <ul>
 <li>Recipe: <code>qwen-omni</code> (native Mandarin speech in/out, function calling) or <code>cascade</code> (Paraformer/Whisper + LLM + CosyVoice/Qwen3-TTS).</li>
 <li>Formats: ¥/元, 万/亿 number groups, YMD dates, +86 mobiles, 6-digit postal codes, 18-digit resident ID pattern.</li>
 <li>Privacy notes: PIPL, cross-border data-transfer rules, data localisation; models mirrored on ModelScope for users without Hugging Face access.</li>
 <li>Benchmark: <code>vakforge-bench-zh-v0</code>.</li>
 </ul>
-<h3 id="es-es-es-es-mx-de-fr-pt-br-ja-ar-planned"><code>es</code> (es-ES / es-MX), <code>de</code>, <code>fr</code>, <code>pt-BR</code>, <code>ja</code>, <code>ar</code> — planned</h3>
+<h3 id="es-es-es-es-mx-de-fr-pt-br-ja-ar-planned"><code>es</code> (es-ES / es-MX), <code>de</code>, <code>fr</code>, <code>pt-BR</code>, <code>ja</code>, <code>ar</code>: planned</h3>
 <p>Added in the order native speech-output support appears in open models; until then <code>cascade</code> with locale STT/TTS defaults.</p>
 <h2 id="how-packs-are-implemented">How packs are implemented</h2>
 <ul>
@@ -195,7 +195,7 @@ in the class yet; <code>docs/ROADMAP.md</code> tracks them.</p>
 <ol>
 <li><code>vakforge/locales/&lt;id_with_underscores&gt;.py</code> implementing <code>LocalePack</code>; inherit from a parent where sensible, and import it in <code>vakforge/locales/__init__.py</code>.</li>
 <li>Unit tests: <code>detect_lang</code>, <code>normalize_text</code> (golden cases incl. numbers, currency, dates), every <code>pii_pattern</code> (positive and negative cases), name generator sanity.</li>
-<li>Scenario templates localised (not just translated — local business norms, greetings, verification steps).</li>
+<li>Scenario templates localised (not just translated: local business norms, greetings, verification steps).</li>
 <li><code>tts_defaults</code> / <code>stt_defaults</code> verified to run; <code>recipe_support</code> filled honestly.</li>
 <li><code>privacy_notes</code> with sources; <code>call_recording_consent</code> set.</li>
 <li><code>benchmark</code> spec + at least a synthetic benchmark committed.</li>
@@ -215,7 +215,7 @@ in the class yet; <code>docs/ROADMAP.md</code> tracks them.</p>
       <a href="https://github.com/vakforge-ai/vakforge/blob/main/docs/LOCALE_PACKS.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
     </footer>
   </main>
-  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#what-a-pack-contains">What a pack contains</a></li><li class="lvl2"><a href="#packs">Packs</a></li><li class="lvl3"><a href="#en-parent-with-en-us-en-gb-en-in-launch">en (parent) with en-US, en-GB, en-IN — launch</a></li><li class="lvl3"><a href="#hi-latn-in-hinglish-launch-showcase">hi-Latn-IN (Hinglish) — launch, showcase</a></li><li class="lvl3"><a href="#zh-cn-planned-first-non-english">zh-CN — planned (first non-English)</a></li><li class="lvl3"><a href="#es-es-es-es-mx-de-fr-pt-br-ja-ar-planned">es (es-ES / es-MX), de, fr, pt-BR, ja, ar — planned</a></li><li class="lvl2"><a href="#how-packs-are-implemented">How packs are implemented</a></li><li class="lvl2"><a href="#adding-a-locale-pack-checklist">Adding a locale pack (checklist)</a></li><li class="lvl2"><a href="#design-rules">Design rules</a></li></ul></nav></aside>
+  <aside class="right"><nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="lvl2"><a href="#what-a-pack-contains">What a pack contains</a></li><li class="lvl2"><a href="#packs">Packs</a></li><li class="lvl3"><a href="#en-parent-with-en-us-en-gb-en-in-launch">en (parent) with en-US, en-GB, en-IN: launch</a></li><li class="lvl3"><a href="#hi-latn-in-hinglish-launch-showcase">hi-Latn-IN (Hinglish): launch, showcase</a></li><li class="lvl3"><a href="#zh-cn-planned-first-non-english">zh-CN: planned (first non-English)</a></li><li class="lvl3"><a href="#es-es-es-es-mx-de-fr-pt-br-ja-ar-planned">es (es-ES / es-MX), de, fr, pt-BR, ja, ar: planned</a></li><li class="lvl2"><a href="#how-packs-are-implemented">How packs are implemented</a></li><li class="lvl2"><a href="#adding-a-locale-pack-checklist">Adding a locale pack (checklist)</a></li><li class="lvl2"><a href="#design-rules">Design rules</a></li></ul></nav></aside>
 </div>
 <script src="docs.js"></script>
 </body>
