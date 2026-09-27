@@ -52,6 +52,10 @@ def test_init_keeps_every_data_file_out_of_git(tmp_path):
         "data/prepared/redactions/conv_1.json",
         "runs/eval/report.json",
         "exports/call.m4a",
+        # The reports, when written beside the project file rather than in runs/.
+        "inspect.json",
+        "recommend.json",
+        "report.html",
     ]
     kept = ["vakforge.yaml", "configs/train.yaml"]
     check = ["git", "check-ignore", *private, *kept]

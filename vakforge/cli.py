@@ -42,6 +42,11 @@ PROJECT_GITIGNORE = """# written by `vakforge init`
 # replaced. None of it belongs in version control.
 data/
 runs/
+# The reports, wherever they are written: they name your files and columns, and
+# inspect.json can name the people in a chat export.
+inspect.json
+recommend.json
+report.html
 .venv/
 *.wav
 *.mp3
@@ -101,7 +106,7 @@ def init(
     console.print(f"[green]created[/] {project}/  ({cfg_path.name}: locales={locale})")
     console.print(
         "next: drop your documents, tables, chats or audio into data/raw/ and run "
-        f"`vakforge inspect {project}/data/raw`"
+        f"`vakforge inspect {project}/data/raw -o {project}/runs/inspect.json`"
     )
 
 

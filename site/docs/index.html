@@ -88,12 +88,13 @@
 <h2 id="try-it">Try it</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>en-US<span class="w">       </span><span class="c1"># or en-GB, en-IN, hi-Latn-IN</span>
-<span class="c1"># copy your files into my-assistant/data/raw/, then:</span>
-vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw<span class="w"> </span>-o<span class="w"> </span>inspect.json
-vakforge<span class="w"> </span>recommend<span class="w"> </span>inspect.json<span class="w"> </span>-o<span class="w"> </span>recommend.json
-vakforge<span class="w"> </span>report<span class="w"> </span>inspect.json<span class="w"> </span>recommend.json<span class="w"> </span>-o<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># one page to share or save as PDF</span>
+<span class="nb">cd</span><span class="w"> </span>my-assistant
+<span class="c1"># copy your files into data/raw/, then:</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>data/raw<span class="w"> </span>-o<span class="w"> </span>runs/inspect.json
+vakforge<span class="w"> </span>recommend<span class="w"> </span>runs/inspect.json<span class="w"> </span>-o<span class="w"> </span>runs/recommend.json
+vakforge<span class="w"> </span>report<span class="w"> </span>runs/inspect.json<span class="w"> </span>runs/recommend.json<span class="w"> </span>-o<span class="w"> </span>runs/report.html<span class="w">   </span><span class="c1"># to share or save as PDF</span>
 </code></pre></div>
-<p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.</p>
+<p><code>inspect</code> reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. <code>recommend</code> says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine. The reports go in <code>runs/</code>, which the project's <code>.gitignore</code> keeps out of git: <code>inspect.json</code> names your files and columns, and can name the people in a chat export.</p>
 <p>No data to hand? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project with both reports committed next to it.</p>
 <h2 id="why-vakforge-exists">Why vakforge exists</h2>
 <p>Open voice models are good enough today. Moshi, PersonaPlex, LFM2.5-Audio and Qwen-Omni can listen and talk, and strong open speech-to-text and text-to-speech models exist too. Yet most companies still pay per minute for a closed voice API.</p>
@@ -401,10 +402,11 @@ read <code>SKILL.md</code>-style instructions work the same way; point them at t
 <h2 id="quick-start">Quick start</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>hi-Latn-IN
-<span class="c1"># put your documents, tables, chat exports and call recordings in my-assistant/data/raw/</span>
-vakforge<span class="w"> </span>inspect<span class="w"> </span>my-assistant/data/raw
+<span class="nb">cd</span><span class="w"> </span>my-assistant
+<span class="c1"># put your documents, tables, chat exports and call recordings in data/raw/</span>
+vakforge<span class="w"> </span>inspect<span class="w"> </span>data/raw<span class="w"> </span>-o<span class="w"> </span>runs/inspect.json
 </code></pre></div>
-<p><code>inspect</code> prints a summary and writes <code>inspect.json</code>. <code>vakforge recommend inspect.json</code> reads it and writes <code>recommend.json</code>.</p>
+<p><code>inspect</code> prints a summary and writes <code>runs/inspect.json</code>. <code>vakforge recommend runs/inspect.json -o runs/recommend.json</code> reads it and writes the decision.</p>
 <p>No data of your own yet? <a href="https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop" target="_blank" rel="noopener"><code>examples/hinglish-shop</code></a> is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.</p>
 <h2 id="documentation">Documentation</h2>
 <ul>

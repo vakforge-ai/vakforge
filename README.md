@@ -23,13 +23,14 @@ vakforge helps you build a voice assistant from the data your company already ha
 ```bash
 pip install vakforge
 vakforge init my-assistant --locale en-US       # or en-GB, en-IN, hi-Latn-IN
-# copy your files into my-assistant/data/raw/, then:
-vakforge inspect my-assistant/data/raw -o inspect.json
-vakforge recommend inspect.json -o recommend.json
-vakforge report inspect.json recommend.json -o report.html   # one page to share or save as PDF
+cd my-assistant
+# copy your files into data/raw/, then:
+vakforge inspect data/raw -o runs/inspect.json
+vakforge recommend runs/inspect.json -o runs/recommend.json
+vakforge report runs/inspect.json runs/recommend.json -o runs/report.html   # to share or save as PDF
 ```
 
-`inspect` reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. `recommend` says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine.
+`inspect` reports what is in the folder: languages, personal data (in table columns too), tables that could become tools, and every file it skipped and why. `recommend` says what each source needs, and whether anything is worth fine-tuning yet. Nothing leaves your machine. The reports go in `runs/`, which the project's `.gitignore` keeps out of git: `inspect.json` names your files and columns, and can name the people in a chat export.
 
 No data to hand? [`examples/hinglish-shop`](https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop) is a small synthetic project with both reports committed next to it.
 
@@ -177,11 +178,12 @@ English has the strongest open voice models, so every recipe works for US, UK an
 ```bash
 pip install vakforge
 vakforge init my-assistant --locale hi-Latn-IN
-# put your documents, tables, chat exports and call recordings in my-assistant/data/raw/
-vakforge inspect my-assistant/data/raw
+cd my-assistant
+# put your documents, tables, chat exports and call recordings in data/raw/
+vakforge inspect data/raw -o runs/inspect.json
 ```
 
-`inspect` prints a summary and writes `inspect.json`. `vakforge recommend inspect.json` reads it and writes `recommend.json`.
+`inspect` prints a summary and writes `runs/inspect.json`. `vakforge recommend runs/inspect.json -o runs/recommend.json` reads it and writes the decision.
 
 No data of your own yet? [`examples/hinglish-shop`](https://github.com/vakforge-ai/vakforge/tree/main/examples/hinglish-shop) is a small synthetic project (Hinglish FAQ, two table exports, a WhatsApp chat) with both reports committed next to it, so you can see the output before installing anything.
 
