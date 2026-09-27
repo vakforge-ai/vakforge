@@ -91,6 +91,22 @@ SPEAKER_KEYS = ("role", "speaker", "author", "from", "sender")
 TEXT_KEYS = ("text", "content", "message", "body", "utterance")
 
 
+LABEL_KEYS = ("intent", "category", "label", "class", "topic")
+
+
+def labelled_text_columns(names: Iterable[object]) -> tuple[str, str] | None:
+    """The (text, label) columns of a table of labelled texts, such as an intent dataset.
+
+    One text per row with a category beside it is neither a conversation nor a table to
+    look records up in. It was reported as a table that "needs an id column", which is
+    not why vakforge could not use it.
+    """
+    by_key = {column_key(n): str(n) for n in names}
+    text = next((by_key[k] for k in (*TEXT_KEYS, "sentence") if k in by_key), None)
+    label = next((by_key[k] for k in LABEL_KEYS if k in by_key), None)
+    return (text, label) if text and label else None
+
+
 def message_columns(names: Iterable[object]) -> tuple[str, str] | None:
     """The (speaker, text) columns among `names`, in the file's own spelling, or None."""
     by_key = {column_key(n): str(n) for n in names}

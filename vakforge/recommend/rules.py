@@ -234,6 +234,18 @@ class Recommendation:
         return next((d for d in self.goal_decisions if d.goal == goal), None)
 
 
+def _non_english_share(summary: dict[str, Any]) -> float:
+    """The share of sampled paragraphs and messages that are not English.
+
+    The language goal exists because the recipes' base models are English, so English is
+    the line it draws, whatever the locale.
+    """
+    langs = summary.get("languages", {})
+    sampled = sum(langs.values())
+    other = sum(n for lang, n in langs.items() if not lang.startswith("en"))
+    return other / sampled if sampled else 0.0
+
+
 def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
     """What the data suggests the user wants, most likely first.
 
@@ -254,8 +266,9 @@ def infer_goals(summary: dict[str, Any], pack: LocalePack) -> list[Goal]:
         goals.append("recognition")
     if profiled.get("document", 0) or summary.get("document_words", 0):
         goals.append("knowledge")
-    non_native = [lang for lang in summary.get("languages", {}) if not lang.startswith("en")]
-    if non_native and any(v != "native" for v in pack.resolved("recipe_support").values()):
+    if _non_english_share(summary) and any(
+        v != "native" for v in pack.resolved("recipe_support").values()
+    ):
         goals.append("language")
     return goals
 
@@ -265,6 +278,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
     # Routes follow what was read, as goals do: two unreadable PDFs used to get "documents
     # -> retrieval" beside a verdict that nothing in the folder was usable.
     profiled = summary.get("profiled") or counts
+    labelled = summary.get("labelled_text_tables", 0)
     routes: list[Route] = []
     if profiled.get("document", 0):
         routes.append(
@@ -327,8 +341,10 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
                     f"{unread} file{'s' if unread > 1 else ''} could not be read (the inspect "
                     "report says why)"
                 )
-            if profiled.get("table", 0):
+            if profiled.get("table", 0) > labelled:
                 why.append("a table needs an id column to look records up by")
+            if labelled:
+                why.append("vakforge does not use tables of labelled texts yet")
             routes.append(
                 Route(
                     "nothing usable yet",
@@ -339,6 +355,16 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
             )
         else:
             routes.append(Route("nothing yet", "synth", start))
+    if labelled:
+        routes.append(
+            Route(
+                "labelled texts",
+                "not used yet",
+                "a text column with a category beside it, such as an intent dataset, is "
+                "neither a conversation nor a lookup table, and vakforge does not read it yet; "
+                "real requests like these still make good test questions for the baseline",
+            )
+        )
     return routes
 
 
@@ -423,7 +449,7 @@ def _amount(value: float, unit: str) -> str:
     return f"{fmt_number(value)} {_UNIT_NAME[unit]}"
 
 
-def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
+def _evidence(goal: Goal, bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str], bool]:
     """What the data can actually prove for this bar: (amount, counted, uncounted, verified).
 
     Raw audio is never converted into conversation turns. An hour of recording is not 300
@@ -445,6 +471,28 @@ def _evidence(bar: Bar, summary: dict[str, Any]) -> tuple[float, str, list[str],
                 f"{fmt_number(audio_hours)} h of audio contributes no turns until it is "
                 "transcribed and diarized; inspect does neither"
             )
+        if goal == "language":
+            # Only turns in the language count. Counting every message turned 600 English
+            # messages and one Hinglish one into 601 turns of language evidence.
+            share = _non_english_share(summary)
+            turns = round(messages * share)
+            return (
+                float(turns),
+                f"~{turns} of {messages} parsed chat messages, from the "
+                f"{100 * share:.3g}% of sampled text that is not English",
+                uncounted,
+                True,
+            )
+        if goal == "tools":
+            # A conversation is not a tool-call example, and 8,000 of them with no tool in
+            # sight used to make tool training "worth trying".
+            note = (
+                "conversations are not tool-call examples: nothing in them marks which turn "
+                "calls a tool, with what arguments and what came back"
+            )
+            if not summary.get("tool_candidates"):
+                note += ", and no table here offers a lookup to call"
+            return float(messages), f"{messages} parsed chat messages", [note, *uncounted], False
         return float(messages), f"{messages} parsed chat messages", uncounted, True
 
     if bar.unit == "hours":
@@ -540,7 +588,7 @@ def _verdict(primary: Goal, bar: Bar, have: float) -> tuple[Eligibility, str]:
 def _decide(goal: Goal, summary: dict[str, Any], pack: LocalePack, c: Constraints) -> GoalDecision:
     """Answer one goal on its own evidence, bar and recipe."""
     bar = BARS[goal]
-    have, have_from, uncounted, verified = _evidence(bar, summary)
+    have, have_from, uncounted, verified = _evidence(goal, bar, summary)
     eligibility, reason = _verdict(goal, bar, have)
 
     two_channel = bool(summary.get("two_channel_audio_files", 0))
@@ -642,6 +690,7 @@ class InspectSummary(BaseModel):
     languages: dict[str, int] = Field(default_factory=dict)
     pii: dict[str, int] = Field(default_factory=dict)
     tool_candidates: list[str] = Field(default_factory=list)
+    labelled_text_tables: int = 0
 
 
 def recommend(

@@ -74,7 +74,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
     languages: Counter[str] = Counter()
     pii: Counter[str] = Counter()
     tool_candidates: list[str] = []
-    words = messages = two_channel = truncated = 0
+    words = messages = two_channel = truncated = labelled = 0
     audio_seconds = 0.0
     for f in files:
         facts = f.get("facts", {})
@@ -90,6 +90,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
             two_channel += facts.get("channels", 0) == 2
         for table in facts.get("tables", {}).values():
             tool_candidates += table.get("tool_candidates", [])
+            labelled += "labelled_texts" in table
     return {
         "counts": {k: kinds.get(k, 0) for k in KINDS},
         "profiled": {k: profiled_kinds.get(k, 0) for k in KINDS},
@@ -102,6 +103,7 @@ def summarise(files: list[dict[str, Any]]) -> dict[str, Any]:
         "languages": dict(languages.most_common()),
         "pii": dict(pii.most_common()),
         "tool_candidates": list(dict.fromkeys(tool_candidates)),
+        "labelled_text_tables": labelled,
     }
 
 

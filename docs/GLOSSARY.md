@@ -24,11 +24,13 @@ The words `vakforge inspect` and `vakforge recommend` use, and the fields they w
 
 **Message.** One thing one person said in a chat: a WhatsApp message with any lines it runs onto, one record of a chat log, or one side of an exchange.
 
-**Turn.** A message counted as training data. The bars for behaviour, tools and language are measured in turns. A recording is not turns until it has been transcribed and split by speaker, which `inspect` does not do.
+**Turn.** A message counted as training data. The bars for behaviour, tools and language are measured in turns. For language, only the turns that are not in English count, estimated from the share of sampled text that is not English. A recording is not turns until it has been transcribed and split by speaker, which `inspect` does not do.
 
 **Exchange.** A row with a user column and a reply column, such as `input`/`output`, `instruction`/`response`, `customer`/`agent` or `user`/`assistant`. Each exchange is two messages. A file of one message per row instead has a speaker column (`role`, `speaker`, `from`, …) and a text column (`text`, `message`, `content`, …).
 
 **FAQ file.** A CSV or JSON file with `question` and `answer` columns. It holds facts, so it is read as a document and routed to retrieval, not to a fine-tune. `faq_pairs` counts its pairs.
+
+**Labelled texts.** A table with one text per row and a category beside it (`text` and `intent`, `category` or `label`), such as an intent dataset. It is neither a conversation nor a table to look records up in, and vakforge does not use it yet; `recommend` says so rather than leaving it out. `labelled_texts` names the two columns, and `labelled_text_tables` counts such tables.
 
 **ID column.** A column that identifies a record, such as `order_id`, `Ticket ID`, `sku` or `customer_id`, however the export spells it.
 

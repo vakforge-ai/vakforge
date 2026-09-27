@@ -122,6 +122,10 @@ jobs:
           echo 'Refunds take 5 days.' > smoke/data/raw/faq.md
           /tmp/clean/bin/vakforge inspect smoke/data/raw -o /tmp/inspect.json
           /tmp/clean/bin/vakforge recommend /tmp/inspect.json -o /tmp/rec.json
+          # The page embeds the logo from package data, so this also proves the wheel ships it.
+          /tmp/clean/bin/vakforge report /tmp/inspect.json /tmp/rec.json -o /tmp/report.html
+          grep -q '<h2>Recommendation</h2>' /tmp/report.html
+          grep -q '<h2>Files</h2>' /tmp/report.html
 
   coverage:
     runs-on: ubuntu-latest

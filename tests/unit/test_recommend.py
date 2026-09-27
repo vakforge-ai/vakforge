@@ -362,3 +362,40 @@ def test_each_goal_reports_its_floor_beside_its_target():
         summary(counts={"chat": 1}, chat_messages=50), US, Constraints(goals=("workflow",))
     )
     assert (d(r).floor, d(r).need) == (200, 600)
+
+
+def test_the_language_goal_counts_only_turns_that_are_not_english():
+    # 600 English messages and one Hinglish one used to be 601 turns of language evidence.
+    lopsided = summary(
+        counts={"chat": 1}, chat_messages=601, languages={"en-IN": 199, "hi-Latn": 1}
+    )
+    lang = recommend(lopsided, HI).decision("language")
+    assert lang.have == 3 and lang.eligibility == "blocked"
+    assert "not English" in lang.have_from
+    mostly = summary(
+        counts={"chat": 1}, chat_messages=2000, languages={"hi-Latn": 188, "en-IN": 12}
+    )
+    lang = recommend(mostly, HI).decision("language")
+    assert lang.have == 1880 and lang.eligibility == "candidate"
+
+
+def test_plain_conversations_cannot_make_tool_training_a_candidate():
+    # 8,000 chats and no tool in sight used to make tool training "worth trying".
+    chats = summary(counts={"chat": 1}, chat_messages=8000)
+    tools = recommend(chats, US, Constraints(goals=("tools",))).decision("tools")
+    assert tools.eligibility == "baseline_first"
+    assert "not tool-call examples" in tools.reason
+    assert "no table here offers a lookup" in tools.uncounted[0]
+    with_tables = summary(counts={"chat": 1, "table": 1}, chat_messages=8000)
+    with_tables["tool_candidates"] = ["lookup_orders_by_order_id"]
+    tools = recommend(with_tables, US, Constraints(goals=("tools",))).decision("tools")
+    assert tools.eligibility == "baseline_first"
+    assert "no table" not in tools.uncounted[0]
+
+
+def test_a_table_of_labelled_texts_is_named_not_blamed_on_a_missing_id_column():
+    r = recommend(summary(counts={"table": 1}, labelled_text_tables=1), US)
+    assert r.goals == []
+    nothing, labelled = r.routes
+    assert "id column" not in nothing.why and "labelled texts" in nothing.why
+    assert (labelled.source, labelled.route) == ("labelled texts", "not used yet")

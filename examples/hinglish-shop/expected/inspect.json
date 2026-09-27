@@ -36,7 +36,8 @@
       "lookup_orders_by_order_id",
       "lookup_orders_by_customer_id",
       "lookup_products_by_sku"
-    ]
+    ],
+    "labelled_text_tables": 0
   },
   "files": [
     {

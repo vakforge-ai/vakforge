@@ -33,6 +33,7 @@ from vakforge.inspect.sources import (
     conversation_pair,
     faq_pair,
     json_records,
+    labelled_text_columns,
     message_columns,
 )
 from vakforge.locales.base import LocalePack
@@ -123,23 +124,34 @@ def _text_facts(text: str, pack: LocalePack) -> dict[str, Any]:
     }
 
 
-def _records(src: Source) -> Iterator[Any]:
-    """The records of a CSV/TSV (streamed), JSON or JSONL file."""
+def _csv_records(src: Source) -> Iterator[dict[str, Any]]:
+    with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+        yield from csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
+
+
+def _records(src: Source) -> tuple[Iterable[Any], bool]:
+    """The records of a CSV/TSV (streamed), JSON or JSONL file, and whether the file was
+    longer than what was read. Only JSONL is read up to a limit rather than whole."""
     if src.format in {"csv", "tsv"}:
-        with src.path.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
-            yield from csv.DictReader(fh, delimiter="\t" if src.format == "tsv" else ",")
-    elif src.format == "json":
-        yield from json_records(json.loads(_whole_text(src.path)))
-    else:  # jsonl / ndjson
-        yield from _jsonl_rows(*_read_text(src.path))[0]
+        return _csv_records(src), False
+    if src.format == "json":
+        return json_records(json.loads(_whole_text(src.path))), False
+    text, truncated = _read_text(src.path)  # jsonl / ndjson
+    return _jsonl_rows(text, truncated)[0], truncated
 
 
 def _faq_text(src: Source) -> tuple[str, int, bool]:
     """An FAQ file's questions and answers as text, the number of pairs, and whether the
-    text stopped short of the file. Every pair is counted; the text stops at MAX_CHARS."""
+    text stopped short of the file. Every pair read is counted; the text stops at MAX_CHARS.
+
+    A JSONL file cut short by the read limit used to report its pairs as a total: long
+    fields beside the question and answer used up the limit, and 2,200 pairs read as 1,902
+    with nothing saying so.
+    """
     parts: list[str] = []
     pairs = chars = 0
-    for rec in _records(src):
+    records, cut_short = _records(src)
+    for rec in records:
         if not isinstance(rec, dict) or not (cols := faq_pair(rec)):
             continue
         pair = "\n\n".join(str(rec.get(c) or "") for c in cols).strip()
@@ -149,7 +161,7 @@ def _faq_text(src: Source) -> tuple[str, int, bool]:
         if chars < MAX_CHARS:
             parts.append(pair)
             chars += len(pair)
-    return "\n\n".join(parts), pairs, chars >= MAX_CHARS
+    return "\n\n".join(parts), pairs, cut_short or chars >= MAX_CHARS
 
 
 def profile_document(src: Source, pack: LocalePack) -> dict[str, Any]:
@@ -327,6 +339,8 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         t["tool_candidates"] = [
             f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
         ]
+        if not t["id_columns"] and (labelled := labelled_text_columns(t["columns"])):
+            t["labelled_texts"] = list(labelled)  # [text column, label column]
         pii.update(t.pop("pii", {}))
     facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:

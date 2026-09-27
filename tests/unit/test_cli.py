@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -34,6 +36,27 @@ def test_init_creates_project(tmp_path):
     assert (target / "data" / "raw").is_dir()
     assert (target / ".gitignore").read_text().startswith("# written by")
     assert ProjectConfig.load(target).locales == ["en-US", "en-IN"]
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_init_keeps_every_data_file_out_of_git(tmp_path):
+    # Only data/raw/ and three audio extensions used to be ignored, so recordings in
+    # data/audio/, prepared manifests and redaction logs could be committed.
+    target = tmp_path / "shop"
+    assert runner.invoke(app, ["init", str(target), "--locale", "en-US"]).exit_code == 0
+    subprocess.run(["git", "init", "-q"], cwd=target, check=True)
+    private = [
+        "data/raw/crm.csv",
+        "data/audio/call.opus",
+        "data/prepared/vakforge.jsonl",
+        "data/prepared/redactions/conv_1.json",
+        "runs/eval/report.json",
+        "exports/call.m4a",
+    ]
+    kept = ["vakforge.yaml", "configs/train.yaml"]
+    check = ["git", "check-ignore", *private, *kept]
+    ignored = subprocess.run(check, cwd=target, capture_output=True, text=True).stdout.split()
+    assert ignored == private
 
 
 def test_a_project_created_by_0_1_0_still_loads(tmp_path):
