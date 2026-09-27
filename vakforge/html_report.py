@@ -179,6 +179,7 @@ def _source_detail(source: str, s: dict[str, Any]) -> str:
         "audio": _duration(s["audio_hours"] * 3600),
         "two-channel audio": f"{_n(s['two_channel_audio_files'])} files",
         "languages": ", ".join(list(s["languages"])[:3]),
+        "labelled texts": fmt_kinds({"table": s.get("labelled_text_tables", 0)}),
     }.get(source, "")
     return escape(detail)
 

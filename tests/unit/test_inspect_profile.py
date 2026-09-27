@@ -499,3 +499,14 @@ def test_phone_band_audio_marked_narrowband(tmp_path):
     facts = profile_audio(classify(p), HI)
     assert facts["narrowband"] is True
     assert 0.4 < facts["silence_ratio"] < 0.6
+
+
+def test_a_table_of_labelled_texts_is_recognised(tmp_path):
+    # An intent dataset: one text per row and its category, no id column.
+    p = tmp_path / "intents.csv"
+    p.write_text("text,category\nwhere is my order,order_status\ncancel it,cancel\n", "utf-8")
+    table = profile_table(classify(p), HI)["tables"]["intents"]
+    assert table["labelled_texts"] == ["text", "category"]
+    q = tmp_path / "tickets.csv"
+    q.write_text("ticket_id,text,category\n1,late,delivery\n", "utf-8")
+    assert "labelled_texts" not in profile_table(classify(q), HI)["tables"]["tickets"]

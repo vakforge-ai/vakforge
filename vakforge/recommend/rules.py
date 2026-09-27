@@ -278,6 +278,7 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
     # Routes follow what was read, as goals do: two unreadable PDFs used to get "documents
     # -> retrieval" beside a verdict that nothing in the folder was usable.
     profiled = summary.get("profiled") or counts
+    labelled = summary.get("labelled_text_tables", 0)
     routes: list[Route] = []
     if profiled.get("document", 0):
         routes.append(
@@ -340,8 +341,10 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
                     f"{unread} file{'s' if unread > 1 else ''} could not be read (the inspect "
                     "report says why)"
                 )
-            if profiled.get("table", 0):
+            if profiled.get("table", 0) > labelled:
                 why.append("a table needs an id column to look records up by")
+            if labelled:
+                why.append("vakforge does not use tables of labelled texts yet")
             routes.append(
                 Route(
                     "nothing usable yet",
@@ -352,6 +355,16 @@ def _routes(summary: dict[str, Any], goals: list[Goal]) -> list[Route]:
             )
         else:
             routes.append(Route("nothing yet", "synth", start))
+    if labelled:
+        routes.append(
+            Route(
+                "labelled texts",
+                "not used yet",
+                "a text column with a category beside it, such as an intent dataset, is "
+                "neither a conversation nor a lookup table, and vakforge does not read it yet; "
+                "real requests like these still make good test questions for the baseline",
+            )
+        )
     return routes
 
 
@@ -677,6 +690,7 @@ class InspectSummary(BaseModel):
     languages: dict[str, int] = Field(default_factory=dict)
     pii: dict[str, int] = Field(default_factory=dict)
     tool_candidates: list[str] = Field(default_factory=list)
+    labelled_text_tables: int = 0
 
 
 def recommend(

@@ -30,6 +30,8 @@ The words `vakforge inspect` and `vakforge recommend` use, and the fields they w
 
 **FAQ file.** A CSV or JSON file with `question` and `answer` columns. It holds facts, so it is read as a document and routed to retrieval, not to a fine-tune. `faq_pairs` counts its pairs.
 
+**Labelled texts.** A table with one text per row and a category beside it (`text` and `intent`, `category` or `label`), such as an intent dataset. It is neither a conversation nor a table to look records up in, and vakforge does not use it yet; `recommend` says so rather than leaving it out. `labelled_texts` names the two columns, and `labelled_text_tables` counts such tables.
+
 **ID column.** A column that identifies a record, such as `order_id`, `Ticket ID`, `sku` or `customer_id`, however the export spells it.
 
 **Tool candidate.** A lookup the assistant could call, made from a table and one of its ID columns: `lookup_orders_by_order_id`. Tools answer questions about records ("where is my order?") without training anything.

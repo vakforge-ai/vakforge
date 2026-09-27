@@ -33,6 +33,7 @@ from vakforge.inspect.sources import (
     conversation_pair,
     faq_pair,
     json_records,
+    labelled_text_columns,
     message_columns,
 )
 from vakforge.locales.base import LocalePack
@@ -338,6 +339,8 @@ def profile_table(src: Source, pack: LocalePack) -> dict[str, Any]:
         t["tool_candidates"] = [
             f"lookup_{column_key(name)}_by_{column_key(c)}" for c in t["id_columns"][:3]
         ]
+        if not t["id_columns"] and (labelled := labelled_text_columns(t["columns"])):
+            t["labelled_texts"] = list(labelled)  # [text column, label column]
         pii.update(t.pop("pii", {}))
     facts: dict[str, Any] = {"tables": tables, "pii": dict(pii.most_common())}
     if truncated:

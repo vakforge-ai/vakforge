@@ -391,3 +391,11 @@ def test_plain_conversations_cannot_make_tool_training_a_candidate():
     tools = recommend(with_tables, US, Constraints(goals=("tools",))).decision("tools")
     assert tools.eligibility == "baseline_first"
     assert "no table" not in tools.uncounted[0]
+
+
+def test_a_table_of_labelled_texts_is_named_not_blamed_on_a_missing_id_column():
+    r = recommend(summary(counts={"table": 1}, labelled_text_tables=1), US)
+    assert r.goals == []
+    nothing, labelled = r.routes
+    assert "id column" not in nothing.why and "labelled texts" in nothing.why
+    assert (labelled.source, labelled.route) == ("labelled texts", "not used yet")
