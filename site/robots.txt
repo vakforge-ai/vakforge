@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vakforge.pages.dev/sitemap.xml
