@@ -1,0 +1,25 @@
+name: pr-description
+
+# Its own workflow so that editing a description re-runs this check alone, not all of CI.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-description:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: The description follows the pull request template
+        # The description arrives through the environment, never pasted into the script:
+        # it is text anyone opening a pull request controls.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 scripts/check_pr_body.py

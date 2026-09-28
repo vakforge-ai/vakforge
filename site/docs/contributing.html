@@ -129,6 +129,7 @@ version of each tool until someone changes <code>uv.lock</code>. The build backe
 <li>Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.</li>
 <li>Conventional commit messages: <code>feat(prepare): roman-hindi language tagging</code>.</li>
 <li>Large recipes land as a sequence of pull requests: adapter → train wrapper → eval → serve.</li>
+<li>Every pull request description follows <a href="https://github.com/vakforge-ai/vakforge/blob/main/.github/pull_request_template.md" target="_blank" rel="noopener"><code>.github/pull_request_template.md</code></a>: <strong>What</strong>, <strong>Why</strong>, <strong>How to check</strong> and <strong>Checklist</strong>, in that order, each one filled in. The <code>pr-description</code> check fails a description with a missing, reordered or empty section; editing the description re-runs it. Descriptions written by bots, such as Dependabot's, are not checked.</li>
 </ul>
 <h2 id="releases">Releases</h2>
 <ol>
