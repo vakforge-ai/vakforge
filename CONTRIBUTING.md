@@ -60,6 +60,7 @@ version of each tool until someone changes `uv.lock`. The build backend is pinne
 - Commits are small and logical: one concern per commit, several commits per branch. A branch that adds a CLI command, its tests and its docs is three commits, not one.
 - Conventional commit messages: `feat(prepare): roman-hindi language tagging`.
 - Large recipes land as a sequence of pull requests: adapter → train wrapper → eval → serve.
+- Every pull request description follows [`.github/pull_request_template.md`](.github/pull_request_template.md): **What**, **Why**, **How to check** and **Checklist**, in that order, each one filled in. The `pr-description` check fails a description with a missing, reordered or empty section; editing the description re-runs it. Descriptions written by bots, such as Dependabot's, are not checked.
 
 ## Releases
 

@@ -1,10 +1,14 @@
-## What and why
+## What
 
-<!-- One or two sentences: what this changes and the reason. Link the issue if there is one. -->
+<!-- One or two sentences: what this pull request changes. -->
+
+## Why
+
+<!-- The problem it fixes or the need it meets. Link the issue if there is one (Fixes #123). -->
 
 ## How to check
 
-<!-- Commands a reviewer can run, or what to look at. -->
+<!-- What you ran and what a reviewer can run or look at: commands, tests added, pages to open. -->
 
 ## Checklist
 

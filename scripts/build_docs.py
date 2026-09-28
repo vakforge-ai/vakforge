@@ -384,6 +384,24 @@ def version() -> str:
     return m.group(1) if m else "dev"
 
 
+def canonical(page: Page) -> str:
+    """The address a search engine should index. Cloudflare Pages redirects `x.html` to `x`,
+    so the extensionless form is the one that answers without a redirect."""
+    return SITE_DOCS if page.slug == "index" else f"{SITE_DOCS}{page.slug}"
+
+
+def sitemap() -> str:
+    """The landing page and every docs page, for search engines. Written by the build so a
+    new or renamed page cannot be missing from it."""
+    urls = [SITE_DOCS.removesuffix("docs/"), *(canonical(p) for p in PAGES)]
+    entries = "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{entries}</urlset>\n"
+    )
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("*.html"):
@@ -397,6 +415,7 @@ def main() -> None:
         html_out = TEMPLATE.format(
             title=html.escape(page.title),
             blurb=html.escape(page.blurb),
+            canonical=canonical(page),
             repo=REPO,
             source=page.source.as_posix(),
             version=ver,
@@ -409,6 +428,7 @@ def main() -> None:
     (OUT / "search.json").write_text(
         json.dumps(index, ensure_ascii=False), encoding="utf-8", newline="\n"
     )
+    (OUT.parent / "sitemap.xml").write_text(sitemap(), encoding="utf-8", newline="\n")
     # pygments colours, both themes, appended to the hand-written stylesheet at build time
     css_src = (ROOT / "scripts" / "docs.css").read_text(encoding="utf-8")
 
