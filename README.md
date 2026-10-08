@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://vakforge.pages.dev/assets/social/readme-banner.png" alt="vakforge: your data, your voice assistant, your hardware" width="100%">
-</p>
-
 # vakforge
 
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/vakforge?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLUE&right_color=ORANGE&left_text=downloads)](https://pepy.tech/projects/vakforge)
@@ -10,15 +6,15 @@
 
 vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.
 
-<p align="center">
-  <img src="https://vakforge.pages.dev/assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." width="100%">
-</p>
-
 - **Bring the data you have:** documents, FAQs, database tables, chat logs, CRM exports, recorded calls. PDF, Word and Excel files are listed as skipped until text extraction lands; export them to text or CSV for now.
 - **Open models only:** the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)
 - **Any language:** through locale packs. Launching with English (US, UK, India) and Hinglish.
 
 > Status: pre-alpha. `init`, `inspect`, `recommend`, `report`, `validate` and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See [`docs/ROADMAP.md`](https://vakforge.pages.dev/docs/roadmap.html).
+
+<p align="center">
+  <img src="https://vakforge.pages.dev/assets/social/vakforge-demo.gif" alt="A 45-second loop. Your company's documents, tables, chats and calls go into vakforge, which tells you whether each needs retrieval, tools, a locale pack or fine-tuning. It then runs inspect and recommend on a sample Hinglish shop, which say to ship on retrieval and tools and not to fine-tune yet, and shows the shareable HTML report." width="100%">
+</p>
 
 ## Try it
 
