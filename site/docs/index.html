@@ -85,7 +85,6 @@
 <p><a href="https://pepy.tech/projects/vakforge" target="_blank" rel="noopener"><img src="https://static.pepy.tech/personalized-badge/vakforge?period=total&amp;units=INTERNATIONAL_SYSTEM&amp;left_color=BLUE&amp;right_color=ORANGE&amp;left_text=downloads" alt="PyPI Downloads" /></a></p>
 <p><strong>The decision layer for open voice AI.</strong></p>
 <p>vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.</p>
-<p><img src="../assets/diagrams/decision-layer-light.webp" alt="Documents, database tables, chat logs and call recordings go into vakforge, which inspects them and recommends retrieval, tools, fine-tuning or a locale pack. The result is your voice assistant, on your servers." /></p>
 <ul>
 <li><strong>Bring the data you have:</strong> documents, FAQs, database tables, chat logs, CRM exports, recorded calls. PDF, Word and Excel files are listed as skipped until text extraction lands; export them to text or CSV for now.</li>
 <li><strong>Open models only:</strong> the assistant itself runs on your servers and never calls a hosted API. (Generating synthetic training dialogues may use a provider you choose, only after you approve it.)</li>
@@ -94,6 +93,7 @@
 <blockquote>
 <p>Status: pre-alpha. <code>init</code>, <code>inspect</code>, <code>recommend</code>, <code>report</code>, <code>validate</code> and the locale packs work today. The agent skill that writes the rest of the path is written but has not yet been run end to end on a real project. See <a href="roadmap.html"><code>docs/ROADMAP.md</code></a>.</p>
 </blockquote>
+<p><img src="../assets/social/vakforge-demo.gif" alt="A 45-second loop. Your company's documents, tables, chats and calls go into vakforge, which tells you whether each needs retrieval, tools, a locale pack or fine-tuning. It then runs inspect and recommend on a sample Hinglish shop, which say to ship on retrieval and tools and not to fine-tune yet, and shows the shareable HTML report." /></p>
 <h2 id="try-it">Try it</h2>
 <div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">copy</button><pre class="highlight"><code>pip<span class="w"> </span>install<span class="w"> </span>vakforge
 vakforge<span class="w"> </span>init<span class="w"> </span>my-assistant<span class="w"> </span>--locale<span class="w"> </span>en-US<span class="w">       </span><span class="c1"># or en-GB, en-IN, hi-Latn-IN</span>
