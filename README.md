@@ -4,6 +4,8 @@
 
 # vakforge
 
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/vakforge?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLUE&right_color=ORANGE&left_text=downloads)](https://pepy.tech/projects/vakforge)
+
 **The decision layer for open voice AI.**
 
 vakforge helps you build a voice assistant from the data your company already has, and run it on your own servers. Before you spend anything on GPUs, it tells you what actually needs training. Usually that is less than you think.
